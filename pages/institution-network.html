@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Institution Network — Upadyay</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/institution.css?v=14">
+<style>
+.nw{max-width:min(100%,1680px);margin:0 auto;padding:16px clamp(16px,3.2vw,56px) 60px;box-sizing:border-box}
+.nw>*{margin-left:auto;margin-right:auto}
+.nw-stack h1,.nw-stack>p.sub{text-align:center}
+.nw h1{font-size:20px;margin:0 0 4px}.nw h2{font-size:16px;margin:0 0 8px}.nw h3{font-size:15px;margin:0 0 8px}
+.nw p.sub{color:var(--ink-faint);margin:0 0 20px;font-size:14px}
+.nw-demo{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--blue-50);border:1px dashed var(--blue-500);border-radius:var(--radius);padding:8px 10px;margin-bottom:12px;font-size:12.5px}
+.nw-demo b{margin-right:4px}.nw-demo .btn.on{background:var(--blue-700);color:#fff;border-color:var(--blue-700)}
+.c{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);padding:12px 14px}
+.g{display:grid;gap:14px}.g2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}.g3{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.pick{cursor:pointer;border:2px solid var(--line);transition:.15s}.pick:hover{border-color:var(--blue-500)}.pick.sel{border-color:var(--blue-700);background:var(--blue-50)}
+.lg{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex-shrink:0}
+.lg.big{width:48px;height:48px;font-size:17px}
+.row{display:flex;gap:12px;align-items:center}.row.top{align-items:flex-start}.wrap{flex-wrap:wrap}.sp{justify-content:space-between}.grow{flex:1;min-width:0}
+.bd{font-size:10.5px;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:20px;display:inline-block}
+.bd.m{background:#EFE7FB;color:#5B2AA8}.bd.s{background:#E3EEFF;color:#1B4FBF}
+.st{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block}
+.st.y{background:#FFF4D6;color:#8A6100}.st.g{background:#DDF5E5;color:#17753A}.st.r{background:#FDE3E0;color:#B3261E}.st.n{background:#ECEFF4;color:#55627A}
+.mut{color:var(--ink-faint);font-size:13px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+.fld input,.fld select,.fld textarea{font:inherit;font-weight:400;padding:9px 10px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink)}
+.fld.err input{border-color:#B3261E}
+.res{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:#fff}.res:hover{border-color:var(--blue-500);background:var(--blue-50)}
+.sk{height:58px;border-radius:6px;background:linear-gradient(90deg,#eef1f6,#f7f8fb,#eef1f6);background-size:200% 100%;animation:sk 1s infinite}@keyframes sk{to{background-position:-200% 0}}
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin:12px 0}.tabs button{background:none;border:0;padding:10px 14px;font:inherit;font-weight:600;color:var(--ink-faint);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}.tabs button.on{color:var(--blue-700);border-color:var(--blue-700)}
+.pst{display:flex;gap:6px;overflow-x:auto;margin:12px 0 14px;border-bottom:1px solid var(--line);padding-bottom:8px}.pst button{background:#fff;border:1px solid var(--line);border-radius:4px;padding:7px 12px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink-faint);cursor:pointer;white-space:nowrap}.pst button.on{background:var(--blue-900);color:#fff;border-color:var(--blue-900)}.pst button.done{color:#17753A;border-color:#17753A}.pst button:disabled{opacity:.5;cursor:not-allowed}
+.dtabs{display:flex;gap:2px;border:1px solid var(--line);border-radius:2px;padding:4px;background:#fff;margin:0 0 16px;overflow-x:auto}.dtabs button{flex:1;min-width:max-content;padding:10px 16px;border:0;border-radius:2px;background:transparent;font:600 13.5px inherit;font-family:inherit;color:var(--ink-soft);text-align:center;cursor:pointer;white-space:nowrap}.dtabs button:hover{background:var(--blue-50)}.dtabs button.on{background:var(--blue-900);color:#fff;box-shadow:var(--shadow-sm)}
+.sug{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-md);z-index:30;overflow:hidden;padding:4px 0}.sg{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:14px}.sg:hover{background:var(--blue-50)}.sg .lg{width:28px;height:28px;border-radius:50%}
+.num{font-size:26px;font-weight:700;color:var(--blue-900)}
+.mod{position:fixed;inset:0;background:rgba(10,20,50,.55);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.mod>.c{max-width:520px;width:100%;max-height:90vh;overflow:auto}
+.steps{display:flex;flex-direction:column;gap:10px}.steps div{display:flex;gap:10px;align-items:center}.dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;background:#ECEFF4;color:#55627A}.dot.d{background:#17753A;color:#fff}.dot.p{background:#F2B01E;color:#fff}
+.chk{width:72px;height:72px;border-radius:50%;background:#17753A;color:#fff;font-size:38px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;animation:pop .4s}@keyframes pop{from{transform:scale(.3)}}
+.tree{padding-left:18px;border-left:2px solid var(--blue-100);margin-left:22px}
+@media(max-width:640px){.mod{align-items:flex-end;padding:0}.mod>.c{border-radius:14px 14px 0 0}.btns .btn{flex:1}}
+
+.nw-stack{max-width:880px;margin:0 auto}
+.nw-big{padding:26px 28px;border-width:2px;border-color:var(--blue-700)}
+.nw-big h3{font-size:20px;margin-bottom:12px}
+.nw-sm{padding:12px 16px}
+.nw-sm h3{font-size:14px;margin-bottom:6px}
+.nw-mid{max-width:560px}
+.nw-selc>.c{padding:14px 18px}
+.nw-selc .lg.big{width:48px;height:48px}
+.nw-form{max-width:720px}
+.nw-steps{display:flex;gap:6px;margin:16px 0 0}
+.nw-steps span{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.nw-steps span.on{background:var(--blue-700)}
+.nw-conn{padding:12px 16px}
+.nw-conn .lg{width:40px;height:40px}
+.nw-subrev{padding:12px 16px;font-size:14px}
+.nw-subrev .lg.big{width:48px;height:48px}
+.nw-lg a{color:var(--blue-700);text-decoration:underline;font-weight:600}
+.nw-stack>.pick:first-child{padding:26px 28px}
+.nw-or{display:flex;align-items:center;gap:14px;color:var(--ink-faint);margin:14px 0}
+.nw-or:before,.nw-or:after{content:"";flex:1;height:1px;background:var(--line)}
+.nw-small{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 16px}
+.nw-small .nw-ic svg{width:26px;height:26px;display:block}
+.nw-small .grow{min-width:200px}
+.nw-lg{margin:10px 0 0}
+.nw.nw-wide{max-width:none;padding:0}
+</style>
+</head>
+<body class="page">
+<div id="siteNav"></div>
+<main class="nw" id="app"></main>
+<div id="siteChrome"></div>
+<script src="../js/api.js"></script>
+<script src="../js/store.js"></script>
+<script src="../js/employer.js"></script>
+<script src="../js/auth.js"></script>
+<script src="../js/faculty.js"></script>
+<script src="../js/layout.js"></script>
+<script>
+mountNav(''); mountChrome({noFooter:true});
+/* ---------- mock data (UI demo only, no backend) ---------- */
+const COL=['#5B2AA8','#1B4FBF','#0E7C66','#B4531A','#A3245E','#3B5B92','#6B7A1F','#7A3E9D'];
+const MAINS=[
+ {n:'St. Joseph Educational Group',c:'Hyderabad, Telangana',t:'Education Group',code:'10245',d:'Schools, junior colleges and engineering campuses across South India.'},
+ {n:'St. Joseph Education Trust',c:'Bengaluru, Karnataka',t:'Education Trust',code:'20871',d:'Charitable trust running 9 institutions.'},
+ {n:'St. Jude Institutions',c:'Chennai, Tamil Nadu',t:'University Group',code:'31502',d:'Multi-campus university group.'},
+ {n:'Sri Chaitanya Academic Society',c:'Vijayawada, Andhra Pradesh',t:'Education Society',code:'44019',d:'Junior colleges and coaching centres.'},
+ {n:'Narayana Vidya Foundation',c:'Nellore, Andhra Pradesh',t:'Foundation',code:'55630',d:'K-12 and professional colleges.'},
+ {n:'Osmania Heritage Trust',c:'Hyderabad, Telangana',t:'Education Trust',code:'67744',d:'Heritage degree colleges.'},
+ {n:'St. Joseph Educational Society',c:'Warangal, Telangana',t:'Education Society',code:'81236',d:'Degree and pharmacy colleges in Warangal.'},
+ {n:'St. Joseph Group of Institutions',c:'Bengaluru, Karnataka',t:'College Group',code:'82347',d:'Engineering and management campuses.'},
+ {n:"St. Joseph's Academy Trust",c:'Chennai, Tamil Nadu',t:'Education Trust',code:'83458',d:'Schools and junior colleges.'},
+ {n:'St. Joseph Vidya Samstha',c:'Vijayawada, Andhra Pradesh',t:'Education Society',code:'84569',d:'K-12 and degree colleges.'},
+ {n:'Stanley Group of Colleges',c:'Hyderabad, Telangana',t:'College Group',code:'78123',d:'Engineering and pharmacy colleges.'}];
+const SUB={n:'St. Joseph College of Engineering',c:'Hyderabad, Telangana',t:'Engineering College',by:'Dr. Kittu Kumar',em:'principal@sjce.edu',ph:'+91 98765 43210',d:'AICTE-approved engineering college offering B.Tech and M.Tech programmes.',date:'29 Sep 2026'};
+let reqs=[{...SUB,id:1,s:'Pending'},{n:'St. Joseph Polytechnic',c:'Warangal, Telangana',t:'Polytechnic',by:'Ms. Anita Rao',em:'head@sjp.edu',ph:'+91 90000 11111',d:'Diploma programmes in engineering.',date:'27 Sep 2026',id:2,s:'Pending'}];
+const BR=[{n:'St. Joseph Junior College',c:'Secunderabad, Telangana',j:11,f:42,a:76,l:'1 day ago'},{n:'St. Joseph Degree College',c:'Karimnagar, Telangana',j:8,f:31,a:54,l:'3 days ago'}];
+const S={empty:false,bv:null,bt:'overview',v:'type',type:null,main:MAINS[0],q:'',role:'reg',tab:'overview',st:'pending',all:false,chk:false,code:''};
+let LOGOS=(()=>{try{return JSON.parse(localStorage.getItem('nwLogos'))||{}}catch(e){return {}}})();
+const crest=(n)=>{const c=COL[n.length%8];return `<svg viewBox="0 0 48 48" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" fill="${c}"/><path d="M24 6l14 4.5v11.5c0 9-6 15.5-14 20-8-4.5-14-11-14-20V10.5z" fill="#fff"/><path d="M24 17c-3.5-2.2-7-2.3-10.5-1v13c3.500-1.300 7-1.200 10.500 1 3.500-2.200 7-2.300 10.500-1V16c-3.500-1.300-7-1.200-10.500 1z" fill="${c}"/><path d="M24 17v13" stroke="#fff" stroke-width="1.6"/><circle cx="24" cy="12" r="1.8" fill="${c}"/></svg>`};
+const lg=(n,cls='')=>`<div class="lg ${cls}" style="background:#fff;border:1px solid var(--line);overflow:hidden;padding:0">${LOGOS[n]?`<img src="${LOGOS[n]}" alt="" style="width:100%;height:100%;object-fit:cover">`:crest(n)}</div>`;
+const B=(m)=>m?'<span class="bd m">MAIN INSTITUTION</span>':'<span class="bd s">SUB-BRANCH</span>';
+const ST={pending:['y','<svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#C99A00"/></svg> Pending Main Institution Approval'],approved:['g','<svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#17753A"/></svg> Connected'],rejected:['r','<svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#B3261E"/></svg> Request Rejected'],withdrawn:['n','<svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#8A93A6"/></svg> Request Withdrawn']};
+const stB=k=>`<span class="st ${ST[k][0]}">${ST[k][1]}</span>`;
+const mainCard=(m,extra='')=>`<div class="c row wrap">${lg(m.n,'big')}<div class="grow"><b>${m.n}</b> ${B(1)}<div class="mut">${m.c} · ${m.t}</div>${extra}</div></div>`;
+const go=(v)=>{S.v=v;render();scrollTo(0,0)};
+const FROM_LOGIN=new URLSearchParams(location.search).get('from')==='login';
+function contType(){
+  if(S.type=='main'){ FROM_LOGIN?goTo('employer'):goTo('register',{role:'company',type:'main'}); return; }
+  let d=null;try{d=JSON.parse(localStorage.getItem('nwSub'))}catch(e){}
+  if(FROM_LOGIN&&d&&d.st=='approved'){Object.assign(SUB,d.sub);S.main=MAINS.find(m=>m.code==d.mainCode)||S.main;S.st='approved';reqs[0]={...reqs[0],...SUB,id:1,s:'Approved'};S.role='sub';S.sd='profile';render();return;}
+  location.href='subbranch-auth.html?mode=register';
+}
+const set=(k,v)=>{S[k]=v;render()};
+/* ---------- render ---------- */
+function demoBar(){return `<div class="nw-demo"><b>Demo view:</b>
+${[['reg','Registration flow'],['sub','Sub-branch dashboard'],['main','Main branch dashboard']].map(([r,l])=>`<button class="btn btn-light btn-sm ${S.role==r?'on':''}" onclick="S.role='${r}';S.tab='overview';S.bv=null;if(r=='reg')S.v='type';render()">${l}</button>`).join('')}
+${S.role=='sub'?'<span class="mut">Status:</span>'+Object.keys(ST).map(k=>`<button class="btn btn-light btn-sm ${S.st==k?'on':''}" onclick="set('st','${k}')">${k}</button>`).join(''):''}${S.role=='main'?`<button class="btn btn-light btn-sm ${S.empty?'on':''}" onclick="set('empty',!S.empty)">Empty state</button>`:''}</div>`}
+function render(){
+  const V={type:vType,sublogin:vSubLogin,code:vFind,confirm:vConfirm,form:vForm,review:vReview,done:vDone}[S.v];
+  document.getElementById('app').className='nw'+(S.role=='sub'?' nw-wide':'');document.getElementById('app').innerHTML=(S.role=='reg'?V():S.role=='sub'?vSub():vMain());
+}
+/* 1. choose type */
+function vType(){const o2=(k,ic,t,bd,d,ex,btn)=>`<div class="c pick nw-small ${S.type==k?'sel':''}" onclick="location.href='subbranch-auth.html?mode=register'"><div class="nw-ic">${ic}</div><div class="grow"><h3 style="display:inline;margin:0 8px 0 0">${t}</h3>${bd}<p class="mut" style="margin:4px 0 0">${d}</p></div><span class="btn btn-ghost btn-sm">${btn}</span></div>`;
+const o=(k,ic,t,bd,d,ex,btn)=>`<div class="c pick ${S.type==k?'sel':''}" onclick="set('type','${k}')"><div style="font-size:30px">${ic}</div><h2>${t}</h2>${bd}<p class="mut">${d}</p>${ex?`<p class="mut">e.g. ${ex}</p>`:''}<span class="btn ${S.type==k?'btn-primary':'btn-ghost'} btn-sm">${btn}</span></div>`;
+return `<div class="nw-stack"><h1>What type of institution are you registering?</h1><p class="sub">Choose one to continue. Nothing is created until you pick.</p>${o('main','<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;color:var(--blue-700);vertical-align:0" aria-hidden="true"><path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/></svg>','Main / Normal Institution','<span class="bd m">MAIN / NORMAL INSTITUTION</span>','Create a new independent institution profile or the primary/main organization profile.','University, College, School, Company, Education Group, Main Campus, Headquarters','Create Institution')}<div class="nw-or">or</div>${o2('sub','<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;color:var(--blue-700);vertical-align:0" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-4.5"/></svg>','Sub-Branch / College','<span class="bd s">SUB-BRANCH</span>','Join an existing registered Main Institution as a branch, college, campus or affiliated institution.','','Register as Sub-Branch')}<p class="mut nw-lg">Already a sub-branch? <a href="#" onclick="location.href='subbranch-auth.html?mode=login';return false">Log in</a></p>
+<p class="btns row wrap"><button class="btn btn-light" onclick="goTo('home')">Back</button><button class="btn btn-primary" ${S.type?'':'disabled style="opacity:.5"'} onclick="contType()">Continue</button></p>${S.type=='main'?'<p class="mut">Continues to the existing institution form. After registering you become a <span class="bd m">MAIN INSTITUTION</span> and receive a 5-digit institution code for your branches.</p>':''}</div>`}
+/* sub-branch login (separate from main-institution login) */
+function vSubLogin(){return `<h1>Sub-branch login</h1><p class="sub">Sign in to your sub-branch dashboard. Main institutions log in from the main Log in page.</p><div class="c g" style="max-width:480px"><label class="fld">Branch email or code<input id="sl_id"></label><label class="fld">Password<input id="sl_pw" type="password"></label>${S.slerr?`<div style="color:#B3261E;font-size:13px">${S.slerr}</div>`:''}<p class="btns row wrap"><button class="btn btn-light" onclick="S.slerr='';go('type')">Back</button><button class="btn btn-primary" onclick="subLogin()">Log in</button></p><p class="mut">No account yet? <a href="#" onclick="S.type='sub';S.slerr='';go('code');return false">Register as sub-branch</a></p></div>`}
+function subLogin(){const i=document.getElementById('sl_id').value.trim(),p=document.getElementById('sl_pw').value;let d=null;try{d=JSON.parse(localStorage.getItem('nwSub'))}catch(e){}
+ if(!i||!p){S.slerr='Enter your branch email or code and password.';render();return}
+ if(!d||d.st!='approved'){S.slerr='No approved sub-branch found on this device. Register as a sub-branch first.';render();return}
+ Object.assign(SUB,d.sub);S.main=MAINS.find(m=>m.code==d.mainCode)||S.main;S.st='approved';reqs[0]={...reqs[0],...SUB,id:1,s:'Approved'};
+ setBranchSession(i,SUB.n);if(typeof updateNavForLogin==='function')updateNavForLogin();
+ S.slerr='';S.role='sub';S.sd='profile';render();scrollTo(0,0)}
+/* 2. find main institution */
+function vFind(){
+  const digits=S.code.replace(/\D/g,''),bad=S.code&&!/^\d{5}$/.test(S.code);
+  const q=S.q.trim().toLowerCase(),hits=q?MAINS.filter(m=>(m.n+m.c).toLowerCase().includes(q)):[];
+  const shown=S.all?hits:hits.slice(0,6);
+  return `<div class="nw-stack"><h1>Find Your Main Institution</h1><p class="sub">Your Sub-Branch must be connected to an existing Main Institution.</p>
+<div class="c nw-big"><h3>Main Institution Code</h3>
+<label class="fld ${bad?'err':''}">Main Institution Code<input id="code" maxlength="5" inputmode="numeric" placeholder="Enter 5-digit code, e.g. 10245" value="${S.code}" oninput="S.code=this.value;const b=document.getElementById('cb');b.disabled=!/^\\d{5}$/.test(this.value);this.parentNode.classList.toggle('err',this.value&&b.disabled)"></label>
+<p class="mut" id="ce">${bad?'Code must be exactly 5 digits.':'Demo codes: 10245, 20871, 31502'}</p>
+<button id="cb" class="btn btn-primary" ${/^\d{5}$/.test(S.code)?'':'disabled'} onclick="const m=MAINS.find(x=>x.code==S.code);m?(S.main=m,go('confirm')):(S.code='',S.q='zzz',render())">Find Institution</button></div>
+<div class="nw-or">or</div>
+<div class="c nw-sm"><h3>Search by Institution Name</h3>
+<label class="fld">Institution name<input id="q" placeholder="Search institution name..." value="${S.q}" oninput="liveQ(this.value)" autofocus></label>
+<div id="hits" class="g" style="margin-top:12px">${hitsHtml(q,shown,hits.length)}</div></div></div>`}
+function hitsHtml(q,shown,total){
+  if(!q)return '<div class="mut">Choose your main institution — start typing to search. Only Main / Normal institutions are listed; Sub-Branches can\'t be selected as a parent.</div>';
+  if(!shown.length)return `<h3>No Main Institution Found</h3><div class="mut">We couldn't find a matching Main Institution.</div><p class="btns row wrap"><button class="btn btn-light btn-sm" onclick="S.q='';S.code='';render()">Search Again</button><button class="btn btn-ghost btn-sm" onclick="goTo('register',{role:'company',type:'main'})">Create a Main / Normal Institution</button></p>`;
+  return shown.map(m=>`<div class="res" onclick="S.main=MAINS[${MAINS.indexOf(m)}];go('confirm')">${lg(m.n)}<div class="grow"><b>${m.n}</b> ${B(1)}<div class="mut">${m.t}</div><div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${m.c}</div><div class="mut">Code: <b>${m.code}</b></div></div></div>`).join('')+(total>shown.length?`<button class="btn btn-light btn-sm" onclick="set('all',true)">View all results (${total})</button>`:'');
+}
+let tm;function liveQ(v){S.q=v;S.all=false;const h=document.getElementById('hits');h.innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';clearTimeout(tm);tm=setTimeout(()=>{const q=v.trim().toLowerCase(),hits=q?MAINS.filter(m=>(m.n+m.c).toLowerCase().includes(q)):[];h.innerHTML=hitsHtml(q,hits.slice(0,6),hits.length)},350)}
+/* 3. confirm */
+function vConfirm(){return `<div class="nw-stack nw-mid"><h1>Selected Main Institution</h1><p class="sub">This sub-branch will be connected to the institution below.</p>
+<div class="nw-sm nw-selc">${mainCard(S.main,`<div><b>Institution Code: ${S.main.code}</b></div>`)}</div>
+<p class="btns row wrap"><button class="btn btn-primary" onclick="S.fs=0;go('form')">Continue</button><button class="btn btn-light" onclick="go('code')">Change Institution</button></p></div>`}
+/* connection card */
+const conn=()=>`<div class="c"><div class="mut">Connected Main Institution</div><div class="row wrap" style="margin:8px 0">${lg(S.main.n)}<div class="grow"><b>${S.main.n}</b> ${B(1)}<div class="mut">${S.main.c} · Code <b>${S.main.code}</b></div></div><span class="st y"><svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#C99A00"/></svg> Request will be sent on submit</span><button class="btn btn-light btn-sm" onclick="go('code')">Change Main Institution</button></div>
+<div class="mut">↓</div><div class="mut">MAIN INSTITUTION → YOUR SUB-BRANCH</div><div><b>${SUB.n}</b> ${B(0)}</div></div>`;
+/* 4. form */
+const F={'Basic Information':['Sub-branch / College name','Institution type|Engineering College,Degree College,Junior College,School,Polytechnic','Department / category','Established year','Logo / profile image|file','Cover image|file','About the branch|area'],
+'Location':['Address','City','State','Country','PIN / ZIP code','Map / location link'],
+'Contact':['Official email','Phone','Alternate phone','Website','Contact person'],
+'Academic Information':['College type|Autonomous,Affiliated,Deemed,Private','University affiliation','Courses / programs','Departments','Specializations','Student capacity','Faculty count','Accreditation (NAAC/NBA)','Recognition (AICTE/UGC)','Facilities'],
+'Social / Online Presence':['LinkedIn','Instagram','Facebook','YouTube','Other links']};
+const FV={},FVO={};
+function fvSel(k,val){if(val=='__other'){FVO[k]=true;FV[k]=''}else{FVO[k]=false;FV[k]=val}render();if(val=='__other'){const e=[...document.querySelectorAll('input[data-o]')].find(x=>x.dataset.k==k);if(e)e.focus()}}
+function readLogo(inp){const f=inp.files&&inp.files[0];if(!f)return;if(f.size>500000){alert('Please choose a logo under 500 KB.');inp.value='';return}const r=new FileReader();r.onload=()=>{S.logo=r.result;const pv=document.getElementById('logoPv');if(pv)pv.innerHTML='<img src="'+r.result+'" style="width:100%;height:100%;object-fit:cover">'};r.readAsDataURL(f)}
+function applyForm(){const n=(FV['Sub-branch / College name']||'').trim(),c=(FV['City']||'').trim(),st=(FV['State']||'').trim();if(n)SUB.n=n;if(c||st)SUB.c=[c,st].filter(Boolean).join(', ');if(FV['Official email'])SUB.em=FV['Official email'];if(FV['Phone'])SUB.ph=FV['Phone'];if(FV['Contact person'])SUB.by=FV['Contact person'];if(FV['About the branch'])SUB.d=FV['About the branch'];if(FV['Institution type'])SUB.t=FV['Institution type']}
+function submitReg(){applyForm();if(S.logo){LOGOS[SUB.n]=S.logo;try{localStorage.setItem('nwLogos',JSON.stringify(LOGOS))}catch(e){}}
+ reqs[0]={...reqs[0],...SUB,id:1,s:'Approved',mainInstitutionId:S.main.code,mainInstitutionCode:S.main.code,subBranchName:SUB.n,requestStatus:'Approved',requestDate:new Date().toISOString()};
+ S.st='approved';try{setBranchSession((ls0('nwSubAccount')||{}).id,SUB.n);if(typeof updateNavForLogin==='function')updateNavForLogin()}catch(e){}try{localStorage.setItem('nwSub',JSON.stringify({sub:SUB,mainCode:S.main.code,mainName:S.main.n,st:'approved'}))}catch(e){}go('done')}
+function fldH(f){const[l,o]=f.split('|'),v=FV[l]||'',ev=String(v).replace(/"/g,'&quot;');return `<label class="fld">${l}${o=='area'?`<textarea rows="3" data-k="${l}" oninput="FV[this.dataset.k]=this.value">${v}</textarea>`:o=='file'?(l.startsWith('Logo')?`<span class="row"><span id="logoPv" class="lg big" style="background:#fff;border:1px dashed var(--line);overflow:hidden;padding:0">${S.logo?`<img src="${S.logo}" style="width:100%;height:100%;object-fit:cover">`:crest(SUB.n)}</span><input type="file" accept="image/*" onchange="readLogo(this)"></span><span class="mut" style="font-weight:400">Upload your own logo (under 500 KB). A free default crest is used if you skip this.</span>`:'<input type="file" accept="image/*">'):o?(()=>{const lst=o.split(','),oth=!!(FVO[l]||(v&&!lst.includes(v)));return `<select data-k="${l}" onchange="fvSel(this.dataset.k,this.value)"><option value="">Select</option>${lst.map(x=>`<option ${!oth&&v==x?'selected':''}>${x}</option>`).join('')}<option value="__other" ${oth?'selected':''}>Other</option></select>${oth?`<input data-k="${l}" data-o="1" placeholder="Enter ${l.toLowerCase()}" value="${ev}" style="margin-top:8px" oninput="FV[this.dataset.k]=this.value">`:''}`})():`<input data-k="${l}" value="${ev}" oninput="FV[this.dataset.k]=this.value">`}</label>`}
+function vForm(){const ks=Object.keys(F),i=S.fs||0,k=ks[i],last=i==ks.length-1;
+return `<div class="nw-stack nw-form"><h1>Create Your Sub-Branch / College Profile</h1><p class="sub">You are joining <b>${S.main.n}</b> as a sub-branch. Your profile will be sent to the Main Institution for verification.</p>
+<div class="c nw-conn"><div class="row wrap">${lg(S.main.n)}<div class="grow"><div class="mut" style="font-size:12px">Connected Main Institution</div><b>${S.main.n}</b> ${B(1)}<div class="mut">${S.main.c} · Code <b>${S.main.code}</b></div></div><button class="btn btn-light btn-sm" onclick="go('code')">Change</button></div><div class="mut" style="margin-top:8px;font-size:12.5px">↓ Your sub-branch: <b>${(FV['Sub-branch / College name']||SUB.n)}</b> ${B(0)}</div></div>
+<div class="nw-steps">${ks.map((x,j)=>`<span class="${j<=i?'on':''}"></span>`).join('')}</div>
+<p class="mut" style="margin:6px 0 10px">Step ${i+1} of ${ks.length}</p>
+<div class="c"><h2>${k}</h2><div class="g g2">${F[k].map(fldH).join('')}</div></div>
+<p class="btns row wrap"><button class="btn btn-light" onclick="fsBack()">Back</button><button class="btn btn-primary" onclick="fsNext()">${last?'Review Profile':'Next'}</button></p></div>`}
+function fsNext(){const n=Object.keys(F).length;if((S.fs||0)>=n-1){applyForm();go('review')}else{S.fs=(S.fs||0)+1;render();scrollTo(0,0)}}
+function fsBack(){if((S.fs||0)>0){S.fs--;render();scrollTo(0,0)}else go('confirm')}
+/* 5. review */
+function vReview(){return `<div class="nw-stack nw-form"><h1>Review Your Institution</h1><p>Registration Type: <span class="bd s">SUB-BRANCH</span></p>
+<div class="row sp" style="margin:16px 0 8px"><h3 style="margin:0">Main Institution</h3><button class="btn btn-light btn-sm" onclick="go('code')">Edit Main Institution</button></div>
+${mainCard(S.main,`<div>Code: <b>${S.main.code}</b></div>`)}
+<div class="mut" style="text-align:center;margin:10px 0">↓ connects to</div>
+<div class="row sp" style="margin:0 0 8px"><h3 style="margin:0">Your Sub-Branch</h3><button class="btn btn-light btn-sm" onclick="go('form')">Edit Profile</button></div>
+<div class="c row wrap nw-subrev">${lg(SUB.n,'big')}<div class="grow"><b>${SUB.n}</b> ${B(0)}<div class="mut">${SUB.c}</div><div class="mut">${SUB.em} · ${SUB.ph}</div><div>${SUB.d}</div><div class="mut">Academic: B.Tech, M.Tech · NAAC A · AICTE</div></div></div>
+<label class="row" style="margin:18px 0"><input type="checkbox" onchange="document.getElementById('sb').disabled=!this.checked"> I confirm that this Sub-Branch belongs to the selected Main Institution.</label>
+<p class="btns row wrap"><button class="btn btn-light" onclick="go('form')">Back</button><button id="sb" class="btn btn-primary" disabled onclick="submitReg()">Create Profile &amp; Send Connection Request</button></p></div>`}
+/* 6. done */
+function vDone(){return `<div class="c" style="text-align:center;max-width:560px;margin:0 auto"><div class="chk"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;vertical-align:0" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h1>You're Connected</h1><p><b>${SUB.n}</b> is now part of <b>${S.main.n}</b> (Code ${S.main.code}).</p>${stB('approved')}<div class="steps" style="text-align:left;margin:16px auto;max-width:320px">${[['d','<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>','Profile Created'],['d','<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>','Connection Request Sent'],['d','<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>','Main Institution Review (auto for now)'],['d','<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>','Approved'],['d','<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>','Institution Connected']].map(([c,i,t])=>`<div><span class="dot ${c}">${i}</span>${t}</div>`).join('')}</div>
+<p class="mut">Post a Job, Posted Jobs, Browse Candidates and Requests are now unlocked.</p><button class="btn btn-primary" onclick="S.role='sub';S.st='approved';S.sd='profile';render()">Go to Dashboard</button></div>`}
+/* sub dashboard */
+function vSub0(){const k=S.st;return `<div class="c row wrap"><div class="grow row wrap">${lg(SUB.n,'big')}<div><h1 style="margin:0">${SUB.n}</h1>${B(0)} ${k=='approved'?'<div style="margin-top:4px"><b>Part of '+S.main.n+'</b> · <a href="#" onclick="S.role=\'main\';render();return false">Main Institution Profile</a></div>':''}<div class="mut">${SUB.c}</div></div></div>${stB(k)}</div>
+<h2 style="margin-top:18px">Connected Main Institution</h2>${mainCard(S.main,stB(k))}
+${k=='pending'?'<p class="mut">Your institution is waiting for approval from the Main Institution. <button class="btn btn-light btn-sm" onclick="set(\'st\',\'withdrawn\')">Withdraw request</button></p>':''}
+${k=='rejected'?'<div class="c" style="margin-top:14px;border-color:#B3261E"><b>Rejection reason:</b> Affiliation documents are incomplete. Please re-apply with valid proof.<p><button class="btn btn-primary btn-sm" onclick="S.role=\'reg\';S.v=\'code\';render()">Choose Another Main Institution</button></p></div>':''}
+${k=='withdrawn'?'<div class="c" style="margin-top:14px"><b>Request withdrawn.</b> You can send a new request any time.<p><button class="btn btn-primary btn-sm" onclick="S.role=\'reg\';S.v=\'code\';render()">Choose Main Institution</button></p></div>':''}
+${k=='approved'?'<h2 style="margin-top:18px">Institution Hierarchy</h2>'+tree():''}
+`}
+const tree=()=>`<div class="c"><div class="row">${lg(S.main.n)}<div><b>${S.main.n}</b> ${B(1)}</div></div><div class="mut" style="margin:8px 0 0 12px">↓ Connected Institutions</div><div class="tree">${['St. Joseph College of Engineering','St. Joseph College of Arts','St. Joseph School'].map(n=>`<div class="row" style="margin:10px 0">${lg(n)}<div><b>${n}</b> ${B(0)}</div></div>`).join('')}</div></div>`;
+const _old=()=>`<div class="c"><div class="row">${lg(S.main.n)}<div><b>${S.main.n}</b> ${B(1)}</div></div><div class="tree"><div class="row" style="margin:12px 0">${lg(SUB.n)}<div><b>${SUB.n}</b> ${B(0)}</div></div><div class="tree mut">Computer Science · Mechanical · Electronics · Civil</div></div></div>`;
+/* ---------- sub-branch dashboard after approval (jobs + candidates, localStorage) ---------- */
+function ls0(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+const LSG=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
+const LSS=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let JOBS=LSG('nwJobs',[]),CREQ=LSG('nwCandReq',[]);
+const CANDS=[{id:1,n:'Dr. Ravi Teja',r:'Professor',s:'Physics',e:'12 yrs',c:'Hyderabad, Telangana'},{id:2,n:'Ms. Sunita Rao',r:'Assistant Professor',s:'Computer Science',e:'6 yrs',c:'Warangal, Telangana'},{id:3,n:'Mr. Imran Khan',r:'Lecturer',s:'Mathematics',e:'3 yrs',c:'Secunderabad, Telangana'},{id:4,n:'Dr. Anjali Sharma',r:'Associate Professor',s:'Electronics',e:'9 yrs',c:'Hyderabad, Telangana'}];
+S.sd='profile';S.jf='all';
+const SD=[['profile','Institution Profile'],['post','Post a Job'],['jobs','Posted Jobs'],['cands','Browse Candidates'],['reqs','Requests']];
+const lockedTab=()=>alert('Locked until the Main Institution approves your connection.');
+const myJobs=()=>JOBS.filter(j=>j.mainCode==S.main.code&&j.branchName==SUB.n);
+const myReqs=()=>CREQ.filter(r=>r.mainCode==S.main.code&&r.branchName==SUB.n);
+const subNav=k=>{const ok=k=='approved';return `<div class="dash-tabs">${SD.map(([t,l])=>t=='profile'||ok?`<button class="dash-subtab ${S.sd==t?'active':''}" onclick="set('sd','${t}')">${l}${t=='jobs'&&myJobs().length?' ('+myJobs().length+')':''}${t=='reqs'&&myReqs().length?' ('+myReqs().length+')':''}</button>`:`<button class="dash-subtab" style="opacity:.55" onclick="lockedTab()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${l}</button>`).join('')}</div>`};
+const opt=a=>a.map(x=>`<option>${x}</option>`).join('');
+const jobCard=j=>`<div class="c"><div class="row wrap sp"><b>${esc(j.title)}</b><span class="st g">Active</span></div><div class="mut">${esc(j.role)} · ${esc(j.dept)} · ${esc(j.type)} · ${esc(j.vac)} vacancy</div><div class="mut">₹${esc(j.salMin)} – ₹${esc(j.salMax)} per ${esc(j.period)} · Exp ${esc(j.expMin)}+ yrs · ${esc(j.qual)}</div><div style="margin-top:6px"><b>${esc(j.branchName)}</b> ${B(0)}<div class="mut">Part of ${esc(j.mainName)} (Code ${esc(j.mainCode)}) · <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${j.campus?esc(j.campus)+' · ':''}${esc(j.loc)} · Posted ${esc(j.date)}</div></div></div>`;
+/* ---------- Post a Job: stepped form, same layout as the main employer dashboard ---------- */
+const JSTEPS=['Job details','Requirements','Salary','Job location','Description'];
+const JSUB=['What is the role and where does it sit in your institution?','Qualification, experience and how soon the candidate can join.','Clear pay details get more applications.','This job is posted for your campus. Main institution and branch are added automatically.','Tell candidates what the role involves.'];
+const JF=[
+ [['title','Job title',1,'text','e.g. Assistant Professor, Computer Science','full'],['role','Role / designation',1,['Professor','Associate Professor','Assistant Professor','Lecturer','Head of Department'],'Select role'],['cat','Category',1,['Schools','Intermediate','Higher Education'],'Select category'],['dept','Department / subject',1,'text','e.g. Mathematics'],['type','Employment type',1,['Full-time','Part-time','Contract','Visiting faculty'],'Select type'],['vac','Number of vacancies',0,'number','1']],
+ [['qual','Qualification needed',1,['UG','PG','PhD','PG + NET / SET','PhD + NET / SET'],'Select qualification'],['notice','Notice period accepted',1,['Immediate joiner','Up to 15 days','Up to 30 days','Up to 60 days'],'Select notice period'],['expMin','Minimum experience (years)',1,'number','0 for freshers'],['expMax','Maximum experience (years)',0,'number','Leave empty for no limit']],
+ [['salMin','Minimum salary',1,'number','e.g. 45000','pre'],['salMax','Maximum salary',1,'number','e.g. 70000','pre'],['period','Paid',1,[['month','Per month'],['year','Per year']],'']],
+ [['city','City / location',0,'text','Filled from your campus if left empty','full']],
+ [['desc','Job description',0,'area','Responsibilities, teaching load, research expectations and benefits','full'],['skills','Key skills',0,'text','e.g. Python, Machine Learning, Research'],['deadline','Apply before',0,'date','']]];
+let JB={step:0,max:0,d:{period:'month'},err:{},o:{}};
+const jbV=k=>JB.d[k]!==undefined?JB.d[k]:'';
+function jbField(f){const[k,l,req,t,ph,x]=f,v=jbV(k),er=JB.err[k];let inp;
+ if(Array.isArray(t)){const pairs=t.some(Array.isArray),oth=!pairs&&!!JB.o[k],pr=t.map(o=>Array.isArray(o)?o:[o,o]);inp=`<select id="jb_${k}" onchange="jbSel('${k}',this.value)">${ph?`<option value="">${ph}</option>`:''}${pr.map(([a,b])=>`<option value="${esc(a)}" ${!oth&&v==a?'selected':''}>${esc(b)}</option>`).join('')}${pairs?'':`<option value="__other" ${oth?'selected':''}>Other</option>`}</select>${oth?`<input id="jb_${k}_o" type="text" placeholder="Enter ${esc(l.toLowerCase())}" value="${esc(v)}" style="margin-top:8px" oninput="JB.err.${k}=''">`:''}`}
+ else if(t=='area')inp=`<textarea id="jb_${k}" rows="3" placeholder="${esc(ph)}">${esc(v)}</textarea>`;
+ else{inp=`<input id="jb_${k}" type="${t}" ${t=='number'?'min="0"':''} placeholder="${esc(ph)}" value="${esc(v)}" oninput="JB.err.${k}=''">`;if(x=='pre')inp=`<div class="in-pre"><span>₹</span>${inp}</div>`}
+ return `<div class="in-f${x=='full'||t=='area'?' in-full':''}${er?' err':''}"><label>${l}<i>${req?'Required':'Optional'}</i></label>${inp}<div class="in-err" role="alert">${esc(er||'')}</div></div>`}
+function jbBody(){const s=JB.step;
+ if(s==2)return `<div class="in-row3">${JF[2].map(jbField).join('')}</div><label class="in-chk"><input type="checkbox" id="jb_salNeg" ${JB.d.salNeg?'checked':''}> Salary is negotiable based on experience</label><label class="in-chk"><input type="checkbox" id="jb_salNorms" ${JB.d.salNorms?'checked':''}> Pay as per UGC / AICTE norms</label>`;
+ if(s==3)return `<div class="in-grid"><div class="in-f"><label>Institution</label><div style="font-weight:700;color:var(--blue-900);padding:10px 0">${esc(S.main.n)} <span class="mut">· Code ${esc(S.main.code)}</span></div></div><div class="in-f"><label>Campus / branch</label><div style="font-weight:700;color:var(--blue-900);padding:10px 0">${esc(SUB.n)} ${B(0)}</div></div>${jbField(['city','City / location',0,'text',SUB.c||'Filled from your campus if left empty','full'])}</div>`;
+ return `<div class="in-grid">${JF[s].map(jbField).join('')}</div>`}
+function jbGrab(){(JF[JB.step]||[]).forEach(f=>{const oi=document.getElementById('jb_'+f[0]+'_o');if(oi){JB.d[f[0]]=oi.value.trim();return}const e=document.getElementById('jb_'+f[0]);if(e)JB.d[f[0]]=e.value.trim()});if(JB.step==2)['salNeg','salNorms'].forEach(k=>{const e=document.getElementById('jb_'+k);if(e)JB.d[k]=e.checked})}
+function jbCheck(s){const bad=[];(JF[s]||[]).forEach(f=>{if(f[2]&&!String(jbV(f[0])).trim()){JB.err[f[0]]='Required';bad.push(f[0])}});
+ if(s==2&&!JB.err.salMin&&!JB.err.salMax&&Number(jbV('salMin'))>Number(jbV('salMax'))){JB.err.salMax='Maximum must be at least the minimum';bad.push('salMax')}
+ if(s==1&&jbV('expMax')!==''&&Number(jbV('expMax'))<Number(jbV('expMin'))){JB.err.expMax='Maximum must be at least the minimum';bad.push('expMax')}
+ return bad}
+const jbPct=()=>{let t=0,f=0;JF.forEach(a=>a.forEach(x=>{if(x[2]){t++;if(String(jbV(x[0])).trim())f++}}));return Math.round(f/t*100)};
+function jbSel(k,val){jbGrab();if(val=='__other'){JB.o[k]=true;JB.d[k]=''}else{JB.o[k]=false;JB.d[k]=val}delete JB.err[k];render();if(val=='__other'){const e=document.getElementById('jb_'+k+'_o');if(e)e.focus()}}
+function jbGo(i){jbGrab();if(i>JB.max)return;JB.step=i;render();scrollTo(0,0)}
+function jbBack(){jbGrab();JB.step=Math.max(0,JB.step-1);render();scrollTo(0,0)}
+function jbNext(){jbGrab();const bad=jbCheck(JB.step);if(bad.length){render();return}
+ if(JB.step==JSTEPS.length-1){return postJob()}
+ JB.step++;JB.max=Math.max(JB.max,JB.step);render();scrollTo(0,0)}
+function vPost(){const s=JB.step,last=s==JSTEPS.length-1;
+ return `<div class="in-wrap"><div class="in-head"><h3>Post a job</h3><p>Fill in the role details so the right candidates can find and apply. Fields marked Required must be completed.</p></div>
+ <div class="in-layout">${inSide(JSTEPS,s,JB.max,jbPct(),'jbGo')}
+ <div class="in-main"><div class="in-card"><h4>${JSTEPS[s]}</h4><p class="sub2">${JSUB[s]}</p>${jbBody()}</div>
+ <div class="in-actions"><span class="in-stepof">Step ${s+1} of ${JSTEPS.length}</span><div class="r">${s>0?'<button class="btn btn-ghost btn-sm" onclick="jbBack()">Back</button>':''}<button class="btn btn-primary btn-sm" onclick="jbNext()">${last?'Post job — free':'Next'}</button></div></div></div></div></div>`}
+function postJob(){const v=jbV;
+ for(let s=0;s<JSTEPS.length;s++){if(jbCheck(s).length){JB.step=s;JB.max=Math.max(JB.max,s);render();scrollTo(0,0);return}}
+ JOBS.push({id:Date.now(),title:v('title'),role:v('role'),cat:v('cat'),dept:v('dept'),type:v('type'),vac:v('vac')||'1',qual:v('qual'),notice:v('notice'),expMin:v('expMin'),expMax:v('expMax'),salMin:v('salMin'),salMax:v('salMax'),period:v('period')||'month',salNeg:!!v('salNeg'),salNorms:!!v('salNorms'),skills:v('skills'),deadline:v('deadline'),desc:v('desc'),mainName:S.main.n,mainCode:S.main.code,branchName:SUB.n,branchLoc:SUB.c,loc:v('city')||SUB.c,date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})});
+ LSS('nwJobs',JOBS);JB={step:0,max:0,d:{period:'month'},err:{},o:{}};S.sd='jobs';render();scrollTo(0,0)}
+function vPosted(){const a=myJobs();return `<h2>Posted Jobs</h2>${a.length?`<div class="g g2">${a.map(jobCard).join('')}</div>`:empty('No jobs posted yet','Use Post a Job to create your first job.')}`}
+/* ---------- Browse Candidates: same cards as the main employer dashboard ---------- */
+S.cq='';S.cc='';S.cn=8;
+const candInvited=id=>myReqs().filter(r=>String(r.candId)===String(id));
+const candIds=()=>{const q=S.cq.toLowerCase();return Object.keys(facultyProfiles).filter(id=>{const p=facultyProfiles[id];return !q||(p.name+' '+p.role+' '+p.tags.join(' ')).toLowerCase().includes(q)})};
+function candCard(id){const p=facultyProfiles[id],inv=candInvited(id).length,full=inv&&inv>=myJobs().length;
+ return `<div class="job-card profile-card profile-card-banner"><div class="pc-banner" style="background:${bannerGradient(p.name)};">${inv?'<span class="badge badge-pending">Invited</span>':''}${p.college?`<span class="pc-college-badge">${esc(p.college)}</span>`:''}</div><div class="pc-avatar-wrap"><div class="job-logo pc-avatar" style="background-image:url('${esc(p.avatar)}');background-size:cover;"></div></div><div class="pc-body"><div class="pc-headline"><p class="jc-title">${esc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p><p class="jc-org">${esc(p.role)}</p></div><div class="jc-tags">${p.tags.map(t=>`<span class="hp-tag">${esc(t)}</span>`).join('')}</div><div class="jc-foot"><span class="jc-posted">Open to opportunities</span><div class="pc-actions"><button class="btn btn-light btn-sm" onclick="msgCand('${id}')">Message</button><button class="btn btn-primary btn-sm" ${full?'disabled':''} onclick="inviteCand('${id}')">${inv?'Invited ✓':'Invite'}</button></div></div></div></div>`}
+function vCands(){const ids=candIds(),vis=ids.slice(0,S.cn),rest=ids.length-vis.length;
+ return `<h3 style="margin:0 0 10px;font-size:15px">Browse candidates</h3><div class="dash-form-row"><input type="text" id="candSearch" value="${esc(S.cq)}" placeholder="Subject, role or keyword" onkeydown="if(event.key=='Enter')candSearch()" style="border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;font-family:inherit"><select id="candCategory" style="border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;font-family:inherit"><option value="">All categories</option>${['Schools','Intermediate','Higher Education'].map(x=>`<option ${S.cc==x?'selected':''}>${x}</option>`).join('')}</select></div><button class="btn btn-primary btn-sm" onclick="candSearch()">Search candidates</button>${myJobs().length?'':'<p class="mut" style="margin:10px 0 0">Post a job first to invite candidates.</p>'}
+ <div class="dash-fullbleed" style="padding:0;margin-top:18px"><div class="candidates-section-head"><h3>Recommended candidates</h3><span class="count">${ids.length} ${ids.length==1?'profile':'profiles'} found</span></div><div class="demo-grid dash-fullbleed-grid" id="candidateList">${vis.map(candCard).join('')||'<div class="empty-state"><h4>No profiles found</h4><p>No published profiles match your search yet. Try broadening your search.</p></div>'}</div>${rest>0?`<div style="display:flex;justify-content:center;margin-top:22px"><button class="btn btn-light" onclick="S.cn+=8;render()">Show ${Math.min(rest,8)} more</button></div>`:''}</div>`}
+function candSearch(){S.cq=document.getElementById('candSearch').value.trim();S.cc=document.getElementById('candCategory').value;S.cn=8;render()}
+function msgCand(id){const p=facultyProfiles[id],m=prompt(`Send a message to ${p.name}:`,`Hi, we'd like to talk to you about an opening at ${SUB.n}.`);if(m)alert('Message sent to '+p.name+'.')}
+function sendReq(id,jobId){const c=facultyProfiles[id],j=JOBS.find(x=>x.id==jobId);if(!j||!c)return;
+ if(myReqs().some(r=>String(r.candId)===String(id)&&r.jobId==j.id)){alert('Request already sent for this job.');return}
+ CREQ.push({id:Date.now(),mainInstitutionId:S.main.code,mainCode:S.main.code,mainName:S.main.n,subBranchId:SUB.n,branchName:SUB.n,jobId:j.id,jobTitle:j.title,candId:id,candName:c.name,requestStatus:'Pending',requestDate:new Date().toLocaleDateString('en-GB')});
+ LSS('nwCandReq',CREQ);render()}
+function inviteCand(id){const jobs=myJobs(),c=facultyProfiles[id];
+ if(!jobs.length){alert('Post a job first, then invite candidates against it.');return}
+ const left=jobs.filter(j=>!myReqs().some(r=>String(r.candId)===String(id)&&r.jobId==j.id));
+ if(!left.length)return;
+ if(left.length==1){sendReq(id,left[0].id);return}
+ mod(`<h2>Invite ${esc(c.name)}</h2><p class="mut">Choose the job to invite them for.</p><label class="fld">Job<select id="invJob">${left.map(j=>`<option value="${j.id}">${esc(j.title)}</option>`).join('')}</select></label><p class="btns row wrap" style="margin-top:14px"><button class="btn btn-light" onclick="closeMod()">Cancel</button><button class="btn btn-primary" onclick="const v=document.getElementById('invJob').value;closeMod();sendReq('${id}',v)">Send invite</button></p>`)}
+function vReqs(){const a=myReqs();return `<h2>Requests</h2>${a.length?`<div class="g">${a.map(r=>`<div class="c row wrap sp"><div><b>${esc(r.candName)}</b> → <b>${esc(r.jobTitle)}</b><div class="mut">${esc(r.branchName)} · Part of ${esc(r.mainName)} (Code ${esc(r.mainCode)}) · Sent ${esc(r.requestDate)}</div></div><span class="st y">${esc(r.requestStatus)}</span></div>`).join('')}</div>`:empty('No requests yet','Candidate requests you send appear here.')}`}
+/* ---------- Institution Profile wizard: details > location > representative > verification > campus > review ---------- */
+const PSTEPS=['Institution details','Location','Representative','Verification','Connect to main institution','Review & submit'];
+const PFLD=[
+ [['name','Institution / college name',1],['type','Institution type',1,['Engineering College','Degree College','Junior College','School','Polytechnic']],['year','Established year'],['about','About the institution',0,'area']],
+ [['addr','Address'],['city','City',1],['state','State',1],['pin','PIN code']],
+ [['rname','Representative name',1],['rdes','Designation'],['rem','Official email',1],['rph','Phone',1]]];
+let P=LSG('nwProfile',null)||{step:0,max:0,done:false,d:{},ver:{em:false,doc:''},campus:'main',camps:[],o:{}};
+S.otp=false;S.perr='';S.welcome=!!(P.max>0&&!P.done);
+const saveP=()=>LSS('nwProfile',P);if(P.step>5)P.step=5;if(P.max>5)P.max=5;
+const pdef=()=>{const c=(SUB.c||'').split(',').map(x=>x.trim());return {name:SUB.n,type:SUB.t,about:SUB.d,city:c[0]||'',state:c[1]||'',rname:SUB.by,rem:SUB.em,rph:SUB.ph}};
+const pv=k=>(P.d[k]!==undefined?P.d[k]:(pdef()[k]||''));
+const campusSel=()=>({n:SUB.n,l:SUB.c});
+function grabStep(){PFLD[P.step]&&PFLD[P.step].forEach(f=>{const oi=document.getElementById('pf_'+f[0]+'_o');if(oi){P.d[f[0]]=oi.value.trim();return}const e=document.getElementById('pf_'+f[0]);if(e)P.d[f[0]]=e.value.trim()})}
+function pfGo(i){S.welcome=S.saved=false;grabStep();if(i>P.max){return}P.step=i;S.perr='';saveP();render()}
+function pfBack(){S.welcome=S.saved=false;grabStep();P.step=Math.max(0,P.step-1);S.perr='';saveP();render()}
+function pfNext(){S.welcome=S.saved=false;grabStep();const s=P.step;let miss=[];
+ if(PFLD[s])PFLD[s].forEach(f=>{if(f[2]&&!pv(f[0]))miss.push(f[1])});
+ if(s==3&&!P.ver.em)miss.push('Verify your official email (OTP)');
+ if(miss.length){S.perr='Please complete: '+miss.join(', ');saveP();render();return}
+ S.perr='';P.step=Math.min(5,s+1);P.max=Math.max(P.max,P.step);saveP();render();scrollTo(0,0)}
+function pfSendOtp(){grabStep();S.otp=true;render()}
+function pfVerifyOtp(){const v=(document.getElementById('pf_otp')||{}).value;if(v=='123456'){P.ver.em=true;S.otp=false;S.perr='';S.welcome=!!(P.max>0&&!P.done);saveP();render()}else{S.perr='Wrong OTP. Demo OTP is 123456.';render()}}
+function pfDoc(inp){const f=inp.files&&inp.files[0];if(f){P.ver.doc=f.name;saveP();render()}}
+let SG=[];
+function pfMatches(v){const t=v.toLowerCase().split(/[\s,]+/).filter(Boolean);if(!t.length)return [];return MAINS.filter(m=>{const h=(m.n+' '+m.c+' '+m.t+' '+m.code).toLowerCase();return t.every(x=>h.includes(x))})}
+let SGQ='',SGALL=false,SGN=0;
+function pfRenderSug(){const box=document.getElementById('pf_sug');if(!box)return;
+ if(!SGQ.trim()){box.style.display='none';return}
+ box.style.display='block';
+ const all=pfMatches(SGQ);SGN=all.length;SG=SGALL?all:all.slice(0,4);
+ if(!all.length){box.innerHTML=`<div class="sg" style="display:block"><b>Not found</b><div class="mut">No Main / Normal institution matches "${esc(SGQ)}". Check the code, name or location.</div><p style="margin:8px 0 2px"><button class="btn btn-primary btn-sm" onclick="goTo('register',{role:'company',type:'main'})">Not available? Create a Main / Normal college account</button></p></div>`;return}
+ box.innerHTML=SG.map((m,i)=>`<div class="sg" onclick="pfPick(${i})">${lg(m.n)}<div class="grow"><b>${esc(m.n)}</b> ${B(1)}<div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${esc(m.c)} · ${esc(m.t)}</div></div><span class="mut">Code <b style="color:#17753A">${esc(m.code)}</b></span></div>`).join('')
+ +(!SGALL&&all.length>4?`<div class="sg" style="justify-content:center"><button class="btn btn-light btn-sm" onclick="SGALL=true;pfRenderSug()">See more (${all.length-4} more)</button></div>`:'')
+ +`<div class="sg mut" style="display:block;border-top:1px solid var(--line);font-size:12.5px">Can't find yours? <a href="#" onclick="goTo('register',{role:'company',type:'main'});return false">Create a Main / Normal college account</a></div>`}
+function pfSuggest(v){SGQ=v;SGALL=false;pfRenderSug()}
+function pfPick(i){const m=SG[i];if(!m)return;S.main=m;LSS('nwSub',{sub:SUB,mainCode:m.code,mainName:m.n,st:'approved'});S.perr='';render()}
+function pfKey(e){if(e.key=='Enter'){e.preventDefault();pfPick(0)}}
+function pfSubmit(){grabStep();const d=P.d;if(d.name)SUB.n=d.name;SUB.c=[d.city,d.state].filter(Boolean).join(', ')||SUB.c;if(d.type)SUB.t=d.type;if(d.about)SUB.d=d.about;if(d.rname)SUB.by=d.rname;if(d.rem)SUB.em=d.rem;if(d.rph)SUB.ph=d.rph;
+ if(S.logo){LOGOS[SUB.n]=S.logo;LSS('nwLogos',LOGOS)}
+ reqs[0]={...reqs[0],...SUB,id:1,s:'Approved'};LSS('nwSub',{sub:SUB,mainCode:S.main.code,mainName:S.main.n,st:'approved'});P.done=true;P.max=5;saveP();render();scrollTo(0,0)}
+function pfEdit(){P.done=false;P.step=0;P.max=5;saveP();render()}
+function pfField(f){const[k,l,req,o]=f,v=pv(k),ev=String(v).replace(/"/g,'&quot;'),oth=Array.isArray(o)&&!!((P.o&&P.o[k])||(v&&!o.includes(v)));
+ return `<div class="in-f${o=='area'?' in-full':''}"><label>${l}<i>${req?'Required':'Optional'}</i></label>${o=='area'?`<textarea id="pf_${k}" rows="3">${esc(v)}</textarea>`:Array.isArray(o)?`<select id="pf_${k}" onchange="pfSel('${k}',this.value)"><option value="">Select</option>${o.map(x=>`<option ${!oth&&v==x?'selected':''}>${x}</option>`).join('')}<option value="__other" ${oth?'selected':''}>Other</option></select>${oth?`<input id="pf_${k}_o" type="text" placeholder="Enter ${esc(l.toLowerCase())}" value="${ev}" style="margin-top:8px">`:''}`:`<input id="pf_${k}" value="${ev}">`}</div>`}
+function pfSel(k,val){grabStep();P.o=P.o||{};if(val=='__other'){P.o[k]=true;P.d[k]=''}else{P.o[k]=false;P.d[k]=val}saveP();render();if(val=='__other'){const e=document.getElementById('pf_'+k+'_o');if(e)e.focus()}}
+function pfBody(){const s=P.step,d=P.d;
+ if(s<3)return `<div class="in-grid">${PFLD[s].map(pfField).join('')}</div>${s==0?`<div class="row" style="margin-top:12px">${lg(pv('name')||SUB.n,'big')}<div><b>Logo</b><div class="mut">Upload your own (under 500 KB) or keep the free default crest.</div><input type="file" accept="image/*" onchange="readLogo(this)"></div></div>`:''}`;
+ if(s==3){const okE=P.ver.em;return `<div class="g g2"><div class="c"><b>1. Official email</b><div class="mut">${esc(pv('rem'))||'Add the official email in step 3'}</div>${okE?'<p><span class="st g"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> Email verified</span></p>':(S.otp?`<p class="row"><input id="pf_otp" class="fld" style="padding:8px;border:1px solid var(--line);border-radius:4px" maxlength="6" placeholder="Enter 6-digit OTP"><button class="btn btn-primary btn-sm" onclick="pfVerifyOtp()">Verify</button></p><p class="mut">Demo OTP: 123456</p>`:`<p><button class="btn btn-primary btn-sm" onclick="pfSendOtp()">Send OTP</button></p>`)}</div>
+ <div class="c"><b>2. Affiliation / registration document</b><div class="mut">AICTE / UGC / university affiliation letter (optional for demo).</div><p><input type="file" onchange="pfDoc(this)"></p>${P.ver.doc?`<span class="st g"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> ${esc(P.ver.doc)}</span>`:'<span class="st n">No document uploaded</span>'}</div></div>`}
+ if(s==4){const m=S.main;return `<p class="mut">Type the 5-digit institution code, the name, or the location. Matching institutions appear as you type — top 4 first, use See more for the rest.</p>
+ <div class="c row wrap" style="margin-bottom:12px;border-color:#17753A">${lg(m.n,'big')}<div class="grow"><div class="mut">Connected to</div><b>${esc(m.n)}</b> ${B(1)}<div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${esc(m.c)} · Code <b>${esc(m.code)}</b></div></div><span class="st g"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg> Connected</span></div>
+ <div style="position:relative;max-width:640px"><label class="fld">Change main institution<input id="pf_mq" autocomplete="off" placeholder="Type code, name or location — e.g. St. Joseph Hyderabad" oninput="pfSuggest(this.value)" onkeydown="pfKey(event)"></label><div id="pf_sug" class="sug" style="display:none"></div></div>`}
+ return pfReview()}
+function pfReview(){const m=S.main,loc=[pv('addr'),pv('city'),pv('state'),pv('pin')].filter(Boolean).join(', ');
+ const rows=[['Institution details',0,`<b>${esc(pv('name'))}</b> ${B(0)}<br>Type: ${esc(pv('type'))}<br>Established: ${esc(pv('year')||'—')}<br>${esc(pv('about'))}`],['Location',1,esc(loc)||'—'],['Representative details',2,`<b>${esc(pv('rname'))}</b>${pv('rdes')?', '+esc(pv('rdes')):''}<br>${esc(pv('rem'))}<br>${esc(pv('rph'))}`],['Verification',3,`${P.ver.em?'✓ Official email verified':'Official email not verified'}<br>${P.ver.doc?'✓ '+esc(P.ver.doc):'No document uploaded'}`],['Connect to main institution',4,`<b>${esc(m.n)}</b> ${B(1)}<br>${esc(m.c)} · Code ${esc(m.code)}`]];
+ return `<div class="in-card"><h4>Review your institution profile</h4><p class="sub2">Check everything before you submit.</p>${rows.map((x,i)=>`<div class="in-acc${i==0?' open':''}"><button type="button" onclick="this.parentNode.classList.toggle('open')"><span>${x[0]}</span><span><a href="#" onclick="event.stopPropagation();pfGo(${x[1]});return false" style="color:var(--blue-700);font-size:13px">Edit</a></span></button><div class="body">${x[2]}</div></div>`).join('')}</div>`}
+const PSUB=['Your branch name, type and logo.','Where is your campus located?','Who should candidates and your main institution contact?','Verify your official email and upload your affiliation document.','Link your sub-branch to its main institution.','Check everything before you submit.'];
+const ppct=()=>{let t=2,f=0;PFLD.forEach(a=>a.forEach(x=>{if(x[2]){t++;if(pv(x[0]))f++}}));if(P.ver.em)f++;if(S.main)f++;return Math.round(f/t*100)};
+const inSide=(names,cur,max,pc,go,extra)=>`<aside class="in-side"><div class="in-steps" role="tablist" aria-orientation="vertical">${names.map((t,i)=>`<button type="button" class="in-step${i==cur?' on':i<=max?' done':''}" role="tab" aria-selected="${i==cur}" ${i>max?'disabled style="opacity:.55;cursor:not-allowed"':''} onclick="${go}(${i})"><span class="in-step-n">${i!=cur&&i<=max?'✓':i+1}</span><span class="in-step-t">${t}</span></button>`).join('')}</div><div class="in-side-foot"><div class="in-bar"><div style="width:${pc}%"></div></div><span>${pc}% complete</span>${extra||''}</div></aside>`;
+function pfLater(){grabStep();saveP();S.welcome=false;S.saved=true;render()}
+function vProfile(){
+ if(P.done)return `<div class="in-note in-ok" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:0"><span><b>✓ Profile verified &amp; submitted</b></span><button class="btn btn-light btn-sm" onclick="pfEdit()">Edit profile</button></div>`+vSub0();
+ const s=P.step,last=s==5;
+ return `<div class="in-wrap"><div class="in-head"><h3>Create your institution profile</h3><p>Add your official branch details so candidates and your main institution can identify and trust you.</p></div>
+ <div class="in-layout">${inSide(PSTEPS,s,P.max,ppct(),'pfGo','<button class="btn btn-ghost btn-sm" onclick="pfLater()">Save and continue later</button>')}
+ <div class="in-main">${S.welcome?'<div class="in-note in-ok"><b>Welcome back.</b> Your saved progress is loaded. Carry on from where you stopped.</div>':''}${S.saved?'<div class="in-note in-ok"><b>Progress saved.</b> Carry on any time.</div>':''}${S.perr?`<div class="in-note in-warn">${esc(S.perr)}</div>`:''}
+ ${s==5?pfBody():`<div class="in-card"><h4>${PSTEPS[s]}</h4><p class="sub2">${PSUB[s]}</p>${pfBody()}</div>`}
+ <div class="in-actions"><span class="in-stepof">Step ${s+1} of 6</span><div class="r">${s>0?'<button class="btn btn-ghost btn-sm" onclick="pfBack()">Back</button>':''}<button class="btn btn-primary btn-sm" onclick="${last?'pfSubmit()':'pfNext()'}">${last?'Submit for verification':'Next'}</button></div></div></div></div></div>`}
+const subPanel=()=>({post:vPost,jobs:vPosted,cands:vCands,reqs:vReqs}[S.sd]||vPosted)();
+function vSub(){const k=S.st,ok=k=='approved';if(!ok)S.sd='profile';return `<div class="dash-inner-wide" id="dashInnerWide"><div class="dash-panel">`+subNav(k)+(ok&&S.sd!='profile'?subPanel():ok?vProfile():vSub0())+`</div></div>`}
+const mainJobsHtml=(bn)=>JOBS.filter(j=>j.mainCode==S.main.code&&(!bn||j.branchName==bn)).map(jobCard).join('');
+/* main dashboard */
+const TABS=[['overview','Overview'],['branches','Connected Branches'],['requests','Pending Requests'],['jobs','Jobs'],['faculty','Faculty'],['activity','Activity']];
+const brs=()=>S.empty?[]:[...BR,...reqs.filter(r=>r.s=='Approved').map(r=>({n:r.n,c:r.c,j:24,f:86,a:142,l:'Just now'}))];
+const cp=()=>{try{navigator.clipboard.writeText('10245')}catch(e){}alert('Institution code 10245 copied')};
+const codeCard=()=>`<div class="c row wrap sp"><div><div class="mut">Your Institution Code</div><div class="num" style="letter-spacing:.2em">10245</div><div class="mut">Share this 5-digit code with your branches or colleges so they can request to join your institution.</div></div><div class="btns row wrap"><button class="btn btn-primary btn-sm" onclick="cp()">Copy Code</button><button class="btn btn-light btn-sm" onclick="navigator.share?navigator.share({title:'Institution code',text:'Join us on Upadyay with code 10245'}):cp()">Share Code</button></div></div>`;
+const empty=(t,d)=>`<div class="c" style="text-align:center"><div style="font-size:30px"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;color:var(--ink-faint);vertical-align:0" aria-hidden="true"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/></svg></div><h3>${t}</h3><p class="mut">${d}</p></div>`;
+function vBranch(){const b=brs()[S.bv],T=['overview','jobs','faculty','applications','activity'];
+ const body={overview:()=>`<div class="c"><h3>Institution Overview</h3><p class="mut">${SUB.d}<br>${b.c} · Departments: CSE, ME, ECE, Civil · Affiliation: JNTUH</p><p><b>Jobs ${b.j}</b> · <b>Faculty ${b.f}</b> · <b>Applications ${b.a}</b></p></div>`,
+ jobs:()=>`<div class="g g2">${mainJobsHtml(b.n)}${['Assistant Professor - CSE','Lecturer - Physics'].map(t=>`<div class="c"><b>${t}</b><div class="mut">${b.n} · Applications: 18</div><span class="st g">Active</span></div>`).join('')}</div>`,
+ faculty:()=>`<div class="g g3">${['Dr. Ravi Teja','Ms. Sunita Rao'].map(n=>`<div class="c row top">${lg(n)}<div><b>${n}</b><div class="mut">Asst. Professor</div><span class="st g">Verified</span></div></div>`).join('')}</div>`,
+ applications:()=>`<div class="c"><b>${b.a} applications</b><div class="mut">Latest: Assistant Professor - CSE (18), Lecturer - Physics (11)</div></div>`,
+ activity:()=>`<div class="c">Posted a new faculty position · 2 hours ago<br><span class="mut">Updated branch profile · 3 days ago</span></div>`}[S.bt]();
+ return `<button class="btn btn-light btn-sm" onclick="S.bv=null;render()">← Back to Connected Branches</button><div class="c row wrap" style="margin-top:12px">${lg(b.n,'big')}<div class="grow"><h1 style="margin:0">${b.n}</h1>${B(0)} <b>Part of ${S.main.n}</b><div class="mut">${b.c}</div></div><span class="st g"><svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#17753A"/></svg> Connected</span></div><div class="tabs">${T.map(t=>`<button class="${S.bt==t?'on':''}" onclick="set('bt','${t}')">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div>${body}`}
+function vMain(){
+  if(S.bv!==null&&brs()[S.bv])return vBranch();
+  const list=S.empty?[]:reqs,pend=list.filter(r=>r.s=='Pending').length,conn=S.empty?0:10+brs().length;
+  const body={overview:()=>`${codeCard()}<h2 style="margin-top:20px">Institution Network</h2><div class="g g3">${[['Connected Branches',conn],['Pending Requests',S.empty?0:pend+2],['Total Faculty','850'],['Active Jobs','126'],['Applications','2,430']].map(([l,n])=>`<div class="c"><div class="num">${n}</div><div class="mut">${l}</div></div>`).join('')}</div><h2 style="margin-top:20px">Branch Hierarchy</h2>${tree()}`,
+  branches:()=>`<h2>Connected Institutions</h2>${brs().length?`<div class="g g2">${brs().map((b,i)=>`<div class="c"><div class="row wrap">${lg(b.n)}<div class="grow"><b>${b.n}</b> ${B(0)}<div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${b.c}</div></div><span class="st g"><svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#17753A"/></svg> Connected</span></div><p class="mut">Jobs: <b>${b.j}</b> · Faculty: <b>${b.f}</b> · Applications: <b>${b.a}</b> · Last activity ${b.l}</p><button class="btn btn-light btn-sm" onclick="S.bv=${i};S.bt='overview';render()">View Institution</button></div>`).join('')}</div>`:empty('No connected branches yet','Share your 5-digit code 10245 so branches can request to join.')}`,
+  requests:()=>`<h2>Sub-Branch Requests</h2>${list.length?`<div class="g">${list.map(r=>`<div class="c"><div class="row wrap">${lg(r.n)}<div class="grow"><b>${r.n}</b> <span class="bd s">SUB-BRANCH REQUEST</span><div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${r.c} · ${r.t} · Submitted ${r.date}</div><div class="mut">${r.by} · ${r.em}</div><div>${r.d}</div></div><span class="st ${r.s=='Pending'?'y':r.s=='Approved'?'g':'r'}">${r.s=='Pending'?'<svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#C99A00"/></svg> Pending Review':r.s=='Approved'?'<svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#17753A"/></svg> Connected':'<svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#B3261E"/></svg> Request Rejected'}</span></div>
+  <p class="btns row wrap" style="margin:12px 0 0"><button class="btn btn-light btn-sm" onclick="detail(${r.id})">View Profile</button>${r.s=='Pending'?`<button class="btn btn-primary btn-sm" onclick="dlg('a',${r.id})">Approve</button><button class="btn btn-ghost btn-sm" onclick="dlg('r',${r.id})">Reject</button>`:''}</p></div>`).join('')}</div>`:empty('No pending requests','New Sub-Branch requests will appear here.')}`,
+  jobs:()=>`<h2>Jobs across branches</h2><div class="row wrap" style="margin-bottom:14px"><select class="fld" style="padding:8px;border:1px solid var(--line);border-radius:4px" onchange="S.jf=this.value;render()"><option value="all">All Branches</option>${[SUB.n,...BR.map(b=>b.n)].map(n=>`<option ${S.jf==n?'selected':''}>${n}</option>`).join('')}</select></div><div class="g g2">${mainJobsHtml(S.jf=='all'?'':S.jf)}${[['Assistant Professor - Computer Science',BR[0].n,18],['Lecturer - Mathematics',BR[1].n,9],['Associate Professor - ECE',SUB.n,12]].map(([t,b,a])=>`<div class="c"><b>${t}</b><div class="mut">Posted by:</div><div><b>${b}</b> ${B(0)}</div><div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> Hyderabad, Telangana · Applications: ${a}</div><span class="st g">Active</span></div>`).join('')}</div>`,
+  faculty:()=>`<h2>Faculty Across Institutions</h2>${filters(['Branch','Department','Subject','Experience'])}<div class="g g3">${[['Dr. Ravi Teja','Professor','Physics',BR[0].n,'12 yrs','Verified'],['Ms. Sunita Rao','Asst. Professor','Computer Science',BR[1].n,'6 yrs','Verified'],['Mr. Imran Khan','Lecturer','Mathematics',BR[0].n,'3 yrs','Pending']].map(([n,d,s,b,e,v])=>`<div class="c row top">${lg(n)}<div><b>${n}</b><div class="mut">${d} · ${s}</div><div class="mut">${b} · ${e}</div><span class="st ${v=='Verified'?'g':'y'}">${v}</span></div></div>`).join('')}</div>`,
+  activity:()=>`<h2>Branch Activity</h2><div class="g">${[['Posted a new faculty position','Assistant Professor - Computer Science','2 hours ago',BR[0].n],['Faculty profile created','Dr. Ravi Teja','5 hours ago',BR[1].n],['Faculty application received','Lecturer - Mathematics','Yesterday',BR[1].n],['New document uploaded','Affiliation certificate','2 days ago',SUB.n]].map(([a,b,t,n])=>`<div class="c row">${lg(n)}<div class="grow"><b>${n}</b><div>${a}</div><div class="mut">${b}</div></div><span class="mut">${t}</span></div>`).join('')}</div>`}[S.tab]();
+  return `<div class="c row wrap">${lg(S.main.n,'big')}<div class="grow"><h1 style="margin:0">${S.main.n}</h1>${B(1)} <span class="st g"><svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#17753A"/></svg> Active</span><div class="mut">${S.main.c} · Code <b>10245</b></div><b>${conn} Connected Institutions</b></div><div class="btns row wrap"><button class="btn btn-light btn-sm" onclick="S.role='sub';S.sd='profile';render()">← My Branch Dashboard</button><button class="btn btn-primary btn-sm" onclick="set('tab','branches')">View Branches</button></div></div>
+  <div class="dtabs">${TABS.map(([t,l])=>`<button class="${S.tab==t?'on':''}" onclick="set('tab','${t}')">${l}${t=='requests'&&pend?' ('+pend+')':''}</button>`).join('')}</div>${body}
+  <div class="mut" style="margin-top:18px">Menu: Dashboard · Institution Profile · Branches · Branch Requests · Faculty · Jobs · Applications · Activity · Verification · Settings</div>`}
+const filters=a=>`<div class="row wrap" style="margin-bottom:14px">${a.map(x=>`<select class="fld" style="padding:8px;border:1px solid var(--line);border-radius:4px"><option>${x}</option></select>`).join('')}</div>`;
+/* request detail + modals (mock only) */
+let modal='';
+const mod=h=>{document.getElementById('siteChrome').insertAdjacentHTML('beforeend',`<div class="mod" id="mod" onclick="if(event.target==this)closeMod()"><div class="c">${h}</div></div>`)};
+const closeMod=()=>{const m=document.getElementById('mod');m&&m.remove()};
+function detail(id){const r=reqs.find(x=>x.id==id);mod(`<div class="row wrap">${lg(r.n,'big')}<div><h2 style="margin:0">${r.n}</h2>${B(0)}</div></div><p class="mut">Connected Main Institution: <b>${S.main.n}</b></p>
+<h3>Institution Overview</h3><p class="mut">${r.t} · ${r.c}<br>${r.em} · ${r.ph}<br>${r.d}</p><h3>Contact</h3><p class="mut">${r.em} · ${r.ph} · www.sjce.edu</p><h3>Academic Details</h3><p class="mut">Courses: B.Tech, M.Tech · Departments: CSE, ME, ECE, Civil · Affiliation: JNTUH · Accreditation: NAAC A · Facilities: Labs, Library, Hostel</p>
+<h3>Documents</h3><div class="row wrap">${['Affiliation Certificate','AICTE Approval','Registration Proof'].map(d=>`<div class="c" style="padding:8px 12px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg> ${d}</div>`).join('')}</div>
+<h3 style="margin-top:12px">Request Details</h3><p class="mut">Date: ${r.date} · Status: ${r.s} · Submitted by ${r.by} · Main Institution selected: ${S.main.n}</p>
+<p class="btns row wrap"><button class="btn btn-light" onclick="closeMod()">Close</button>${r.s=='Pending'?`<button class="btn btn-primary" onclick="closeMod();dlg('a',${id})">Approve &amp; Connect</button><button class="btn btn-ghost" onclick="closeMod();dlg('r',${id})">Reject Request</button>`:''}</p>`)}
+function dlg(k,id){const r=reqs.find(x=>x.id==id);
+ if(k=='a')mod(`<h2>Approve Sub-Branch?</h2><p>You are about to connect this institution to your Main Institution.</p><div class="c"><b>${S.main.n}</b> ${B(1)}<div class="mut">↓</div><b>${r.n}</b> ${B(0)}</div><p class="btns row wrap"><button class="btn btn-light" onclick="closeMod()">Cancel</button><button class="btn btn-primary" onclick="fin(${id},'Approved')">Approve &amp; Connect</button></p>`);
+ else mod(`<h2>Reject Sub-Branch Request</h2><label class="fld">Reason for rejection<textarea rows="4" placeholder="Please provide a reason for rejecting this request."></textarea></label><p class="btns row wrap"><button class="btn btn-light" onclick="closeMod()">Cancel</button><button class="btn btn-primary" onclick="fin(${id},'Rejected')">Reject Request</button></p>`)}
+function fin(id,s){reqs.find(x=>x.id==id).s=s;closeMod();if(id==1)S.st=s=='Approved'?'approved':'rejected';render();mod(`<div style="text-align:center"><div class="chk" style="${s=='Rejected'?'background:#B3261E':''}">${s=='Approved'?'<svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;vertical-align:0" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>':'<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;vertical-align:0" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>'}</div><h2>${s=='Approved'?'<svg width="10" height="10" viewBox="0 0 10 10" style="vertical-align:0;margin-right:2px" aria-hidden="true"><circle cx="5" cy="5" r="5" fill="#17753A"/></svg> Sub-Branch Approved':'Request Rejected'}</h2><button class="btn btn-primary" onclick="closeMod();set('tab','${s=='Approved'?'branches':'requests'}')">${s=='Approved'?'View Connected Institutions':'Back to Requests'}</button></div>`)}
+(()=>{const _st=new URLSearchParams(location.search).get('start');if(FROM_LOGIN||_st==='type'||_st==='code')return;try{const d=JSON.parse(localStorage.getItem('nwSub'));if(d&&d.st=='approved'){Object.assign(SUB,d.sub);S.main=MAINS.find(m=>m.code==d.mainCode)||S.main;S.st='approved';reqs[0]={...reqs[0],...SUB,id:1,s:'Approved'};S.role='sub';S.sd='profile'}}catch(e){}})();
+(()=>{const q=new URLSearchParams(location.search).get('start');if((q==='code'||(!q&&typeof isLoggedIn!=='undefined'&&isLoggedIn&&currentRole==='branch'))&&S.role==='reg'){S.type='sub';S.v='code'}})();
+(()=>{const t=new URLSearchParams(location.search).get('tab');if(S.role==='sub'&&['profile','post','jobs','cands','reqs'].includes(t)&&(t==='profile'||S.st==='approved'))S.sd=t})();
+const nwOpenTab=t=>{if(S.role!=='sub')return false;if(S.st!=='approved'&&t!=='profile'){lockedTab();return true}S.sd=t;render();scrollTo(0,0);return true};
+render();
+</script>
+</body>
+</html>

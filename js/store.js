@@ -1,0 +1,255 @@
+/* ==========================================================================
+   store.js — shared state that survives page navigation
+   --------------------------------------------------------------------------
+   The app used to be one HTML page, so state lived in plain JS variables.
+   With separate pages, every navigation reloads the JS, so anything that must
+   carry over (who is logged in, their profile, the company profile, posted
+   jobs, notifications) is saved to localStorage here.
+
+   Load this FIRST on every page, before employer.js / auth.js / etc.
+   ========================================================================== */
+
+const STORE_KEY = 'upadyay_state_v1';
+
+const DEFAULT_USER = {
+  name:'', email:'', avatar:'https://i.pravatar.cc/160?img=68',
+  subject:'', qualification:'', category:'', experience:'', location:'', college:'',
+
+  // ---- 1. Basic personal details ----
+  gender:'', dob:'', age:'', nationality:'', city:'', state:'', country:'',
+  preferredWorkLocation:'', willingToRelocate:'',
+
+  // ---- 2. Contact details ----
+  altPhone:'', altEmail:'', whatsapp:'', linkedin:'', googleScholar:'', orcid:'', website:'',
+  mobileVerified:false, emailVerified:false,
+
+  // ---- 3. Account details ----
+  referralCode:'', registrationType:'',
+
+  // ---- 4. Educational qualifications ----
+  // Highest qualification kept on the flat fields above (qualification/subject/college) for
+  // backward compatibility with existing cards/search; these add the remaining spec fields.
+  highestQualCountry:'', highestQualYear:'', highestQualPct:'', highestQualCertLink:'',
+  additionalQualifications:[],   // [{qualification, specialization, college, year, pct, certLink}]
+
+  // ---- 5. Professional experience ----
+  academicExperience:'', industryExperience:'', researchExperience:'', adminExperienceYears:'',
+  employmentHistory:[],   // [{org, designation, department, location, empType, from, to, currentlyWorking, ctc, reasonForLeaving, certLink}]
+
+  // ---- 6. Current employment ----
+  currentlyWorking:'', currentOrg:'', currentDesignation:'', currentDept:'', joiningDate:'',
+  currentLocation:'', presentCtc:'', noticePeriod:'', expectedCtc:'', availableFrom:'', lookingForChange:'',
+
+  // ---- 7. Teaching & academic details ----
+  teachingExperience:'', subjectsTaught:'', ugSubjects:'', pgSubjects:'',
+  preferredTeachingSubjects:'', preferredDepartments:'', preferredDesignations:'',
+
+  // ---- 8. Research profile ----
+  researchArea:'', specialization:'', researchMethodology:'',
+  journalPublications:'', scopusPublications:'', sciPublications:'', esciPublications:'',
+  wosPublications:'', ugcPublications:'', internationalJournals:'', nationalJournals:'',
+  internationalConferences:'', nationalConferences:'', seminarsWorkshops:'',
+  totalPatents:'', publishedPatents:'', grantedPatents:'', nationalPatents:'', internationalPatents:'',
+  numProjects:'', ongoingProjects:'', completedProjects:'', fundingAgency:'', projectValue:'',
+  booksAuthored:'', bookChapters:'', editedBooks:'', publisherDetails:'',
+
+  // ---- 9. Professional memberships & certifications ----
+  professionalMemberships:[], certifications:[], fdpsAttended:[], fdpsConducted:[],
+  workshopsAttended:[], workshopsConducted:[], moocs:[],
+
+  // ---- 10. Skills ----
+  programmingLanguages:'', softwareTools:'', aiMlSkills:'', dataScienceSkills:'',
+  cloudSkills:'', roboticsSkills:'', simulationTools:'', otherTechnicalSkills:'',
+  academicSkills:[],   // checkboxes: Teaching, Research, Academic Administration, Curriculum Development, Accreditation, Placement/Training, Entrepreneurship etc.
+
+  // ---- 11. Administrative experience ----
+  adminRoles:[],   // [{role, org, duration}] — role from HOD/Dean/Principal/Director/IQAC/NAAC/NBA/Accreditation/Examination/Academic/Other
+
+  // ---- 12. Salary & job preferences ----
+  minAcceptableSalary:'', preferredDesignation:'', preferredOrgType:'',
+  preferredLocation:'', preferredCountry:'', preferredEmploymentType:'', willingToTravel:'',
+
+  // ---- 13. Resume & documents ----
+  passportPhoto:'',   // data URL, mandatory doc besides resume
+  otherDocuments:[],  // [{label, link}]
+
+  // ---- 14. Profile visibility & recruitment preferences ----
+  profileVisibility:'', notifyEmail:true, notifyWhatsapp:false, notifySms:false,
+
+  // ---- 15. Declaration & consent ----
+  declarationAccepted:false,
+
+  // ---- System ----
+  candidateId:''
+};
+const DEFAULT_COMPANY = {
+  name:'', type:'', city:'', website:'', desc:'', contactName:'',
+  designation:'', email:'', phone:'', logo:'', saved:false
+};
+
+function _loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* corrupt or blocked storage — fall through to defaults */ }
+  return {};
+}
+
+const _saved = _loadState();
+
+/* ---- shared state (same variable names the old scripts already use) ---- */
+/* Auth state is NOT read from localStorage any more. The Laravel token (js/api.js) is the only
+   credential; the role below is a first-paint hint that authReady (further down) replaces with the
+   real user/role from GET /auth/me. Sub-branch accounts still use their own local marker (no backend role yet). */
+const _hasBranch = (function(){ try{ const b = JSON.parse(localStorage.getItem('upaadhyay_session')); return !!(b && b.role === 'branch'); }catch(e){ return false; } })();
+let isLoggedIn      = api.hasToken() || _hasBranch;
+let currentRole     = api.hasToken() ? (api.toUiRole(api.roleHint()) || null) : (_hasBranch ? 'branch' : null);   // 'seeker' | 'company' | 'admin' | 'branch' | null
+let authUserId      = _saved.authUserId || null;                  // which backend user the saved profile data belongs to
+let currentUser     = Object.assign({}, DEFAULT_USER,    _saved.currentUser    || {});
+let currentCompany  = Object.assign({}, DEFAULT_COMPANY,  _saved.currentCompany || {});
+let dashNotifs      = Array.isArray(_saved.dashNotifs) ? _saved.dashNotifs : [];
+let hasUnreadNotif  = !!_saved.hasUnreadNotif;
+let postedJobs      = _saved.postedJobs || {};        // jobs the employer posted this session
+let candidateStatus = _saved.candidateStatus || {};   // invited / shortlisted per faculty id
+let postedJobCount  = _saved.postedJobCount || 0;
+
+/* Write everything back. Call after any change to the values above. */
+function saveState(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify({
+      authUserId, currentUser, currentCompany,
+      dashNotifs, hasUnreadNotif, postedJobs, candidateStatus, postedJobCount
+    }));
+  }catch(e){
+    /* Storage full (e.g. big base64 avatar) or blocked: drop the heavy image and retry once. */
+    try{
+      const lite = JSON.parse(JSON.stringify({ currentUser, currentCompany }));
+      if(lite.currentUser.avatar && lite.currentUser.avatar.startsWith('data:')) lite.currentUser.avatar = DEFAULT_USER.avatar;
+      if(lite.currentCompany.logo && lite.currentCompany.logo.startsWith('data:')) lite.currentCompany.logo = '';
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        authUserId, currentUser: lite.currentUser, currentCompany: lite.currentCompany,
+        dashNotifs, hasUnreadNotif, postedJobs, candidateStatus, postedJobCount
+      }));
+    }catch(e2){ console.warn('Could not persist state', e2); }
+  }
+}
+
+function clearSession(){
+  isLoggedIn = false;
+  currentRole = null;
+  api.clearAuth();                       // drop the Laravel token
+  saveState();
+  // sub-branch login keeps its own marker too — clear it so logout is complete
+  try{ localStorage.removeItem('upaadhyay_session'); }catch(e){}
+}
+/* Sub-branch login/registration: make the shared nav treat the branch as signed in
+   (avatar, role badge, dashboard link, Log out). */
+function setBranchSession(id, name){
+  isLoggedIn = true;
+  currentRole = 'branch';
+  if(name) currentUser.name = name;
+  if(id && String(id).indexOf('@') > -1) currentUser.email = id;
+  saveState();
+  try{ localStorage.setItem('upaadhyay_session', JSON.stringify({role:'branch', id:id})); }catch(e){}
+}
+/* ---- backend is the authority for who is logged in and what role they have ---- */
+function applyBackendUser(u){
+  isLoggedIn = true;
+  currentRole = api.toUiRole(u.role);                       // candidate->seeker, company->company, admin->admin
+  if(authUserId !== u.id){                                  // different account than the saved profile data: don't leak it
+    currentUser    = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_USER)));
+    currentCompany = Object.assign({}, DEFAULT_COMPANY);
+    postedJobs = {}; candidateStatus = {}; postedJobCount = 0; dashNotifs = []; hasUnreadNotif = false;
+    authUserId = u.id;
+  }
+  currentUser.name = u.name || currentUser.name;
+  currentUser.email = u.email || currentUser.email;
+  if(u.phone) currentUser.phone = u.phone;
+  if(u.role === 'company'){
+    if(u.company && u.company.company_name) currentCompany.name = u.company.company_name;
+    currentCompany.email = u.email || currentCompany.email;
+    if(u.phone) currentCompany.phone = u.phone;
+    if(!currentCompany.contactName) currentCompany.contactName = u.name || '';
+  }
+  saveState();
+}
+let authError = false;   // true when the backend could not be reached
+/* Resolves once the backend has confirmed (or denied) the session. Protected pages await this. */
+const authReady = (async function(){
+  if(!api.hasToken()) return null;
+  let u = null;
+  try{ u = await api.me(); }
+  catch(e){ authError = true; return null; }
+  if(u){ applyBackendUser(u); }
+  else { isLoggedIn = _hasBranch; currentRole = _hasBranch ? 'branch' : null; saveState(); }
+  if(typeof updateNavForLogin === 'function'){ try{ updateNavForLogin(); }catch(e){} }
+  return u;
+})();
+
+function ensureCandidateId(){
+  if(!currentUser.candidateId){
+    currentUser.candidateId = 'UPA-' + Math.floor(100000 + Math.random()*900000);
+  }
+  return currentUser.candidateId;
+}
+
+/* ---- tiny navigation helpers so page names + folder layout live in one place ----
+   index.html lives at the site root; every other page lives under pages/.
+   These paths are root-relative ("/index.html", "/pages/login.html") so
+   goTo() and links built by layout.js work the same regardless of which
+   folder the current page happens to be in. */
+/* Auto-detect site root from this script's own URL so links work from any
+   location: localhost, GitHub Pages subpath (/Upadhyay/), or file:// */
+const SITE_ROOT = (function(){
+  try{
+    const src = document.currentScript.src;
+    return src.substring(0, src.lastIndexOf('/js/') + 1);
+  }catch(e){ return '/'; }
+})();
+const PAGES = {
+  home:      SITE_ROOT + 'index.html',
+  login:     SITE_ROOT + 'pages/login.html',
+  register:  SITE_ROOT + 'pages/register.html',
+  jobs:      SITE_ROOT + 'pages/jobs.html',
+  faculty:   SITE_ROOT + 'pages/faculty-dashboard.html',
+  employer:  SITE_ROOT + 'pages/employer-dashboard.html',
+  profile:   SITE_ROOT + 'pages/profile.html',
+  network:   SITE_ROOT + 'pages/institution-network.html',
+  subauth:   SITE_ROOT + 'pages/subbranch-auth.html',
+  facultyHub:SITE_ROOT + 'pages/for-faculty.html',
+  employersHub:SITE_ROOT + 'pages/for-employers.html',
+  howItWorks:SITE_ROOT + 'pages/how-it-works.html',
+  jobView:   SITE_ROOT + 'pages/job-view.html',
+  admin:     SITE_ROOT + 'admin/index.html'
+};
+function goTo(page, params){
+  const qs = params ? '?' + new URLSearchParams(params).toString() : '';
+  window.location.href = (PAGES[page] || page) + qs;
+}
+function getParam(name){
+  return new URLSearchParams(window.location.search).get(name);
+}
+/* Where a logged-in user should land */
+function dashboardPageForRole(){
+  if(currentRole === 'admin') return 'admin';
+  if(currentRole === 'branch') return 'network';
+  return currentRole === 'company' ? 'employer' : 'faculty';
+}
+/* Protected-page gate. ASYNC: waits for the backend to confirm the session and role.
+   Usage: requireLogin('seeker').then(ok => { if(ok){ ... } });
+   Not logged in -> login page. Wrong role -> message + redirect to that role's own dashboard. */
+async function requireLogin(role){
+  const u = await authReady;
+  if(!u){
+    if(authError){ api.toast('Cannot reach the server. Please try again.'); return false; }
+    if(currentRole === 'branch' && role){ goTo(dashboardPageForRole()); return false; }
+    goTo('login', { role: role === 'company' ? 'company' : 'seeker' });
+    return false;
+  }
+  if(role && currentRole !== role){
+    api.toast('You do not have access to that page.');
+    setTimeout(function(){ goTo(dashboardPageForRole()); }, 900);
+    return false;
+  }
+  return true;
+}

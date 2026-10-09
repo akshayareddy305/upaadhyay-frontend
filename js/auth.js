@@ -1,0 +1,664 @@
+// ---------- Demo jobs/profiles tabs ----------
+  function switchDemo(which, btn){
+    document.getElementById('demoJobs').style.display = which==='jobs' ? 'grid' : 'none';
+    document.getElementById('demoProfiles').style.display = which==='profiles' ? 'grid' : 'none';
+    document.querySelectorAll('.demo-tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ---------- Auth modal ----------
+  let authMode = 'login';
+  let authMethod = 'email';
+  let authOtpSent = false;
+  let intendedPanel = 'search';
+  let selectedRole = null;
+  let authStep = 1;   // 1: method choice, 2: identifier, 3: name/company (register only), 4: password
+  // isLoggedIn, currentRole, currentUser now live in store.js (persisted across pages)
+
+  let popupMode = 'register';
+  let popupForcedChoice = false;
+
+  // Old behaviour opened a modal. Now these navigate to the real login / register pages.
+  function openAuth(panel){
+    goTo('login', { role: panel==='post' ? 'company' : 'seeker' });
+  }
+  function openAuthRegister(panel){
+    goTo('register', { role: panel==='post' ? 'company' : 'seeker' });
+  }
+  function closeAuth(){ goTo('home'); }
+
+  // Called once by login.html / register.html on load.
+  //   mode = 'login' | 'register'   (fixed by which page it is)
+  //   role comes from ?role=seeker|company — if absent, ask via popup first.
+  function initAuthPage(mode){
+    // Already signed in? Ask the backend (token is the only credential) before redirecting.
+    if(!window._authChecked && (api.hasToken() || isLoggedIn)){
+      window._authChecked = true;
+      authReady.then(function(u){
+        if(u || currentRole === 'branch') goTo(dashboardPageForRole()); else initAuthPage(mode);
+      });
+      return;
+    }
+    popupMode = mode;
+    const roleParam = getParam('role');
+    const typeParam = getParam('type');
+    // Step 1: Job Seeker or Institution?  (card stays hidden until chosen — no flash)
+    if(roleParam !== 'company' && roleParam !== 'seeker'){
+      document.getElementById('authCard').style.display = 'none';
+      openRolePopup(mode, /*forcedChoice*/ true);
+      return;
+    }
+    if(roleParam === 'company'){
+      // Step 2 (institutions only): Main institution or Sub-branch?
+      if(typeParam === 'sub'){ goTo('subauth', { mode: mode }); return; }
+      if(typeParam !== 'main'){
+        document.getElementById('authCard').style.display = 'none';
+        openRolePopup(mode, true);
+        setPopupStage('inst');
+        return;
+      }
+    }
+    startAuthPage(mode, roleParam);
+  }
+  // Query params to carry when linking between login <-> register for the current role
+  function roleParams(){
+    return selectedRole === 'company' ? { role:'company', type:'main' } : { role: selectedRole || 'seeker' };
+  }
+
+  function startAuthPage(mode, role){
+    selectedRole = role;
+    intendedPanel = role==='company' ? 'post' : 'search';
+    authMethod = 'email';
+    authOtpSent = false;
+    document.getElementById('authCard').style.display = 'block';
+    updateAuthLeftPanel(intendedPanel);
+    setAuthMethod('email');
+    setAuthTab(mode);
+    goToAuthStep(1);
+  }
+
+  function updateAuthLeftPanel(panel){
+    const isCompany = panel === 'post';
+    const tagEl = document.getElementById('apPageTag');
+    if(tagEl) tagEl.textContent = isCompany ? 'Main institution account' : 'Faculty account';
+    const switchEl = document.getElementById('acSwitchRole');
+    if(switchEl) switchEl.firstChild.textContent = isCompany ? 'Not an institution? ' : 'Not a faculty member? ';
+  }
+
+  // ---- wizard step control ----
+  function totalAuthSteps(){
+    return authMode === 'register' ? 4 : 3;   // login skips step 3 (name/company)
+  }
+  function stepIdForIndex(i){
+    // register: 1,2,3,4 map straight through.
+    // login: step index 3 maps to the password step (authStep4 element), since there's no name/company step.
+    if(authMode !== 'register' && i === 3) return 4;
+    return i;
+  }
+  function goToAuthStep(i){
+    authStep = i;
+    for(let n=1;n<=4;n++){
+      const el = document.getElementById('authStep'+n);
+      if(el) el.style.display = 'none';
+    }
+    const targetId = stepIdForIndex(i);
+    const target = document.getElementById('authStep'+targetId);
+    if(target) target.style.display = 'block';
+    const backBtn = document.getElementById('authStepBack');
+    if(backBtn) backBtn.style.display = (i>1) ? 'flex' : 'none';
+    const errEl = document.getElementById('authError');
+    if(errEl) errEl.style.display = 'none';
+  }
+  function authWizardNext(){
+    const errEl = document.getElementById('authError');
+    // Step 1 -> 2: nothing to validate, method already chosen.
+    if(authStep === 1){
+      goToAuthStep(2);
+      return;
+    }
+    // Step 2 -> 3 (register) or -> password step (login): validate identifier.
+    if(authStep === 2){
+      if(authMethod === 'email'){
+        const emailVal = document.getElementById('authEmailInput').value.trim();
+        if(!emailVal){
+          errEl.textContent = 'Enter your email address.';
+          errEl.style.display = 'block';
+          return;
+        }
+      } else {
+        const phoneVal = document.getElementById('authPhoneInput').value.trim();
+        if(phoneVal.length < 10){
+          errEl.textContent = 'Enter a valid 10-digit mobile number.';
+          errEl.style.display = 'block';
+          return;
+        }
+        if(!authOtpSent){
+          errEl.textContent = 'Send and enter the OTP first.';
+          errEl.style.display = 'block';
+          return;
+        }
+        const otp = document.getElementById('authOtpInput').value.trim();
+        if(otp.length < 6){
+          errEl.textContent = 'Enter the 6-digit OTP.';
+          errEl.style.display = 'block';
+          return;
+        }
+      }
+      errEl.style.display = 'none';
+      goToAuthStep(authMode === 'register' ? 3 : 4);
+      return;
+    }
+    // Step 3 -> 4 (register only): validate name/company.
+    if(authStep === 3){
+      const isCompanyRole = selectedRole === 'company';
+      if(isCompanyRole){
+        const companyName = document.getElementById('authCompanyNameInput').value.trim();
+        const contactName = document.getElementById('authContactPersonInput').value.trim();
+        if(!companyName || !contactName){
+          errEl.textContent = 'Enter your institution name and contact person.';
+          errEl.style.display = 'block';
+          return;
+        }
+      } else {
+        const nameVal = document.getElementById('authNameInput').value.trim();
+        if(!nameVal){
+          errEl.textContent = 'Enter your full name.';
+          errEl.style.display = 'block';
+          return;
+        }
+      }
+      errEl.style.display = 'none';
+      goToAuthStep(4);
+      return;
+    }
+  }
+  function authWizardBack(){
+    if(authStep <= 1) return;
+    if(authStep === 4 && authMode !== 'register'){
+      goToAuthStep(2);
+      return;
+    }
+    goToAuthStep(authStep - 1);
+  }
+
+  function togglePwVisibility(inputId, btnEl){
+    const input = document.getElementById(inputId);
+    if(!input) return;
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btnEl.classList.toggle('showing', !showing);
+  }
+
+  function setAuthMethod(method){
+    authMethod = method;
+    authOtpSent = false;
+    document.getElementById('methodEmail').classList.toggle('active', method==='email');
+    document.getElementById('methodPhone').classList.toggle('active', method==='phone');
+    document.getElementById('authEmailFields').style.display = method==='email' ? 'block' : 'none';
+    document.getElementById('authPhoneFields').style.display = method==='phone' ? 'block' : 'none';
+    document.getElementById('authOtpField').style.display = 'none';
+    document.getElementById('authSendOtpBtn').textContent = 'Send OTP';
+    document.getElementById('authError').style.display = 'none';
+  }
+  function sendAuthOtp(){
+    const phone = document.getElementById('authPhoneInput').value.trim();
+    const errEl = document.getElementById('authError');
+    if(phone.length < 10){
+      errEl.textContent = 'Enter a valid 10-digit mobile number.';
+      errEl.style.display = 'block';
+      return;
+    }
+    errEl.textContent = 'Mobile OTP sign-in is not available yet. Please use your email and password.';
+    errEl.style.display = 'block';
+  }
+
+  function setAuthTab(mode){
+    authMode = mode;
+    const backLinkEl = document.getElementById('backToLoginLink');
+    const switchLinkEl = document.getElementById('authSwitchModeLink');
+    if(mode==='register'){
+      backLinkEl.style.display = 'block';
+      backLinkEl.innerHTML = '<a href="javascript:void(0)" onclick="goTo(\'login\',roleParams())" style="font-size:13px; font-weight:600; color:var(--blue-700); display:inline-flex; align-items:center; gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 12H5M5 12L11 6M5 12L11 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Already have an account? Log in</a>';
+      if(switchLinkEl){ switchLinkEl.style.display = 'none'; switchLinkEl.innerHTML = ''; }
+    } else {
+      backLinkEl.style.display = 'none';
+      backLinkEl.innerHTML = '';
+      if(switchLinkEl){
+        switchLinkEl.style.display = 'block';
+        switchLinkEl.innerHTML = '<a href="javascript:void(0)" onclick="goTo(\'register\',roleParams())" style="font-size:13px; font-weight:600; color:var(--blue-700);">New here? Create an account</a>';
+      }
+    }
+    const isCompany = selectedRole === 'company';
+    document.getElementById('fieldName').style.display = (mode==='register' && !isCompany) ? 'flex' : 'none';
+    document.getElementById('fieldCompanyName').style.display = (mode==='register' && isCompany) ? 'flex' : 'none';
+    document.getElementById('fieldContactPerson').style.display = (mode==='register' && isCompany) ? 'flex' : 'none';
+    const confirmPwField = document.getElementById('fieldConfirmPassword');
+    if(confirmPwField) confirmPwField.style.display = (mode==='register') ? 'flex' : 'none';
+    document.getElementById('authForm').style.display = 'block';
+    document.getElementById('authTitle').textContent = mode==='register'
+      ? (isCompany ? 'Create your institution account' : 'Create your faculty account')
+      : (isCompany ? 'Welcome back' : 'Welcome back');
+    document.getElementById('authSub').textContent = mode==='register' ? 'Register free to continue' : 'Log in to continue';
+    document.getElementById('authSubmitBtn').textContent = mode==='register' ? 'Register free' : 'Log in';
+    document.getElementById('authError').style.display = 'none';
+  }
+
+  let popupStage = 'role';   // 'role' = Job Seeker / Institution,  'inst' = Main institution / Sub-branch
+  const _ICON_MAIN = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 10L12 4L21 10" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M5 10V18M9.5 10V18M14.5 10V18M19 10V18M3 20H21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  const _ICON_SUB = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 3V9M12 9L5 15M12 9L19 15M5 15V21M19 15V21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  let _roleIcons = null;
+
+  function setPopupStage(stage){
+    popupStage = stage;
+    const isLogin = popupMode === 'login';
+    const q = id => document.getElementById(id);
+    const seekIc = q('popupRoleSeeker').querySelector('.ric'), compIc = q('popupRoleCompany').querySelector('.ric');
+    if(!_roleIcons) _roleIcons = [seekIc.innerHTML, compIc.innerHTML];
+    const back = q('rolePopupBack');
+    if(stage === 'inst'){
+      q('rolePopupTitle').textContent = isLogin ? 'Log in as' : 'Register as';
+      q('rolePopupSub').textContent = 'Choose your institution type';
+      q('popupRoleSeeker').querySelector('.rt').textContent = 'Main Institution';
+      q('popupRoleCompany').querySelector('.rt').textContent = 'Sub-branch';
+      q('popupRoleSeekerDesc').textContent = isLogin ? 'Head-office / main account' : 'College, school or university';
+      q('popupRoleCompanyDesc').textContent = isLogin ? 'Branch linked to a main institution' : 'Branch of an existing institution';
+      seekIc.innerHTML = _ICON_MAIN; compIc.innerHTML = _ICON_SUB;
+      if(back) back.style.display = 'block';
+    } else {
+      q('rolePopupTitle').textContent = isLogin ? 'Log in as' : 'Join Upaadhyay as';
+      q('rolePopupSub').textContent = isLogin ? 'Choose your account type to continue' : 'Choose how you want to use Upaadhyay';
+      q('popupRoleSeeker').querySelector('.rt').textContent = 'Job Seeker';
+      q('popupRoleCompany').querySelector('.rt').textContent = 'Institution';
+      q('popupRoleSeekerDesc').textContent = isLogin ? 'Faculty account' : 'Find faculty roles';
+      q('popupRoleCompanyDesc').textContent = isLogin ? 'Main institution or sub-branch' : 'College, university or school';
+      seekIc.innerHTML = _roleIcons[0]; compIc.innerHTML = _roleIcons[1];
+      if(back) back.style.display = 'none';
+    }
+  }
+  function openRolePopup(mode, forcedChoice){
+    popupMode = mode || 'register';
+    popupForcedChoice = !!forcedChoice;
+    setPopupStage('role');
+    document.getElementById('rolePopupOverlay').classList.add('open');
+  }
+  function closeRolePopup(){
+    if(popupForcedChoice) { goTo('home'); return; } // nothing chosen yet — bail to home
+    document.getElementById('rolePopupOverlay').classList.remove('open');
+  }
+  function rolePopupGoBack(){
+    setPopupStage('role');
+    if(popupForcedChoice){ const u = new URL(window.location.href); u.searchParams.delete('role'); u.searchParams.delete('type'); history.replaceState(null,'',u); }
+  }
+  function pickRoleFromPopup(role){
+    // Stage 2: first option = Main institution, second = Sub-branch
+    if(popupStage === 'inst'){ pickInstType(role === 'seeker' ? 'main' : 'sub'); return; }
+    if(role === 'company'){
+      // Institution picked -> ask Main vs Sub-branch next (never skipped)
+      if(popupForcedChoice){
+        const u = new URL(window.location.href); u.searchParams.set('role','company'); history.replaceState(null,'',u);
+        setPopupStage('inst');
+      } else {
+        goTo(popupMode === 'login' ? 'login' : 'register', { role: 'company' });
+      }
+      return;
+    }
+    document.getElementById('rolePopupOverlay').classList.remove('open');
+    if(popupForcedChoice){
+      const url = new URL(window.location.href);
+      url.searchParams.set('role', role);
+      url.searchParams.delete('type');
+      history.replaceState(null, '', url);
+      startAuthPage(popupMode, role);
+    } else {
+      goTo(popupMode === 'login' ? 'login' : 'register', { role });
+    }
+  }
+  function pickInstType(type){
+    if(type === 'sub'){ goTo('subauth', { mode: popupMode === 'login' ? 'login' : 'register' }); return; }
+    document.getElementById('rolePopupOverlay').classList.remove('open');
+    if(popupForcedChoice){
+      const url = new URL(window.location.href);
+      url.searchParams.set('role','company'); url.searchParams.set('type','main');
+      history.replaceState(null,'',url);
+      startAuthPage(popupMode, 'company');
+    } else {
+      goTo(popupMode === 'login' ? 'login' : 'register', { role:'company', type:'main' });
+    }
+  }
+
+  function _authBusy(on){
+    const btn = document.getElementById('authSubmitBtn'); if(!btn) return;
+    if(on){ btn.dataset.label = btn.textContent; btn.textContent = 'Please wait…'; btn.disabled = true; }
+    else { btn.textContent = btn.dataset.label || btn.textContent; btn.disabled = false; }
+  }
+  async function submitAuth(e){
+    e.preventDefault();
+    const errEl = document.getElementById('authError');
+    const showErr = function(m){ errEl.textContent = m; errEl.style.display = 'block'; return false; };
+    errEl.style.display = 'none';
+    const wasRegister = authMode === 'register';
+    const isCompanyRole = selectedRole === 'company';
+
+    if(authMethod !== 'email') return showErr('Mobile OTP sign-in is not available yet. Please use your email and password.');
+
+    const emailVal = document.getElementById('authEmailInput').value.trim();
+    const pass = document.getElementById('authPasswordInput').value;
+    if(!emailVal || !pass) return showErr('Enter your email and password.');
+
+    let name = '', companyName = '';
+    if(wasRegister){
+      const confirmPwInput = document.getElementById('authConfirmPasswordInput');
+      const confirmPw = confirmPwInput ? confirmPwInput.value : '';
+      if(pass !== confirmPw) return showErr('Passwords do not match.');
+      if(isCompanyRole){
+        companyName = document.getElementById('authCompanyNameInput').value.trim();
+        name = document.getElementById('authContactPersonInput').value.trim();
+        if(!companyName || !name) return showErr('Enter your institution name and contact person.');
+      } else {
+        name = document.getElementById('authNameInput').value.trim();
+        if(!name) return showErr('Enter your full name.');
+      }
+    }
+
+    _authBusy(true);
+    try{
+      let user;
+      if(wasRegister){
+        // frontend "seeker" is backend "candidate"; admin can never be registered from here
+        const payload = { name: name, email: emailVal, password: pass, password_confirmation: pass,
+                          role: isCompanyRole ? 'company' : 'candidate' };
+        if(isCompanyRole) payload.company_name = companyName;
+        user = await api.register(payload);
+      } else {
+        user = await api.login(emailVal, pass);
+      }
+      applyBackendUser(user);                       // role + identity come from the backend response
+      currentUser.loginMethod = 'email';
+
+      // A brand-new account lands on the profile section once, permanently.
+      const seenKey = 'upadyay_profile_seen_' + String(emailVal).toLowerCase();
+      const isFirstEverLogin = wasRegister && !localStorage.getItem(seenKey);
+      if(isFirstEverLogin) localStorage.setItem(seenKey, '1');
+      saveState();
+
+      // Backend role decides the dashboard (candidate -> faculty, company -> employer, admin -> admin).
+      goTo(dashboardPageForRole(), isFirstEverLogin ? { welcome: '1' } : null);
+    }catch(err){
+      _authBusy(false);
+      showErr(err.message || 'Something went wrong. Please try again.');
+    }
+    return false;
+  }
+
+  // Single source of truth for nav state across all three states:
+  // logged-out visitor, logged-in faculty (seeker), logged-in company (employer).
+  function updateNavForLogin(){
+    const cta = document.getElementById('navCta'); if(cta) cta.style.display = isLoggedIn ? 'none' : 'flex';
+    const usr = document.getElementById('navUser'); if(usr) usr.style.display = isLoggedIn ? 'flex' : 'none';
+    if(isLoggedIn){
+      const av = document.getElementById('navAvatarImg'); if(av) av.src = (currentRole==='company' && currentCompany && currentCompany.logo) ? currentCompany.logo : currentUser.avatar;
+      if(document.getElementById('miniPanel')) refreshMiniProfile();
+    }
+    const navEl = document.querySelector('.nav'); if(navEl) navEl.classList.toggle('logged-in', isLoggedIn);
+    const isBranch = isLoggedIn && currentRole === 'branch';
+    const isSeeker = isLoggedIn && currentRole !== 'company' && !isBranch;
+    const isCompany = isLoggedIn && currentRole === 'company';
+
+    // Marketing/home nav links (For Faculty, For Employers, jobs-by-type dropdown,
+    // How it works) are for logged-out visitors deciding which side to join.
+    // Once someone is signed in as either role, these are hidden entirely —
+    // a signed-in faculty user doesn't need "For Employers" marketing copy,
+    // and a signed-in company doesn't need "For Faculty" or job-browsing links.
+    const forFaculty = document.getElementById('navForFacultyLink');
+    if(forFaculty) forFaculty.style.display = isLoggedIn ? 'none' : 'inline';
+    const forEmployers = document.getElementById('navForEmployersLink');
+    if(forEmployers) forEmployers.style.display = isLoggedIn ? 'none' : 'inline';
+    const jobsDrop = document.getElementById('navJobsDropWrap');
+    if(jobsDrop) jobsDrop.style.display = isLoggedIn ? 'none' : '';
+
+    // Dashboard-side links, split cleanly by role — never both, never neither.
+    const bjLink = document.getElementById('navBrowseJobsLink');
+    if(bjLink) bjLink.style.display = isSeeker ? 'inline' : 'none';
+    const postJobLink = document.getElementById('navPostJobLink');
+    if(postJobLink) postJobLink.style.display = isCompany ? 'inline' : 'none';
+    const browseCandLink = document.getElementById('navBrowseCandidatesLink');
+    if(browseCandLink) browseCandLink.style.display = isCompany ? 'inline' : 'none';
+
+    const dashLink = document.getElementById('navDashLink');
+    if(dashLink){
+      dashLink.href = PAGES[dashboardPageForRole()];
+      dashLink.textContent = isBranch ? 'Branch dashboard' : (isCompany ? 'Employer dashboard' : 'My dashboard');
+      dashLink.style.display = isLoggedIn ? 'inline' : 'none';
+    }
+    const roleBadge = document.getElementById('navRoleBadge');
+    if(roleBadge){
+      roleBadge.style.display = isLoggedIn ? 'inline' : 'none';
+      roleBadge.textContent = isBranch ? 'Sub-branch' : (isCompany ? 'Employer' : 'Faculty');
+    }
+    const logoutBtn = document.getElementById('navLogoutBtn'); if(logoutBtn) logoutBtn.style.display = isLoggedIn ? '' : 'none';
+    const miniLink = document.getElementById('miniBrowseJobsLink');
+    if(miniLink) miniLink.style.display = isSeeker ? 'flex' : 'none';
+  }
+
+  async function logoutUser(){
+    await api.logout();      // revokes the Sanctum token on the server (always clears locally too)
+    clearSession();
+    goTo('home');
+  }
+
+  function showGenericToast(msg){
+    const t = document.getElementById('genericToast');
+    if(!t) return;
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(window._genericToastTimer);
+    window._genericToastTimer = setTimeout(()=>{
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(12px)';
+    }, 1800);
+  }
+
+  function openNavDrop(){
+    const m1 = document.getElementById('navDropMenu'); if(m1) m1.classList.add('open');
+    const m2 = document.getElementById('navDropMenuBj'); if(m2) m2.classList.add('open');
+  }
+  function closeNavDrop(){
+    const m1 = document.getElementById('navDropMenu'); if(m1) m1.classList.remove('open');
+    const m2 = document.getElementById('navDropMenuBj'); if(m2) m2.classList.remove('open');
+  }
+  function quickBrowse(category){
+    goTo('jobs', { cat: category });
+  }
+
+  function renderNotifPanelList(){
+    const list = document.getElementById('notifPanelList');
+    list.innerHTML = dashNotifs.length
+      ? dashNotifs.map(n=>`<div class="notif-panel-item">${n.text}</div>`).join('')
+      : `<div class="notif-panel-empty">No notifications yet.</div>`;
+  }
+  function openNotifPanel(){
+    closeMiniProfile();
+    renderNotifPanelList();
+    document.getElementById('notifPanel').classList.add('open');
+    const navDot = document.getElementById('navBellDot'); if(navDot) navDot.style.display = 'none';
+    const bjDot = document.getElementById('bjBellDot'); if(bjDot) bjDot.style.display = 'none';
+    hasUnreadNotif = false; saveState();
+  }
+  function closeNotifPanel(){
+    document.getElementById('notifPanel').classList.remove('open');
+  }
+  document.addEventListener('click', function(e){
+    const panel = document.getElementById('notifPanel');
+    if(!panel || !panel.classList.contains('open')) return;
+    if(panel.contains(e.target)) return;
+    if(e.target.closest('.nav-bell')) return;
+    closeNotifPanel();
+  });
+
+  /* Sub-branch details for the profile card, read from what the branch saved on its dashboard */
+  function nwBranchInfo(){
+    let sv=null, pr=null, lgs=null;
+    try{ sv = JSON.parse(localStorage.getItem('nwSub')); }catch(e){}
+    try{ pr = JSON.parse(localStorage.getItem('nwProfile')); }catch(e){}
+    try{ lgs = JSON.parse(localStorage.getItem('nwLogos')); }catch(e){}
+    const sub = (sv && sv.sub) || {}, d = (pr && pr.d) || {};
+    const name = d.name || sub.n || '';
+    const city = d.city ? [d.city, d.state].filter(Boolean).join(', ') : (sub.c || '');
+    const type = d.type || sub.t || '';
+    return { name:name, type:type, city:city, logo:(lgs && name && lgs[name]) || '',
+      mainName:(sv && sv.mainName) || '', mainCode:(sv && sv.mainCode) || '',
+      contact:[d.rname || sub.by, d.rdes].filter(Boolean).join(', '), email:d.rem || sub.em || '', phone:d.rph || sub.ph || '',
+      line:[type, city].filter(Boolean).join(' \u00b7 ') };
+  }
+  /* Profile-card links for a sub-branch: switch tab in place on the dashboard, or open it with that tab */
+  function branchGo(tab){
+    closeMiniProfile();
+    if(typeof nwOpenTab === 'function' && nwOpenTab(tab)) return;
+    goTo('network', {start:'dash', tab:tab});
+  }
+  function openMiniProfile(){
+    closeNotifPanel();
+    refreshMiniProfile();
+    document.getElementById('miniScrim').classList.add('open');
+    document.getElementById('miniPanel').classList.add('open');
+  }
+  function closeMiniProfile(){
+    document.getElementById('miniScrim').classList.remove('open');
+    document.getElementById('miniPanel').classList.remove('open');
+  }
+  function refreshMiniProfile(){
+    document.getElementById('miniAvatar').src = currentRole==='company' ? (currentCompany.logo || currentUser.avatar) : currentRole==='branch' ? (nwBranchInfo().logo || currentUser.avatar) : currentUser.avatar;
+    const isBranch = currentRole==='branch';
+    const isCompany = currentRole==='company';
+    document.getElementById('miniName').textContent = isBranch ? (nwBranchInfo().name || currentUser.name || 'Your sub-branch') : isCompany
+      ? (currentCompany.name || 'Your institution')
+      : (currentUser.name || 'Your name');
+    document.getElementById('miniDegree').textContent = isBranch ? (nwBranchInfo().line || 'Sub-branch account') : isCompany
+      ? ([currentCompany.type, currentCompany.city].filter(Boolean).join(' · ') || 'Company account')
+      : (currentUser.qualification ? `${currentUser.qualification}${currentUser.college ? ' · '+currentUser.college : ''}` : 'Add your qualification');
+
+    const linksFaculty = document.getElementById('miniLinksFaculty');
+    const linksCompany = document.getElementById('miniLinksCompany');
+    const linksBranch = document.getElementById('miniLinksBranch');
+    if(linksFaculty) linksFaculty.style.display = (isCompany || isBranch) ? 'none' : 'flex';
+    if(linksCompany) linksCompany.style.display = isCompany ? 'flex' : 'none';
+    if(linksBranch) linksBranch.style.display = isBranch ? 'flex' : 'none';
+    ['miniStatsSection','miniPrefSection'].forEach(function(id){ const el=document.getElementById(id); if(el) el.style.display = (isBranch || isCompany) ? 'none' : ''; });
+    const coSec = document.getElementById('miniCompanySection');
+    if(coSec){
+      coSec.style.display = isCompany ? '' : 'none';
+      if(isCompany){
+        const rows = [['Location', currentCompany.city], ['Type', currentCompany.type], ['Website', currentCompany.website],
+                      ['Contact', [currentCompany.contactName, currentCompany.designation].filter(Boolean).join(', ')],
+                      ['Email', currentCompany.email], ['Phone', currentCompany.phone]].filter(function(r){ return r[1]; });
+        const box = document.getElementById('miniCompanyInfo'); box.innerHTML = '';
+        if(!rows.length){ const p = document.createElement('p'); p.className = 'mini-co-empty'; p.textContent = 'Add your institution details on your company profile.'; box.appendChild(p); }
+        rows.forEach(function(r){
+          const row = document.createElement('div'); row.className = 'mini-co-row';
+          const k = document.createElement('span'); k.textContent = r[0];
+          const v = document.createElement('b'); v.textContent = r[1];
+          row.appendChild(k); row.appendChild(v); box.appendChild(row);
+        });
+      }
+    }
+
+    const brSec = document.getElementById('miniBranchSection');
+    if(brSec){
+      brSec.style.display = isBranch ? '' : 'none';
+      if(isBranch){
+        const b = nwBranchInfo();
+        const rows = [['Location', b.city], ['Type', b.type],
+                      ['Main institution', [b.mainName, b.mainCode ? 'Code ' + b.mainCode : ''].filter(Boolean).join(' \u00b7 ')],
+                      ['Contact', b.contact], ['Email', b.email], ['Phone', b.phone]].filter(function(r){ return r[1]; });
+        const box = document.getElementById('miniBranchInfo'); box.innerHTML = '';
+        if(!rows.length){ const p = document.createElement('p'); p.className = 'mini-co-empty'; p.textContent = 'Add your branch details on your institution profile.'; box.appendChild(p); }
+        rows.forEach(function(r){
+          const row = document.createElement('div'); row.className = 'mini-co-row';
+          const k = document.createElement('span'); k.textContent = r[0];
+          const v = document.createElement('b'); v.textContent = r[1];
+          row.appendChild(k); row.appendChild(v); box.appendChild(row);
+        });
+      }
+    }
+
+    const statsHeading = document.getElementById('miniStatsHeading');
+    const stat1Num = document.getElementById('miniStat1Num'), stat1Label = document.getElementById('miniStat1Label');
+    const stat2Num = document.getElementById('miniStat2Num'), stat2Label = document.getElementById('miniStat2Label');
+    if(isCompany){
+      if(statsHeading) statsHeading.textContent = 'Your hiring activity';
+      const jobCount = Object.keys(postedJobs || {}).length;
+      const invitedCount = Object.values(candidateStatus || {}).filter(s=>s==='invited' || s==='shortlisted').length;
+      if(stat1Num) stat1Num.textContent = jobCount;
+      if(stat1Label) stat1Label.textContent = 'Jobs posted';
+      if(stat2Num) stat2Num.textContent = invitedCount;
+      if(stat2Label) stat2Label.textContent = 'Candidates contacted';
+      const stat1Box = document.getElementById('miniStat1Box');
+      if(stat1Box){
+        stat1Box.style.cursor = 'pointer';
+        stat1Box.onclick = ()=>{ closeMiniProfile(); goTo('employer', {tab:'myjobs'}); };
+      }
+    } else {
+      if(statsHeading) statsHeading.textContent = 'Your profile performance';
+      if(stat1Num) stat1Num.textContent = '12';
+      if(stat1Label) stat1Label.textContent = 'Search appearances';
+      if(stat2Num) stat2Num.textContent = '4';
+      if(stat2Label) stat2Label.textContent = 'Recruiter actions';
+      const stat1Box = document.getElementById('miniStat1Box');
+      if(stat1Box){ stat1Box.style.cursor = 'default'; stat1Box.onclick = null; }
+    }
+
+    const prefHeading = document.getElementById('miniPrefHeading');
+    const prefSub = document.getElementById('miniPrefSub');
+    const tagsWrap = document.getElementById('miniPrefTags');
+    if(isCompany){
+      if(prefHeading) prefHeading.textContent = 'Your hiring focus';
+      if(prefSub) prefSub.textContent = 'What you typically hire for.';
+      if(tagsWrap){
+        const tags = [currentCompany.type, currentCompany.city].filter(Boolean);
+        tagsWrap.innerHTML = tags.length
+          ? tags.map(t=>`<span class="bj-pref-tag">${t}</span>`).join('')
+          : `<span style="font-size:12px; color:var(--ink-faint);">Add your institution type and city on your company profile.</span>`;
+      }
+    } else {
+      if(prefHeading) prefHeading.textContent = 'Your preferences';
+      if(prefSub) prefSub.textContent = 'Matched roles are based on these.';
+      if(tagsWrap){
+        const tags = [currentUser.category, currentUser.subject, currentUser.location].filter(Boolean);
+        tagsWrap.innerHTML = tags.length
+          ? tags.map(t=>`<span class="bj-pref-tag">${t}</span>`).join('')
+          : `<span style="font-size:12px; color:var(--ink-faint);">Add preferences on your profile to see matches.</span>`;
+      }
+    }
+  }
+
+  function computeCompleteness(){
+    const fields = [currentUser.subject, currentUser.qualification, currentUser.category, currentUser.experience, currentUser.location];
+    const filled = fields.filter(v=>v && v.trim()).length;
+    return Math.round((filled/fields.length)*100) || 15;
+  }
+
+  // The full profile lives on the dashboard's own profile tab now (faculty or employer, per role).
+  function openFullProfile(){ if(currentRole === 'branch'){ branchGo('profile'); return; } goTo(dashboardPageForRole()); }
+  function closeFullProfile(){ goTo(dashboardPageForRole()); }
+
+  // Called once by profile.html on load: fills the page from saved state.
+  function initFullProfilePage(){
+    document.getElementById('fpAvatar').src = currentUser.avatar;
+    document.getElementById('fpName').textContent = currentUser.name || 'Your name';
+    document.getElementById('fpDegree').textContent = currentUser.qualification
+      ? `${currentUser.qualification}${currentUser.subject ? ' · '+currentUser.subject : ''}`
+      : 'Add your degree and specialisation';
+    document.getElementById('fpLocation').textContent = currentUser.location || 'Add location';
+    document.getElementById('fpCategory').value = currentUser.category || '';
+    document.getElementById('fpQualification').value = currentUser.qualification || '';
+    document.getElementById('fpExperience').textContent = currentUser.experience || 'Not set';
+    document.getElementById('fpSubject').textContent = currentUser.subject || 'Not set';
+    document.getElementById('fpEduLine').textContent = currentUser.college || 'Not set';
+    const links = currentUser.links || {};
+    document.getElementById('fpResume').value = links.resume || '';
+    document.getElementById('fpDegreeCertLink').value = links.degreeCert || '';
+    document.getElementById('fpPublicationsLink').value = links.publications || '';
+    document.getElementById('fpPatentLink').value = links.patent || '';
+    document.getElementById('fpPct').textContent = computeCompleteness() + '%';
+  }

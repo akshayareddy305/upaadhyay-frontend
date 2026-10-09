@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Admin Login — Upadyay</title>
+<link rel="stylesheet" href="css/admin.css">
+<style>
+  body{ min-height:100vh; display:flex; align-items:center; justify-content:center; background:var(--blue-900,#0B1F45); padding:16px; box-sizing:border-box; }
+  .al-card{ width:100%; max-width:440px; background:#fff; border-radius:10px; padding:32px 26px; box-shadow:0 20px 50px rgba(0,0,0,.35); text-align:center; }
+  .al-card h1{ font-size:20px; margin:0 0 4px; color:#0B1F45; }
+  .al-card p{ font-size:13px; color:#5B6B8C; margin:0 0 22px; }
+  .al-field{ display:block; width:100%; box-sizing:border-box; height:42px; padding:0 12px; margin-bottom:12px; font-size:14.5px; border:1px solid #CBD3E3; border-radius:6px; color:#0B1F45; }
+  .al-field:focus{ outline:none; border-color:#2F5BD0; box-shadow:0 0 0 3px rgba(47,91,208,.15); }
+  .al-err{ display:none; background:#FDECEC; color:#B42318; font-size:13px; padding:9px 12px; border-radius:6px; margin-bottom:14px; }
+  .al-btn{ width:100%; padding:11px; border:0; border-radius:6px; background:#1E3F8F; color:#fff; font-size:14.5px; font-weight:600; cursor:pointer; }
+  .al-btn:hover:not(:disabled){ background:#183477; }
+  .al-btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .al-show{ font-size:12px; color:#5B6B8C; cursor:pointer; margin-bottom:14px; display:inline-block; user-select:none; }
+</style>
+</head>
+<body>
+  <form class="al-card" id="adminLoginForm" autocomplete="off">
+    <h1>Upadyay Admin</h1>
+    <p>Sign in with your admin account</p>
+    <div class="al-err" id="alErr"></div>
+    <input class="al-field" id="alEmail" type="email" placeholder="Admin email" autocomplete="username" required>
+    <input class="al-field" id="alPass" type="password" placeholder="Password" autocomplete="current-password" required>
+    <label class="al-show"><input type="checkbox" id="alShow"> Show password</label>
+    <button class="al-btn" id="alBtn" type="submit">Log in</button>
+  </form>
+<script src="../js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  const err = document.getElementById("alErr"), btn = document.getElementById("alBtn");
+  function showErr(msg){ err.textContent = msg; err.style.display = "block"; }
+  // already signed in as admin? go straight to the dashboard
+  api.me().then(function(u){ if(u && u.role === 'admin') window.location.replace("index.html"); }).catch(function(){});
+  document.getElementById("alShow").addEventListener("change", function(e){
+    document.getElementById("alPass").type = e.target.checked ? "text" : "password";
+  });
+  document.getElementById("adminLoginForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    err.style.display = "none"; btn.disabled = true; btn.textContent = "Please wait…";
+    const r = await adminLogin(document.getElementById("alEmail").value.trim(), document.getElementById("alPass").value);
+    if(r.ok){ window.location.replace("index.html"); return; }
+    showErr(r.message); btn.disabled = false; btn.textContent = "Log in";
+    document.getElementById("alPass").value = "";
+  });
+</script>
+</body>
+</html>

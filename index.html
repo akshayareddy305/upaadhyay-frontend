@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Upaadhyay — Faculty Recruitment</title>
+<link rel="icon" type="image/x-icon" href="assets/logo/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/logo/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/logo/icon-192.png">
+<link rel="apple-touch-icon" href="assets/logo/apple-touch-icon.png">
+<link rel="stylesheet" href="css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/home.css">
+</head>
+<body class="home">
+<div id="siteNav"></div>
+
+<main class="fh">
+  <section class="fh-hero">
+    <h1>18,000+ Faculty Across India</h1>
+    <p class="fh-sub">Get hired by top schools, colleges &amp; universities</p>
+
+    <form class="fh-search" id="fhForm" role="search">
+      <label class="fh-field fh-q">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="fhQuery" placeholder="Search by Subject, Institution or Job Title" autocomplete="off">
+      </label>
+      <div class="fh-field fh-loc fh-dd" id="fhLocDD">
+        <svg viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <input type="text" id="fhLoc" placeholder="Location" autocomplete="off" aria-label="Location">
+        <ul class="fh-list" id="fhLocList" role="listbox"></ul>
+      </div>
+      <div class="fh-field fh-cat fh-dd" id="fhCatDD">
+        <button type="button" class="fh-dd-btn" id="fhCatBtn" aria-haspopup="listbox">
+          <svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2M3 13h18"/></svg>
+          <span id="fhCatLabel">Category</span>
+          <svg class="fh-chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <ul class="fh-list" id="fhCatList" role="listbox"></ul>
+      </div>
+      <button type="submit" class="fh-btn fh-btn-primary fh-search-btn">Search</button>
+    </form>
+  </section>
+
+  <div class="fh-sheet">
+    <section class="fh-section">
+      <h2>Featured Institutions</h2>
+      <div class="fh-carousel-wrap">
+        <button class="fh-arrow l" id="fhPrev" aria-label="Previous"><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <div class="fh-carousel" id="fhCarousel"></div>
+        <button class="fh-arrow r" id="fhNext" aria-label="Next"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+    </section>
+
+    <section class="fh-section">
+      <h2>Popular Categories</h2>
+      <div class="fh-cat-grid" id="fhCatGrid"></div>
+    </section>
+
+    <section class="fh-section">
+      <h2>Trending Roles</h2>
+      <div class="fh-pills" id="fhPills"></div>
+    </section>
+
+    <section class="fh-section">
+      <div class="fh-cta">
+        <div class="fh-cta-card fh-cta-a">
+          <h3>For Faculty</h3>
+          <p>Register once with your qualifications and get discovered by verified institutions across India. Free, always.</p>
+          <button class="fh-btn fh-btn-orange" onclick="goTo('register')">Register as Faculty</button>
+        </div>
+        <div class="fh-cta-card fh-cta-b">
+          <h3>For Employers</h3>
+          <p>Search 18,000+ verified faculty profiles and post unlimited openings. Free for your first 2 years.</p>
+          <button class="fh-btn fh-btn-outline" onclick="goTo('register',{role:'company'})">Hire on Upadyay</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div id="siteChrome"></div>
+
+<script src="js/api.js"></script>
+<script src="js/store.js"></script>
+<script src="js/employer.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/faculty.js"></script>
+<script src="js/layout.js"></script>
+<script>
+  mountNav('home');
+  mountChrome();
+
+  var CATS = [{l:'Schools',v:'Schools'},{l:'Intermediate',v:'Intermediate'},{l:'Higher Education',v:'Higher Education'}];
+  var CITIES = ['Hyderabad','Vijayawada','Chennai','Bengaluru','Mumbai','Delhi','Pune','Nagpur','Kolkata','Ahmedabad'];
+  var INST = [['KL University','Vijayawada'],['Delhi Public School','Hyderabad'],['Narayana Junior College','Chennai'],['Sri Chaitanya','Hyderabad'],['Amity University','Noida'],['Kendriya Vidyalaya','Pan India'],['Manipal University','Manipal'],['VIT','Vellore']];
+  var SUBJ = [['Physics','⚛'],['Mathematics','∑'],['Chemistry','⚗'],['Biology','🧬'],['Computer Science','</>'],['Commerce','₹'],['English','Aa'],['Economics','📈'],['History','🏛'],['Hindi','अ'],['Accountancy','🧾'],['Telugu','తె']];
+  var ROLES = ['PGT Physics','TGT Maths','Assistant Professor','Associate Professor','Lecturer MPC','Vice Principal','Coordinator','Librarian','Lab Assistant','Commerce Lecturer','Computer Teacher','Research Fellow'];
+  var state = {cat:''};
+  function $(i){return document.getElementById(i);}
+  function go(p){ goTo('jobs', p); }
+
+  // dropdowns
+  function fillList(ul, items, onPick){
+    ul.innerHTML='';
+    items.forEach(function(it){ var li=document.createElement('li'); li.textContent=it.l||it; li.onclick=function(e){e.stopPropagation(); onPick(it); ul.parentNode.classList.remove('open');}; ul.appendChild(li); });
+  }
+  fillList($('fhCatList'), CATS, function(it){ state.cat=it.v; $('fhCatLabel').textContent=it.l; $('fhCatBtn').classList.add('set'); });
+  $('fhCatBtn').onclick=function(e){ e.stopPropagation(); $('fhCatDD').classList.toggle('open'); };
+  function locFilter(){ var q=$('fhLoc').value.toLowerCase(); fillList($('fhLocList'), CITIES.filter(function(c){return c.toLowerCase().indexOf(q)>-1;}), function(c){ $('fhLoc').value=c; }); }
+  $('fhLoc').onfocus=function(){ locFilter(); $('fhLocDD').classList.add('open'); };
+  $('fhLoc').oninput=function(){ locFilter(); $('fhLocDD').classList.add('open'); };
+  document.addEventListener('click', function(){ document.querySelectorAll('.fh-dd.open').forEach(function(d){d.classList.remove('open');}); });
+
+  // search
+  $('fhForm').onsubmit=function(e){ e.preventDefault(); var p={}; if(state.cat) p.cat=state.cat; if($('fhQuery').value.trim()) p.q=$('fhQuery').value.trim(); if($('fhLoc').value.trim()) p.loc=$('fhLoc').value.trim(); go(p); };
+
+  // carousel
+  INST.forEach(function(c){ var d=document.createElement('div'); d.className='fh-co'; d.innerHTML='<b>'+c[0]+'</b><small>'+c[1]+'</small>'; d.onclick=function(){ go({q:c[0]}); }; $('fhCarousel').appendChild(d); });
+  $('fhPrev').onclick=function(){ $('fhCarousel').scrollBy({left:-480}); };
+  $('fhNext').onclick=function(){ $('fhCarousel').scrollBy({left:480}); };
+
+  // categories + pills
+  SUBJ.forEach(function(s){ var b=document.createElement('button'); b.className='fh-cat-item'; b.innerHTML='<span class="fh-ico">'+s[1]+'</span>'+s[0]; b.onclick=function(){ go({q:s[0]}); }; $('fhCatGrid').appendChild(b); });
+  ROLES.forEach(function(r){ var b=document.createElement('button'); b.className='fh-pill'; b.textContent=r; b.onclick=function(){ go({q:r}); }; $('fhPills').appendChild(b); });
+</script>
+</body>
+</html>
