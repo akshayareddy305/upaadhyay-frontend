@@ -8,7 +8,7 @@
    the user and role always come from GET /auth/me.
    ========================================================================== */
 (function(){
-  const API_BASE = (window.UPADYAY_API_BASE || 'http://localhost:8000/api').replace(/\/+$/, '');
+  const API_BASE = (window.UPADYAY_API_BASE || ((/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) ? 'http://localhost:8000/api' : 'https://api.upaadhyay.com/api')).replace(/\/+$/, '');
   const TOKEN_KEY = 'upadyay_api_token';
   const ROLE_HINT_KEY = 'upadyay_role_hint';   // first-paint hint only; never used for access decisions
 
@@ -147,13 +147,12 @@
   };
   /* ==========================================================================
      LOCAL MODE (temporary) — login/register/session stored in localStorage.
-     No backend needed. To go back to Laravel later, set
-       window.UPADYAY_LOCAL = false;   (before api.js loads)
-     and this block is skipped entirely.
+     No backend needed. To go back to Laravel later, this block is OFF by default now. To re-enable offline demo mode set
+       window.UPADYAY_LOCAL = true;   (before api.js loads).
      Users live in localStorage key 'upadyay_local_users'.
      Seeded admin: admin@upadyay.com / admin123  (change/remove before launch)
      ========================================================================== */
-  if(window.UPADYAY_LOCAL !== false){
+  if(window.UPADYAY_LOCAL === true){   // opt-in only; live site uses the Laravel backend
     const USERS_KEY = 'upadyay_local_users';
 
     function loadUsers(){
