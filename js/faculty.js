@@ -274,19 +274,18 @@
 
   // POST a file to the backend as multipart/form-data. Resolves to the uploaded file's URL.
   async function uploadFileToServer(fileOrBlob, kind, fileName){
+    // Maps UI kinds to the Laravel endpoints (auth via Sanctum bearer token in js/api.js).
     const fd = new FormData();
     fd.append('file', fileOrBlob, fileName || fileOrBlob.name || 'upload');
-    fd.append('kind', kind);                                   // 'image' | 'resume' | 'document'
-    if(currentUser && currentUser.candidateId) fd.append('candidateId', currentUser.candidateId);
-    const res = await fetch(UPLOAD_API.endpoint, {
-      method: 'POST',
-      headers: UPLOAD_API.headers(),                            // do NOT set Content-Type; browser sets the boundary
-      body: fd
-    });
-    if(!res.ok) throw new Error('Upload failed (' + res.status + '). Please try again.');
-    const data = await res.json();
-    if(!data || !data.url) throw new Error('Upload failed: server did not return a file URL.');
-    return data.url;
+    let path;
+    if(kind === 'resume'){ path = '/candidate/resume'; }
+    else if(kind === 'document'){ path = '/candidate/certificates'; fd.append('name', (fileName || 'Certificate').replace(/\.[^.]+$/, '')); }
+    else { path = '/files/upload'; fd.append('category', 'profile_photo'); }
+    const data = await api.post(path, fd);   // api.js adds the bearer token and unwraps {data}
+    const f = (data && data.file) ? data.file : data;
+    const url = f && (f.url || f.storage_path);
+    if(!url) throw new Error('Upload failed: server did not return a file URL.');
+    return url;
   }
 
   // ---- Profile image (keeps existing UI: #fpAvatar, updateNavForLogin) ----
