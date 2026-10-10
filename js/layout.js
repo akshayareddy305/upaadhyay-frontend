@@ -196,12 +196,13 @@ function mountChrome(opts){
   <div id="genericToast" style="position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(12px); background:var(--blue-900); color:#fff; font-size:13.5px; font-weight:600; padding:11px 20px; border-radius:5px; box-shadow:var(--shadow-lg); z-index:200; opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;"></div>
     <div class="mini-scrim" id="miniScrim" onclick="closeMiniProfile()"></div>
   <div class="mini-panel" id="miniPanel">
-    <button class="mini-close" onclick="closeMiniProfile()">✕</button>
+    <button class="mini-close" onclick="closeMiniProfile()" aria-label="Close"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     <div class="mini-head">
       <img class="mini-avatar" id="miniAvatar" src="">
-      <div>
+      <div class="mini-head-txt">
         <h3 id="miniName">Your name</h3>
         <p id="miniDegree">Add your degree</p>
+        <span class="mini-meta" id="miniMeta"></span>
       </div>
     </div>
     <button class="btn btn-light btn-sm" style="width:100%; margin-bottom:4px;" onclick="openFullProfile()">Update profile</button>
@@ -213,21 +214,16 @@ function mountChrome(opts){
       <div class="mini-section-head"><h4>Institution details</h4></div>
       <div id="miniBranchInfo"></div>
     </div>
-    <div class="mini-section" id="miniStatsSection">
-      <div class="mini-section-head">
-        <h4 id="miniStatsHeading">Your profile performance</h4>
+    <div class="mini-seeker" id="miniSeekerSection" style="display:none">
+      <div class="msk-meter" role="img" aria-label="Profile strength">
+        <div class="msk-meter-top"><b>Profile strength</b><span id="miniPct">0%</span></div>
+        <div class="msk-bar"><i id="miniPctBar" style="width:0%"></i></div>
+        <small id="miniPctHint"></small>
       </div>
-      <div class="mini-stats">
-        <div id="miniStat1Box"><span class="num tabular" id="miniStat1Num">12</span><label id="miniStat1Label">Search appearances</label></div>
-        <div><span class="num tabular" id="miniStat2Num">4</span><label id="miniStat2Label">Recruiter actions</label></div>
-      </div>
-    </div>
-    <div class="mini-section" id="miniPrefSection">
-      <div class="mini-section-head">
-        <h4 id="miniPrefHeading">Your preferences</h4>
-      </div>
-      <p style="font-size:12px; color:var(--ink-faint); margin:0 0 10px;" id="miniPrefSub">Matched roles are based on these.</p>
-      <div id="miniPrefTags" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+      <div class="msk-rows" id="miniRows"></div>
+      <div id="miniSubjectsWrap" style="display:none"><h5 class="msk-h">Subjects</h5><div class="msk-chips" id="miniSubjects"></div></div>
+      <div id="miniLevelsWrap" style="display:none"><h5 class="msk-h">Teaching levels</h5><div class="msk-chips" id="miniLevels"></div></div>
+      <div class="msk-empty" id="miniEmpty" style="display:none">Your profile isn't saved yet. Add your details and press Save &amp; Continue — they will appear here.</div>
     </div>
     <div class="mini-links" id="miniLinksFaculty">
       <a href="javascript:void(0)" id="miniBrowseJobsLink" onclick="closeMiniProfile(); openBrowseJobs();">
