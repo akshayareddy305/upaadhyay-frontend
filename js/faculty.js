@@ -187,11 +187,11 @@
     },
     document: {
       label: 'Document',
-      // Other profile docs: PDF/DOC/DOCX + JPG/PNG/WEBP scans, 5 MB
-      exts: ['pdf','doc','docx','jpg','jpeg','png','webp'],
-      mimes: ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','image/jpeg','image/png','image/webp'],
+      // Must match backend config/uploads.php 'certificate' (PDF/JPG/PNG, 5 MB) so the user is never told "OK" and then rejected by the server.
+      exts: ['pdf','jpg','jpeg','png'],
+      mimes: ['application/pdf','image/jpeg','image/png'],
       maxBytes: 5 * 1024 * 1024,           // 5 MB
-      typeMsg: 'PDF, DOC, DOCX, JPG, PNG or WEBP'
+      typeMsg: 'PDF, JPG or PNG'
     }
   };
 
