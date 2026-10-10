@@ -226,12 +226,12 @@
                 <select id="adminJobsStatusFilter" onchange="renderAdminJobs()" style="padding:9px 12px; border:1px solid var(--line); border-radius:var(--radius); font-family:inherit; font-size:13.5px; background:#fff; max-width:160px;">
                   <option value="">All statuses</option>
                   <option value="live">Live only</option>
-                  <option value="closed">Closed only</option>
+                  <option value="closed">Closed / draft</option>
                 </select>
               </div>
               <div style="overflow-x:auto;">
                 <table class="admin-table">
-                  <thead><tr><th>Job Title</th><th>Institution</th><th>Category</th><th>Location</th><th>Status</th><th>Applicants</th></tr></thead>
+                  <thead><tr><th>Job Title</th><th>Institution</th><th>Category</th><th>Location</th><th>Status</th><th>Applicants</th><th>Action</th></tr></thead>
                   <tbody id="adminJobsBody"></tbody>
                 </table>
               </div>
