@@ -184,7 +184,6 @@ function mountChrome(opts){
           </div>
         </div>
       </div>
-      <div class="footer-collab"><span class="footer-collab-label">Our collaborations</span>${footerCollabHtml()}</div>
       <div class="footer-bottom">
         <div>© 2026 Upadyay. All rights reserved.</div>
         <div style="display:flex; align-items:center; gap:18px;">
