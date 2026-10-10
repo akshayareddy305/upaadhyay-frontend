@@ -12,7 +12,7 @@
 const STORE_KEY = 'upadyay_state_v1';
 
 const DEFAULT_USER = {
-  name:'', email:'', avatar:'https://i.pravatar.cc/160?img=68',
+  name:'', email:'', avatar:'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCc+PHJlY3Qgd2lkdGg9JzI0JyBoZWlnaHQ9JzI0JyBmaWxsPScjRUVGMkY3Jy8+PGcgZmlsbD0nbm9uZScgc3Ryb2tlPScjOTRBM0I4JyBzdHJva2Utd2lkdGg9JzEuNSc+PGNpcmNsZSBjeD0nMTInIGN5PSc5JyByPSczLjUnLz48cGF0aCBkPSdNNSAyMGMwLTMuNSAzLTUuNSA3LTUuNXM3IDIgNyA1LjUnLz48L2c+PC9zdmc+',
   subject:'', qualification:'', category:'', experience:'', location:'', college:'',
 
   // ---- 1. Basic personal details ----
