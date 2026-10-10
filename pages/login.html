@@ -8,6 +8,11 @@
 <link rel="stylesheet" href="../css/trendz-auth.css">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/auth-split.css">
+<style>
+/* login: single centred card, no side panel */
+.auth-page{grid-template-columns:1fr !important;background:#f3f1f7 !important;overflow-y:auto}
+.auth-page .auth-card{margin:32px auto !important;border-radius:18px !important;box-shadow:0 10px 40px rgba(75,31,158,.12) !important;padding:40px 36px !important}
+</style>
 </head>
 <body class="page page-auth">
   <div class="role-popup-overlay" id="rolePopupOverlay" onclick="if(event.target===this) closeRolePopup()">
@@ -34,12 +39,6 @@
 
   <header class="as-head"><a class="as-brand" href="../index.html"><img src="../assets/logo/logo-mark.png" alt="Upaadhyay"><span class="as-word">Upaadh<span>yay</span></span></a><div class="as-switch">New to Upaadhyay? <a id="asSwitchA" href="register.html">Register</a> here</div></header>
   <div class="auth-page" id="authOverlay">
-    <div class="as-left">
-      <div class="as-card" style="left:20%;top:55%;width:210px"><h4><svg viewBox="0 0 24 24"><path d="M4 21V5l8-3v19M12 9h8v12M3 21h18"/></svg>Top Institutions</h4><div class="as-logos"><b style="background:#14285E">KL</b><b style="background:#6b21a8">DPS</b><b style="background:#ff7a1a">VIT</b></div></div>
-      <div class="as-note" style="left:62%;top:60%">Track your<br>chances</div>
-      <div class="as-card" style="left:40%;top:72%;width:300px"><h4><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h4"/></svg>Application status</h4><div class="as-row"><span class="as-sq"></span><div class="as-lines"><i></i><i></i></div><span class="as-ok">&#10003; Applied</span></div></div>
-      <div class="as-note" style="left:5%;top:84%">Showcase profile<br>to top institutions</div>
-    </div>
     <div class="auth-card" id="authCard" style="display:none;">
       <button class="ap-close" onclick="closeAuth()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 5L19 19M19 5L5 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       <button class="ap-step-back" id="authStepBack" onclick="authWizardBack()" style="display:none;" type="button" aria-label="Back">
