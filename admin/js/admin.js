@@ -20,6 +20,8 @@
   // Called once by admin.html on load. Optional ?tab=faculty|institutions|jobs
   async function initAdminPage(){
     if(!(await requireAdmin())) return;
+    try{ await loadAdminData(); }
+    catch(e){ api.toast('Could not load admin data: ' + e.message); }
     document.getElementById('adminFooterYear').textContent = new Date().getFullYear();
     const tab = new URLSearchParams(location.search).get('tab');
     switchAdminTab(['overview','faculty','institutions','jobs'].includes(tab) ? tab : 'overview');
@@ -45,10 +47,7 @@
   }
 
   function totalDemoApplicants(){
-    return allInstitutionJobs().reduce((sum,j)=> sum + (j.applicants||0), 0) + totalApplicantsCount();
-  }
-  function totalApplicantsCount(){
-    return Object.values(readPostedJobs()).reduce((sum,j)=> sum + (j.applicantIds ? j.applicantIds.length : 0), 0);
+    return adminStats ? adminStats.total_applications : allInstitutionJobs().reduce((sum,j)=> sum + (j.applicants||0), 0);
   }
 
   function renderAdminOverview(){
@@ -56,14 +55,14 @@
     const instIds = Object.keys(institutionsData);
     const demoJobs = allInstitutionJobs();
     const liveDemoJobs = demoJobs.filter(j=>j.status==='live');
-    const totalJobsCount = demoJobs.length + Object.keys(readPostedJobs()).length;
+    const totalJobsCount = adminStats ? adminStats.total_jobs : demoJobs.length;
 
     document.getElementById('adminStatJobs').textContent = totalJobsCount;
-    document.getElementById('adminStatFaculty').textContent = facultyIds.length;
-    document.getElementById('adminStatInstitutions').textContent = instIds.length;
+    document.getElementById('adminStatFaculty').textContent = adminStats ? adminStats.total_candidates : facultyIds.length;
+    document.getElementById('adminStatInstitutions').textContent = adminStats ? adminStats.total_companies : instIds.length;
     document.getElementById('adminStatApplications').textContent = totalDemoApplicants();
 
-    document.getElementById('adminMiniLive').textContent = liveDemoJobs.length;
+    document.getElementById('adminMiniLive').textContent = adminStats ? adminStats.active_jobs : liveDemoJobs.length;
     const cityCounts = {};
     facultyIds.forEach(id=>{ const c = facultyProfiles[id].tags[2]; cityCounts[c] = (cityCounts[c]||0)+1; });
     const topCity = Object.keys(cityCounts).sort((a,b)=>cityCounts[b]-cityCounts[a])[0];
@@ -101,8 +100,9 @@
       (inst.jobs||[]).slice(0,1).forEach(j=> activity.push({ text:`${inst.name} posted "${j.title}"`, time:j.posted }));
     });
     facultyIds.slice(0,2).forEach(id=>{
-      activity.push({ text:`${facultyProfiles[id].name} joined as new faculty`, time:'this week' });
+      activity.push({ text:`${facultyProfiles[id].name} registered as faculty`, time:'recently' });
     });
+    if(adminStats && adminStats.pending_companies) activity.unshift({ text: adminStats.pending_companies + ' institution(s) waiting for approval', time:'needs action' });
     document.getElementById('adminActivityFeed').innerHTML = activity.map(a=>`
       <div style="padding:10px 0; border-bottom:1px solid var(--line); font-size:13px;">
         <div style="color:var(--ink);">${a.text}</div>
@@ -116,7 +116,7 @@
     const cities = [...new Set(Object.values(facultyProfiles).map(p=>p.tags[2]))].sort();
     cities.forEach(city=>{
       const opt = document.createElement('option');
-      opt.value = city; opt.textContent = city;
+      opt.value = city; opt.textContent = unesc(city);
       sel.appendChild(opt);
     });
   }
@@ -163,7 +163,7 @@
     const cities = [...new Set(Object.values(institutionsData).map(inst=>normalizeCity(inst.city)).filter(Boolean))].sort();
     cities.forEach(city=>{
       const opt = document.createElement('option');
-      opt.value = city; opt.textContent = city;
+      opt.value = city; opt.textContent = unesc(city);
       sel.appendChild(opt);
     });
   }
@@ -184,7 +184,7 @@
     document.getElementById('adminInstitutionsBody').innerHTML = ids.map(id=>{
       const inst = institutionsData[id];
       return `<tr class="clickable" onclick="openInstitutionProfile('${id}')">
-        <td class="admin-row-name">${inst.name}</td>
+        <td class="admin-row-name">${inst.name} <span class="admin-pill ${inst.verification}">${inst.verification}</span></td>
         <td><span class="admin-pill ${inst.type}">${institutionTypeLabel(inst.type)}</span></td>
         <td>${inst.contact}</td>
         <td>${inst.city}</td>
@@ -211,17 +211,20 @@
         <td>${j.instName}</td>
         <td>${j.category}</td>
         <td>${j.location}</td>
-        <td><span class="admin-pill ${j.status}">${j.status==='live' ? 'Live' : 'Closed'}</span></td>
+        <td><span class="admin-pill ${j.rawStatus==='published' ? 'live' : (j.rawStatus==='draft' ? 'draft' : 'closed')}">${j.rawStatus==='published' ? 'Live' : (j.rawStatus==='draft' ? 'Draft' : 'Closed')}</span></td>
         <td>${j.applicants}</td>
-      </tr>`).join('') || `<tr><td colspan="6" style="text-align:center; color:var(--ink-faint); padding:22px;">No jobs match this filter.</td></tr>`;
+        <td onclick="event.stopPropagation()">${j.rawStatus==='published'
+          ? `<button class="admin-act" onclick="adminJobAction(${j.id},'unpublish')">Unpublish</button>`
+          : `<button class="admin-act ok" onclick="adminJobAction(${j.id},'publish')">Publish</button>`}<button class="admin-act bad" onclick="adminJobAction(${j.id},'delete')">Delete</button></td>
+      </tr>`).join('') || `<tr><td colspan="7" style="text-align:center; color:var(--ink-faint); padding:22px;">No jobs match this filter.</td></tr>`;
   }
 
   function openFacultyDetail(id){
     const p = facultyProfiles[id];
     if(!p) return;
     document.getElementById('adminDetailAvatarWrap').innerHTML = `<img src="${p.avatar}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;">`;
-    document.getElementById('adminDetailName').textContent = p.name;
-    document.getElementById('adminDetailSub').textContent = p.role;
+    document.getElementById('adminDetailName').textContent = unesc(p.name);
+    document.getElementById('adminDetailSub').textContent = unesc(p.role);
     const statsRows = (p.stats||[]).map(([v,l])=>`<div class="admin-detail-row"><span class="k">${l}</span><span class="v">${v}</span></div>`).join('');
     const expRows = (p.experience||[]).map(([title,meta])=>`<div class="admin-detail-row"><span class="k">${title}</span><span class="v">${meta}</span></div>`).join('');
     const tagsRow = `<div class="admin-detail-row"><span class="k">Qualification / Location</span><span class="v">${(p.tags||[]).join(' · ')}</span></div>`;
@@ -243,21 +246,27 @@
     if(!inst) return;
     currentAdminInstitutionId = id;
     switchAdminTab('institutionProfile');
-    document.getElementById('adminProfileAvatar').textContent = institutionInitials(inst.name);
-    document.getElementById('adminProfileName').textContent = inst.name;
-    document.getElementById('adminProfileMeta').textContent = institutionTypeLabel(inst.type) + ' · ' + inst.city;
+    document.getElementById('adminProfileAvatar').textContent = institutionInitials(unesc(inst.name));
+    document.getElementById('adminProfileName').textContent = unesc(inst.name);
+    document.getElementById('adminProfileMeta').textContent = institutionTypeLabel(inst.type) + ' · ' + unesc(inst.city) + ' · ' + (inst.verification || '');
     const jobs = inst.jobs || [];
     const liveCount = jobs.filter(j=>j.status==='live').length;
     const totalApplicants = jobs.reduce((s,j)=>s+j.applicants,0);
     document.getElementById('adminProfileJobsCount').textContent = jobs.length;
     document.getElementById('adminProfileLiveCount').textContent = liveCount;
     document.getElementById('adminProfileApplicantsCount').textContent = totalApplicants;
-    document.getElementById('adminProfileJoined').textContent = inst.joined;
-    document.getElementById('adminProfileContact').textContent = `${inst.contact} (${inst.designation})`;
-    document.getElementById('adminProfileEmail').textContent = inst.email;
-    document.getElementById('adminProfilePhone').textContent = inst.phone;
-    document.getElementById('adminProfileWebsite').textContent = inst.website;
+    document.getElementById('adminProfileJoined').textContent = unesc(inst.joined);
+    document.getElementById('adminProfileContact').textContent = unesc(`${inst.contact} (${inst.designation})`);
+    document.getElementById('adminProfileEmail').textContent = unesc(inst.email);
+    document.getElementById('adminProfilePhone').textContent = unesc(inst.phone);
+    document.getElementById('adminProfileWebsite').textContent = unesc(inst.website);
 
+    let bar = document.getElementById('adminProfileActions');
+    if(!bar){ bar = document.createElement('div'); bar.id = 'adminProfileActions'; document.getElementById('adminProfileMeta').insertAdjacentElement('afterend', bar); }
+    bar.innerHTML = `<span class="admin-pill ${inst.verification}">${inst.verification}</span>`
+      + (inst.verification !== 'approved' ? `<button class="admin-act ok" onclick="adminCompanyAction('${id}','approve')">Approve</button>` : '')
+      + (inst.verification !== 'rejected' ? `<button class="admin-act" onclick="adminCompanyAction('${id}','reject')">Reject</button>` : '')
+      + (inst.verification !== 'blocked' ? `<button class="admin-act bad" onclick="adminCompanyAction('${id}','block')">Block</button>` : '');
     document.getElementById('adminProfileJobsGrid').innerHTML = jobs.map(j=>`
       <div class="admin-jobcard">
         <div class="admin-jobcard-top">
@@ -279,7 +288,7 @@
 
   // ---------- CSV export helpers ----------
   function csvEscape(val){
-    const s = String(val==null ? '' : val);
+    const s = unesc(String(val==null ? '' : val));
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
   }
   function downloadCSV(filename, rows){
@@ -328,9 +337,18 @@
     return out;
   }
 
-  function downloadInstitutionApplicantsCSV(){
+  async function downloadInstitutionApplicantsCSV(){
     const inst = institutionsData[currentAdminInstitutionId];
     if(!inst) return;
+    try{
+      const apps = [];
+      for(const j of (inst.jobs||[])){
+        const r = await _paged('/admin/applications', { job_id: j.id });
+        r.forEach(a => apps.push([j.title, j.category, j.qualification, j.rawStatus, (a.candidate&&a.candidate.name)||'', (a.candidate&&a.candidate.email)||'', a.status]));
+      }
+      downloadCSV(`upadyay-${unesc(inst.name).replace(/\s+/g,'-').toLowerCase()}-applicants.csv`, [['Job Title','Category','Qualification Required','Job Status','Applicant Name','Applicant Email','Application Status']].concat(apps));
+    }catch(e){ api.toast(e.message); }
+    return;
     const rows = [['Job Title','Category','Qualification Required','Job Status','Applicant Name','Applicant Subject / Role','Applicant Qualification','Applicant Location']];
     (inst.jobs||[]).forEach((j,idx)=>{
       const applicants = applicantsForJob(j, currentAdminInstitutionId, idx);
@@ -339,4 +357,27 @@
       });
     });
     downloadCSV(`upadyay-${inst.name.replace(/\s+/g,'-').toLowerCase()}-applicants.csv`, rows);
+  }
+
+
+  // ---------- admin actions (real API) ----------
+  async function adminCompanyAction(id, action){
+    const inst = institutionsData[id]; if(!inst) return;
+    if(action === 'block' && !confirm('Block ' + unesc(inst.name) + '? Its live jobs will be closed.')) return;
+    try{
+      await api.put('/admin/companies/' + inst.companyId + '/' + action, {});
+      await loadAdminData();
+      api.toast('Institution ' + action + (action === 'reject' ? 'ed' : (action === 'block' ? 'ed' : 'd')) + '.');
+      openInstitutionProfile(id);
+    }catch(e){ api.toast(e.message); }
+  }
+  async function adminJobAction(jobId, action){
+    if(action === 'delete' && !confirm('Delete this job permanently?')) return;
+    try{
+      if(action === 'delete') await api.del('/admin/jobs/' + jobId);
+      else await api.put('/admin/jobs/' + jobId + '/' + action, {});
+      await loadAdminData();
+      renderAdminJobs();
+      api.toast(action === 'delete' ? 'Job deleted.' : 'Job ' + action + 'ed.');
+    }catch(e){ api.toast(e.message); }
   }
