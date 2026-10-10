@@ -1,16 +1,7 @@
 // ---------- Browse jobs page ----------
   // >>> MODIFIED START: job data now has salary, type, location, skills, deadline, logo <<<
   // logo: put a real image URL here (e.g. '../img/logos/kluniversity.png'). Empty = initials tile.
-  const bjJobs = [
-    { title:'Assistant Professor — CSE', org:'KL University', city:'Vijayawada', cat:'Higher Education', tags:['PhD required','Full-time'], skills:['Data Structures','Machine Learning','Research'], salary:'₹60K – 90K/Month', type:'Full Time', mode:'In Office', posted:2, daysLeft:14, applicants:34, color:'var(--blue-700)', initials:'KL', logo:'', minExp:2 },
-    { title:'PGT Physics', org:'Delhi Public School', city:'Hyderabad', cat:'Schools', tags:['PG required','CBSE'], skills:['Physics','CBSE Curriculum','Lab Handling'], salary:'₹35K – 50K/Month', type:'Full Time', mode:'In Office', posted:5, daysLeft:9, applicants:61, color:'var(--green)', initials:'DP', logo:'', minExp:0 },
-    { title:'Senior Lecturer — Commerce', org:'Narayana Junior College', city:'Chennai', cat:'Intermediate', tags:['PG required','MPC/CEC'], skills:['Accountancy','Economics','Exam Prep'], salary:'₹40K – 55K/Month', type:'Full Time', mode:'In Office', posted:6, daysLeft:11, applicants:22, color:'var(--blue-500)', initials:'NR', logo:'', minExp:3 },
-    { title:'TGT Mathematics', org:'Ryan International School', city:'Bengaluru', cat:'Schools', tags:['B.Ed required','CBSE'], skills:['Algebra','Geometry','Classroom Mgmt'], salary:'₹30K – 42K/Month', type:'Full Time', mode:'In Office', posted:1, daysLeft:20, applicants:18, color:'var(--blue-900)', initials:'RI', logo:'', minExp:1 },
-    { title:'Assistant Professor — English', org:'Osmania University', city:'Hyderabad', cat:'Higher Education', tags:['PhD required','NET/SET'], skills:['Literature','Linguistics','Research'], salary:'₹57K – 85K/Month', type:'Full Time', mode:'In Office', posted:9, daysLeft:6, applicants:47, color:'var(--blue-700)', initials:'OU', logo:'', minExp:4 },
-    { title:'Junior Lecturer — Botany', org:'Sri Chaitanya Junior College', city:'Vijayawada', cat:'Intermediate', tags:['PG required','MPC/BiPC'], skills:['Botany','NEET Prep','Practicals'], salary:'₹30K – 45K/Month', type:'Full Time', mode:'In Office', posted:3, daysLeft:15, applicants:15, color:'var(--blue-500)', initials:'SC', logo:'', minExp:0 },
-    { title:'PRT Primary Teacher', org:'DAV Public School', city:'Delhi', cat:'Schools', tags:['UG required','CBSE'], skills:['Primary Teaching','EVS','Child Psychology'], salary:'₹25K – 35K/Month', type:'Full Time', mode:'In Office', posted:1, daysLeft:18, applicants:29, color:'var(--green)', initials:'DA', logo:'', minExp:0 },
-    { title:'Associate Professor — Management', org:'IIM Ranchi', city:'Ranchi', cat:'Higher Education', tags:['PhD required','UGC-NET'], skills:['Strategy','Case Teaching','Publications'], salary:'₹1.2L – 1.8L/Month', type:'Full Time', mode:'In Office', posted:14, daysLeft:4, applicants:53, color:'var(--blue-900)', initials:'IR', logo:'', minExp:6 },
-  ];
+  let bjJobs = [];   // filled from GET /jobs by bkLoadBrowseJobs() in js/backend.js
 
   // >>> MODIFIED END <<<
 
@@ -36,7 +27,7 @@
       const bjTopImg = document.getElementById('bjTopAvatarImg');
       if(bjTopImg && currentUser.avatar) bjTopImg.src = currentUser.avatar;
     }
-    renderBrowseJobs();
+    if(typeof bkLoadBrowseJobs === 'function') bkLoadBrowseJobs(); else renderBrowseJobs();
   }
   // >>> MODIFIED START: SVG icon set (replaces emoji) <<<
   const BJ_ICONS = {
@@ -119,10 +110,10 @@
         <div class="bj-card-foot">
           <div class="bj-card-dates">
             <span>${BJ_ICONS.calendar}Posted ${j.posted} day${j.posted===1?'':'s'} ago</span>
-            <span>${BJ_ICONS.hourglass}${j.daysLeft} days left</span>
+            <span>${BJ_ICONS.hourglass}${j.daysLeft===null ? 'Open until filled' : j.daysLeft + ' days left'}</span>
             <span>${BJ_ICONS.users}${j.applicants} applicants</span>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="applyToJob('${safeTitle}')">Apply</button>
+          <button class="btn btn-primary btn-sm" data-apply-job="${j.id}" data-title="${pfEsc(j.title)}" onclick="applyToJob(${j.id}, this.dataset.title)">Apply</button>
         </div>
       </div>`;
     }).join('');
