@@ -350,6 +350,7 @@
       const confirmPwInput = document.getElementById('authConfirmPasswordInput');
       const confirmPw = confirmPwInput ? confirmPwInput.value : '';
       if(pass !== confirmPw) return showErr('Passwords do not match.');
+      if(pass.length < 8 || !/[A-Za-z]/.test(pass) || !/\d/.test(pass)) return showErr('Password must be at least 8 characters and include letters and numbers.');
       if(isCompanyRole){
         companyName = document.getElementById('authCompanyNameInput').value.trim();
         name = document.getElementById('authContactPersonInput').value.trim();
