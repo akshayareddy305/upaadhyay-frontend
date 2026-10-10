@@ -11,7 +11,24 @@
 <style>
 /* login: single centred card, no side panel */
 .auth-page{grid-template-columns:1fr !important;background:#f3f1f7 !important;overflow-y:auto}
-.auth-page .auth-card{margin:32px auto !important;border-radius:18px !important;box-shadow:0 10px 40px rgba(75,31,158,.12) !important;padding:40px 36px !important}
+.auth-page .auth-card{margin:20px auto !important;border-radius:16px !important;box-shadow:0 10px 40px rgba(75,31,158,.12) !important;padding:26px 26px !important;max-width:380px !important}
+/* compact sizing */
+.auth-card h2{font-size:24px !important;margin-bottom:4px !important;letter-spacing:-.5px}
+.auth-card .sub{font-size:14px !important}
+.auth-card .ap-page-tag{font-size:11px;padding:3px 10px;margin-bottom:8px !important}
+.auth-card form{margin-top:10px !important}
+.as-social{gap:10px;margin:12px 0 4px}
+.as-social button{padding:9px;font-size:14px;gap:8px}
+.as-social svg{width:18px;height:18px}
+.as-or{font-size:12.5px;margin-top:10px}
+.ap-step-label{font-size:13.5px !important;margin:12px 0 8px !important}
+.auth-card .modal-tabs{gap:10px;margin-bottom:12px !important}
+.auth-card .modal-tab{padding:9px;font-size:13.5px}
+.auth-card .modal-field label{font-size:13.5px !important;margin-bottom:5px}
+.auth-card .modal-field input,.auth-card .modal-field select{padding:10px 12px !important;font-size:14px !important}
+.auth-step .btn.btn-primary,.auth-card button[type="submit"]{padding:11px !important;font-size:14.5px !important;margin-top:6px}
+#authSwitchModeLink{font-size:13.5px}
+.ac-switch-role{font-size:12.5px}
 </style>
 </head>
 <body class="page page-auth">
