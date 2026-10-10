@@ -1,4 +1,4 @@
-/* Faculty Profile UI — frontend only, dummy data, no backend. */
+/* Faculty Profile UI — loads/saves through the Laravel API (GET/PUT /candidate/profile, uploads, DELETE /candidate/profile/photo). No demo data. */
 (function(){
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -20,7 +20,6 @@ const OPT={
  linkt:['LinkedIn','Google Scholar','ORCID','ResearchGate','Personal Website','Portfolio','YouTube / Teaching Channel','Other'],
  pref:['Pre-Primary','Primary','Middle School','Secondary School','Senior Secondary','Junior College','Undergraduate / UG','Postgraduate / PG','PhD / Research'],
  exp:['Fresher','1–2 Years','3–5 Years','6–10 Years','11–15 Years','15+ Years']};
-const PIN={'500001':['Telangana','Hyderabad','Hyderabad','Abids'],'440001':['Maharashtra','Nagpur','Nagpur','Sitabuldi'],'560001':['Karnataka','Bengaluru Urban','Bengaluru','MG Road'],'400001':['Maharashtra','Mumbai','Mumbai','Fort'],'110001':['Delhi','New Delhi','New Delhi','Connaught Place'],'411001':['Maharashtra','Pune','Pune','Camp']};
 const SEC=['Personal Details','Account & Contact','Professional Profile','Education & Qualifications','Teaching Qualifications','Employment History','Teaching Experience','Documents','Professional Links','Teaching Preferences','Verification','Profile Preview'];
 const ICON=['user','lock','cap','book','award','briefcase','hourglass','folder','link','target','shield','eye'];
 /* inline SVG icons (Lucide-style, stroke = currentColor) — no emoji anywhere */
@@ -50,17 +49,13 @@ const ic=(n,z=14)=>`<svg class="ic" width="${z}" height="${z}" viewBox="0 0 24 2
 const pill=(c,i,t)=>`<span class="fp-pill ${c}">${ic(i,11)}${t}</span>`;
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 const TAG={req:['t-req','Required'],rec:['t-rec','Recommended'],opt:['t-opt','Optional']};
-const S={open:0,done:{},
- title:'Dr.',first:'Kittu',middle:'',last:'Kumar',dob:'14/03/2000',gender:'Male',headline:'Assistant Professor - Computer Science',
- email:'kittu.kumar@example.com',phone:'+91 98765 43210',phone2:'',pin:'500001',state:'Telangana',district:'Hyderabad',city:'Hyderabad',area:'Abids',addr:'',vis:'Employers Only',
- desig:'Assistant Professor',levels:['Undergraduate / UG','Postgraduate / PG'],subjects:['Computer Science','Data Science'],
- high:"Master's Degree",edu:{ssc:{},hsc:{},ug:{type:'BTech',major:'Computer Science',uni:'JNTU Hyderabad'},pg:{type:'MTech',major:'Computer Science',uni:'IIIT Nagpur'},phd:{},mphil:{},dip:{},oth:{}},
- tq:[],jobs:[{org:'ABC College',desig:'Assistant Professor',dept:'Computer Science',type:'Full Time',level:'Undergraduate / UG',subs:['Computer Science'],start:'2024-01',end:'',cur:true,docs:{}},
-       {org:'XYZ School',desig:'PGT Mathematics',dept:'Mathematics',type:'Full Time',level:'Senior Secondary',subs:['Mathematics'],start:'2021-06',end:'2023-12',cur:false,docs:{}}],
- taught:['Undergraduate / UG'],taughtSubs:['Computer Science'],boards:['University / College Curriculum'],medium:['English'],expLevel:'',
- links:[{t:'LinkedIn',u:'https://linkedin.com/in/kittukumar'}],files:{},
- prefLevels:['Undergraduate / UG'],prefSubs:['Computer Science'],prefJob:['Full Time'],prefWork:'On-site',prefLoc:['Hyderabad'],reloc:'Maybe',salary:'',
- ver:{edu:'none',exp:'none',id:'none'}};
+const blank=()=>({open:0,done:{},savedAt:'',title:'',first:'',middle:'',last:'',dob:'',gender:'',headline:'',email:'',phone:'',phone2:'',pin:'',state:'',district:'',city:'',area:'',addr:'',vis:'Employers Only',
+ desig:'',levels:[],subjects:[],high:'',edu:{ssc:{},hsc:{},ug:{},pg:{},phd:{},mphil:{},dip:{},oth:{}},tq:[],jobs:[],taught:[],taughtSubs:[],boards:[],medium:[],expLevel:'',links:[],files:{},
+ prefLevels:[],prefSubs:[],prefJob:[],prefWork:'',prefLoc:[],reloc:'',salary:'',ver:{edu:'none',exp:'none',id:'none'}});
+let S=blank(),SAVED='',ST={saving:false,busy:{}},_uid=0;
+const RULES={photo:{ext:['jpg','jpeg','png','webp'],mb:2,label:'JPG, PNG or WEBP · Max 2 MB'},resume:{ext:['pdf','doc','docx'],mb:5,label:'PDF, DOC or DOCX · Max 5 MB'},doc:{ext:['pdf','jpg','jpeg','png'],mb:5,label:'PDF, JPG or PNG · Max 5 MB'}};
+const kindOf=p=>p==='photo'?'photo':p==='resume'?'resume':'doc';
+const szt=f=>f&&f.size?` · ${f.size} MB`:'';
 const get=(p,o=S)=>p.split('.').reduce((a,k)=>a==null?a:a[k],o);
 const set=(p,v)=>{const k=p.split('.'),l=k.pop();let o=S;k.forEach(x=>{if(o[x]==null)o[x]={};o=o[x]});o[l]=v};
 const tag=(t,txt)=>{const x=TAG[t]||['t-some',t];return `<span class="fp-tag ${x[0]}">${esc(txt||x[1])}</span>`};
@@ -69,8 +64,9 @@ const I=(p,o={})=>`<input class="fp-in" data-k="${p}" ${o.v?`data-v="${o.v}"`:''
 const SEL=(p,opts,o={})=>`<select class="fp-in" data-k="${p}" ${o.v?`data-v="${o.v}"`:''} ${o.re?`data-re="${o.re}"`:''}><option value="">${o.ph||'Select…'}</option>${opts.map(x=>`<option ${get(p)===x?'selected':''}>${esc(x)}</option>`).join('')}</select>`;
 const RAD=(p,opts)=>`<div class="fp-radio">${opts.map(x=>`<label><input type="radio" name="${p}" data-k="${p}" value="${esc(x)}" ${get(p)===x?'checked':''}>${esc(x)}</label>`).join('')}</div>`;
 const MS=(p,opts,ph)=>{const v=get(p)||[];return `<div class="fp-ms" data-ms="${p}" data-opts="${opts}"><div class="box">${v.map(x=>`<span class="fp-chip">${esc(x)}<u data-rm="${esc(x)}">${ic('x',11)}</u></span>`).join('')}<input placeholder="${v.length?'':esc(ph||'Search & select…')}"></div></div>`};
-const UP=(p,label,t)=>{const f=get(p,S.files)||S.files[p];return `<div class="fp-f"><label>${label}${t?tag(t):''}</label><div class="fp-up ${f?'has':''}" data-up="${p}">${UPin(p)}</div><div class="fp-hint">Accepted: PDF, JPG, JPEG, PNG · Max 5 MB</div></div>`};
-const UPin=p=>{const f=S.files[p];return f?`<span class="nm">${ic('check',13)} ${esc(f.name)}<br><small>${f.size} MB</small></span><button class="fp-btn sm" data-pick="${p}">Replace</button><button class="fp-btn sm dng" data-del="${p}">Remove</button>`:`<span class="nm"><small>No file uploaded</small></span><button class="fp-btn sm" data-pick="${p}">Upload</button>`};
+const UP=(p,label,t)=>{const f=S.files[p];return `<div class="fp-f"><label>${label}${t?tag(t):''}</label><div class="fp-up ${f?'has':''}" data-up="${p}">${UPin(p)}</div><div class="fp-hint">Accepted: ${RULES[kindOf(p)].label}</div></div>`};
+const UPin=p=>{const f=S.files[p],b=ST.busy[p];if(b)return `<span class="nm" role="status"><small>Uploading… please wait</small></span>`;
+ return f?`<span class="nm">${p==='photo'&&f.url?`<img class="fp-thumb" src="${esc(f.url)}" alt="Profile photo preview"> `:ic('check',13)+' '}${esc(f.name)}${f.size?`<br><small>${f.size} MB</small>`:''}</span><button type="button" class="fp-btn sm" data-pick="${p}">Replace</button><button type="button" class="fp-btn sm dng" data-del="${p}">Remove</button>`:`<span class="nm"><small>No file uploaded</small></span><button type="button" class="fp-btn sm" data-pick="${p}">Upload</button>`};
 /* ---------- computed ---------- */
 function age(d){const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d||'');if(!m)return null;const D=+m[1],M=+m[2],Y=+m[3],dt=new Date(Y,M-1,D);if(dt.getMonth()!==M-1||dt.getDate()!==D||dt>new Date()||Y<1930)return null;const n=new Date();let a=n.getFullYear()-Y;if(n<new Date(n.getFullYear(),M-1,D))a--;return a}
 function months(){let t=0;const n=new Date();S.jobs.forEach(j=>{if(!j.start)return;const [y,m]=j.start.split('-').map(Number);let e=n;if(!j.cur){if(!j.end)return;const q=j.end.split('-').map(Number);e=new Date(q[0],q[1]-1)}t+=Math.max(0,(e.getFullYear()-y)*12+e.getMonth()-(m-1))});return t}
@@ -86,16 +82,15 @@ const R={
 0:()=>`<h3>Personal Details</h3><p class="fp-sub">Basic professional identity shown to institutions.</p><div class="fp-grid g3">
  ${F('Title','opt',SEL('title',OPT.title))}${F('First name','req',I('first',{v:'req'}))}${F('Middle name','opt',I('middle'))}${F('Last name','req',I('last',{v:'req'}))}
  ${F('Date of birth','req',I('dob',{v:'dob',ph:'DD / MM / YYYY'})+`<span class="fp-age" id="fpAge"></span>`,{hint:'Age is calculated automatically.'})}${F('Gender','opt',SEL('gender',OPT.gender))}</div>
- <div class="fp-grid" style="margin-top:14px">${F('Profile photo','opt',`<div class="fp-up ${S.files.photo?'has':''}" data-up="photo">${UPin('photo')}</div>`,{hint:'JPG/PNG, max 5 MB'})}
+ <div class="fp-grid" style="margin-top:14px">${F('Profile photo','opt',`<div class="fp-up ${S.files.photo?'has':''}" data-up="photo">${UPin('photo')}</div>`,{hint:RULES.photo.label})}
  ${F('Professional headline','rec',I('headline',{ph:'e.g. Assistant Professor - Computer Science'}))}
- ${F('Email','req',I('email',{v:'email'}))}${F('Phone number','req',I('phone',{v:'phone'}))}${F('Alternative phone','opt',I('phone2'))}</div>
+ ${F('Email','req',I('email',{dis:true}),{hint:'Your login email. It cannot be changed here.'})}${F('Phone number','req',I('phone',{v:'phone'}))}${F('Alternative phone','opt',I('phone2'))}</div>
  <div class="fp-card" style="margin-top:14px"><h4>Location ${tag('req')}</h4><div class="fp-grid g3">
- ${F('PIN code','req',I('pin',{v:'pin',ph:'6-digit PIN'}),{hint:'Try 500001, 440001, 560001, 400001, 110001, 411001'})}${F('State','req',I('state'))}${F('District','opt',I('district'))}${F('City','req',I('city'))}${F('Area','opt',I('area'))}
+ ${F('PIN code','req',I('pin',{v:'pin',ph:'6-digit PIN'}),{hint:'6-digit PIN code'})}${F('State','req',I('state'))}${F('District','opt',I('district'))}${F('City','req',I('city'))}${F('Area','opt',I('area'))}
  ${F('Full address','opt',`<textarea class="fp-in" data-k="addr" rows="2">${esc(S.addr)}</textarea>`,{full:1})}</div><div class="fp-hint" id="fpPinMsg"></div></div>`,
 1:()=>`<h3>Account & Contact</h3><p class="fp-sub">Contact and privacy controls.</p><div class="fp-card"><h4>Account details</h4>
- <div class="fp-row"><span>Email: <b>${esc(S.email)}</b></span>${pill('p-ok','check','Verified')}</div><div class="fp-row"><span>Phone: <b>${esc(S.phone)}</b></span>${pill('p-ok','check','Verified')}</div>
- <div class="fp-row"><span>Login email: <b>${esc(S.email)}</b></span><span class="fp-hint">Change from account settings</span></div></div>
- <div class="fp-card"><h4>Profile visibility ${tag('req')}</h4>${RAD('vis',['Public','Employers Only','Private'])}<div class="fp-hint" style="margin-top:8px">Employers Only: visible to registered institutions. Private: only visible to institutions you apply to.</div></div>
+ <div class="fp-row"><span>Login email: <b>${esc(S.email)||'—'}</b></span></div><div class="fp-row"><span>Phone: <b>${esc(S.phone)||'Not added'}</b></span><span class="fp-hint">Edit in Personal Details</span></div></div>
+ <div class="fp-card"><h4>Profile visibility ${tag('req')}</h4>${RAD('vis',['Public','Employers Only','Private'])}<div class="fp-hint" style="margin-top:8px">Saved with your profile. It will apply once employers can browse faculty profiles.</div></div>
  <div class="fp-note fp-note-i">${ic('lock',14)}<span>We never collect Aadhaar, PAN, bank details, passwords, OTPs or financial information in your faculty profile.</span></div>`,
 2:()=>`<h3>Professional Profile</h3><p class="fp-sub">Helps institutions match you with the right roles.</p><div class="fp-grid">
  ${F('Current designation','req',SEL('desig',OPT.desig,{v:'req'}))}${F('Teaching / target level','req',MS('levels','levels'),{hint:'Drives which qualification fields are shown.'})}
@@ -114,25 +109,25 @@ const R={
  <div class="fp-grid">${F('Experience level','req',SEL('expLevel',OPT.exp),{hint:'Suggested: '+expLabel(m)})}${F('Medium of instruction','rec',MS('medium','medium'))}
  ${F('Classes / levels taught','rec',MS('taught','levels'))}${F('Subjects taught','rec',MS('taughtSubs','subjects'))}${F('Boards / curricula','opt',MS('boards','boards'),{full:1})}</div>`},
 7:()=>{const items=docList();return `<h3>Documents</h3><p class="fp-sub">Everything you have uploaded. Add documents from the relevant sections.</p>
- ${items.length?items.map(d=>`<div class="fp-row"><span>${ic('file',14)} <b>${esc(d[1].name)}</b> <small>${d[1].size} MB · ${esc(d[0])}</small></span><span class="fp-pill p-pend">Pending review</span></div>`).join(''):`<div class="fp-empty">No documents uploaded yet.</div>`}
+ ${items.length?items.map(d=>`<div class="fp-row"><span>${ic('file',14)} <b>${esc(d[1].name)}</b> <small>${esc(d[0])}${szt(d[1])}</small></span><span class="fp-pill p-ok">${ic('check',11)}Uploaded</span></div>`).join(''):`<div class="fp-empty">No documents uploaded yet.</div>`}
  <div class="fp-note" style="margin-top:14px">Identity documents are not needed for a normal profile. If an institution requires them, you'll be asked in a separate step.</div>`},
 8:()=>`<h3>Professional Links</h3><p class="fp-sub">Optional — Google Scholar / ORCID are recommended for research roles.</p><div id="fpLinks">${linksHTML()}</div>
  <div class="fp-card"><h4>Add another link</h4><div class="fp-grid"><div class="fp-f"><select class="fp-in" id="fpLt">${OPT.linkt.map(x=>`<option>${x}</option>`).join('')}</select></div><div class="fp-f"><input class="fp-in" id="fpLu" placeholder="https://…"><div class="fp-err" data-e></div></div></div><button class="fp-btn pri" style="margin-top:10px" data-act="addlink">Add link</button></div>
- <div class="fp-card"><h4>CV / Resume ${tag('rec')}</h4><div class="fp-up ${S.files.resume?'has':''}" data-up="resume">${UPin('resume')}</div><div class="fp-hint">Accepted: PDF, JPG, JPEG, PNG · Max 5 MB</div></div>`,
+ <div class="fp-card"><h4>CV / Resume ${tag('rec')}</h4><div class="fp-up ${S.files.resume?'has':''}" data-up="resume">${UPin('resume')}</div><div class="fp-hint">Accepted: ${RULES.resume.label}</div></div>`,
 9:()=>`<h3>Teaching Preferences</h3><p class="fp-sub">What you're looking for next. All optional.</p><div class="fp-grid">
  ${F('Preferred teaching level','opt',MS('prefLevels','pref'))}${F('Preferred subjects','opt',MS('prefSubs','subjects'))}${F('Preferred job type','opt',MS('prefJob','jobtype'))}
  ${F('Work location','opt',RAD('prefWork',['On-site','Remote','Hybrid']))}${F('Preferred locations','opt',MS('prefLoc','cities','Add cities / states'))}${F('Willing to relocate','opt',RAD('reloc',['Yes','No','Maybe']))}
  ${F('Expected salary','opt',I('salary',{ph:'e.g. ₹ per month'}),{hint:'Never required for profile completion.'})}</div>`,
-10:()=>{const V=(k,l,ready,up)=>{const s=k==='email'||k==='phone'?'ok':S.ver[k];const P={ok:['p-ok',ic('check',11)+'Verified'],pend:['p-pend',ic('clock',11)+'Pending'],upd:['p-upd',ic('alert',11)+'Needs update'],none:['p-no',ic('circle',11)+(k==='id'?'Not submitted':'Not verified')]}[s];
- return `<div class="fp-card"><div class="fp-row" style="border:0;padding:0"><b>${l}</b><span class="fp-pill ${P[0]}">${P[1]}</span></div>${up?`<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button class="fp-btn sm" data-act="ver:${k}">${up}</button>${s!=='none'?`<select class="fp-in" style="width:auto;padding:5px" data-vs="${k}"><option value="pend" ${s==='pend'?'selected':''}>Demo: Pending</option><option value="ok" ${s==='ok'?'selected':''}>Demo: Verified</option><option value="upd" ${s==='upd'?'selected':''}>Demo: Needs Update</option></select>`:''}</div>`:''}</div>`};
- return `<h3>Profile Verification</h3><p class="fp-sub">Status shown to institutions. UI states only — no real verification runs.</p>${V('email','Email')}${V('phone','Phone')}${V('edu','Education',0,'Upload Education Certificate')}${V('exp','Experience',0,'Upload Experience Certificate')}${V('id','Identity',0,'')}
- <div class="fp-note">Identity verification is not required to create a faculty profile. If a specific institution or job needs it, it will appear as a separate process.</div>`},
+10:()=>`<h3>Profile Verification</h3><p class="fp-sub">Document verification is not available yet.</p>
+ <div class="fp-card"><div class="fp-row" style="border:0;padding:0"><b>Email</b><span>${esc(S.email)||'—'}</span></div></div>
+ <div class="fp-card"><div class="fp-row" style="border:0;padding:0"><b>Education, experience &amp; identity</b>${pill('p-no','circle','Not verified')}</div><div class="fp-hint" style="margin-top:8px">Upload certificates in Education and Employment History. Verification by our team will be shown here once it is available.</div></div>
+ <div class="fp-note">Identity verification is not required to create a faculty profile.</div>`,
 11:()=>{const a=age(S.dob),m=months(),ed=(EDU[S.high]||[]).filter(x=>['ug','pg','phd','mphil','dip'].includes(x)).reverse();
  const lab={ug:"Bachelor's",pg:"Master's",phd:'Ph.D.',mphil:'M.Phil',dip:'Diploma'},ch=l=>l&&l.length?l.map(x=>`<span class="fp-chip">${esc(x)}</span>`).join(''):'<span class="fp-hint">Not added</span>';
  const jobs=S.jobs.filter(j=>j.org).map(j=>`<div class="fp-tl"><i class="${j.cur?'cur':''}"></i><div><b>${esc(j.desig)}</b>${j.cur?' '+pill('p-ok','check','Current'):''}<div>${esc(j.org)}${j.dept?' · '+esc(j.dept):''}</div><small>${fmt(j.start)} – ${j.cur?'Present':fmt(j.end)} · ${esc(j.type||'')}</small></div></div>`).join('');
  const eds=ed.map(k=>{const e=S.edu[k]||{};return `<div class="fp-tl"><i></i><div><b>${esc((e.type?e.type+' ':'')+(e.major||lab[k]))}</b><div>${esc(e.uni||'')}</div><small>${esc(lab[k])}${e.end?' · '+esc(e.end):''}</small></div></div>`}).join('');
- return `<div class="fp-pv"><div class="fp-pv-ban"></div><div class="fp-pv-head"><div class="fp-av lg">${esc((S.first[0]||'')+(S.last[0]||''))}</div><div style="flex:1;min-width:200px"><h2>${esc([S.title,S.first,S.middle,S.last].filter(Boolean).join(' '))}</h2><div class="fp-pv-role">${esc(S.headline||S.desig||'')}</div><div class="fp-meta"><span>${ic('pin',13)}${esc([S.city,S.state].filter(Boolean).join(', ')||'Location not set')}</span><span>${ic('clock',13)}${m>=12?Math.floor(m/12)+'+ years':m+' months'} experience</span>${a!==null?`<span>${ic('cal',13)}${a} yrs</span>`:''}</div></div><button class="fp-btn pri" data-go="0">Edit Profile</button></div>
- <div class="fp-pv-badges">${pill('p-ok','check','Email verified')}${pill('p-ok','check','Phone verified')}${S.ver.edu==='ok'?pill('p-ok','check','Education verified'):pill('p-no','circle','Education not verified')}</div>
+ return `<div class="fp-pv"><div class="fp-pv-ban"></div><div class="fp-pv-head">${avatarHTML()}<div style="flex:1;min-width:200px"><h2>${esc([S.title,S.first,S.middle,S.last].filter(Boolean).join(' '))}</h2><div class="fp-pv-role">${esc(S.headline||S.desig||'')}</div><div class="fp-meta"><span>${ic('pin',13)}${esc([S.city,S.state].filter(Boolean).join(', ')||'Location not set')}</span><span>${ic('clock',13)}${m>=12?Math.floor(m/12)+'+ years':m+' months'} experience</span>${a!==null?`<span>${ic('cal',13)}${a} yrs</span>`:''}</div></div><button class="fp-btn pri" data-go="0">Edit Profile</button></div>
+ 
  <div class="fp-pv-grid"><div><h5>Teaching levels</h5><div class="fp-chips">${ch(S.levels)}</div><h5>Subjects</h5><div class="fp-chips">${ch(S.subjects)}</div><h5>Links</h5>${S.links.length?S.links.map(l=>`<div class="fp-hint">${ic('link',12)} ${esc(l.t)}</div>`).join(''):'<span class="fp-hint">Not added</span>'}</div>
  <div><h5>Experience</h5>${jobs||'<span class="fp-hint">Fresher / not added</span>'}<h5>Education</h5>${eds||`<span class="fp-hint">${esc(S.high||'Not added')}</span>`}</div></div></div>`}};
 function eduBlock(k){const hi=(EDU[S.high]||[]).slice(-1)[0]===k,rq=hi?'req':(k==='ssc'||k==='hsc'?'rec':'some');const T=(t)=>tag(rq==='some'?'Required for some jobs':rq,rq==='some'?t:undefined);
@@ -158,48 +153,42 @@ function linksHTML(){return S.links.length?S.links.map((l,i)=>`<div class="fp-ro
 function docList(){const nm={photo:'Profile photo',resume:'Resume',phdcert:'Ph.D. certificate',ugcert:"Bachelor's certificate",pgcert:"Master's certificate",mphilcert:'M.Phil certificate',dipcert:'Diploma certificate',othcert:'Certificate'};return Object.entries(S.files).map(([k,f])=>[nm[k]||(/^tq/.test(k)?'Teaching qualification':/^j\d/.test(k)?'Employment document':'Document'),f])}
 /* ---------- shell ---------- */
 function heroHTML(){const c=completion(),m=months(),nx=c.rec.find(x=>!x[1]),miss=c.req.find(x=>!x[1]);
- return `<div class="fp-hero"><div class="fp-hero-l"><div class="fp-av lg">${esc((S.first[0]||'')+(S.last[0]||'')||'?')}</div><div><h2>${esc([S.title,S.first,S.last].filter(Boolean).join(' ')||'Your name')}</h2><p>${esc(S.headline||S.desig||'Add a professional headline')}</p><div class="fp-meta"><span>${ic('pin',13)}${esc(S.city||'Add location')}</span><span>${ic('cap',13)}${esc(S.high||'Add qualification')}</span><span>${ic('clock',13)}${m>=12?Math.floor(m/12)+'+ yrs':m+' mo'}</span></div></div></div>
+ return `${bannerHTML()}<div class="fp-hero"><div class="fp-hero-l">${avatarHTML()}<div><h2>${esc([S.title,S.first,S.last].filter(Boolean).join(' ')||'Your name')}</h2><p>${esc(S.headline||S.desig||'Add a professional headline')}</p><div class="fp-meta"><span>${ic('pin',13)}${esc(S.city||'Add location')}</span><span>${ic('cap',13)}${esc(S.high||'Add qualification')}</span><span>${ic('clock',13)}${m>=12?Math.floor(m/12)+'+ yrs':m+' mo'}</span></div></div></div>
  <div class="fp-hero-r"><div class="fp-ring" style="--p:${c.p}"><span>${c.p}%</span></div><div><b>Profile strength</b><small>${miss?'Complete: '+miss[0]:nx?'Next: '+nx[0]:'Looking great!'}</small></div></div>
  <div class="fp-steps">${c.req.map(x=>`<span class="st ${x[1]?'ok':'no'}">${ic(x[1]?'check':'circle',13)}<span>${x[0]}</span></span>`).join('')}${c.rec.map(x=>`<span class="st rec ${x[1]?'ok':''}" ${x[1]?'':`data-go="${x[2]}"`}>${ic(x[1]?'check':'plus',13)}<span>${x[1]?cap(x[0].replace(/^Add /,'')):x[0]}</span></span>`).join('')}</div></div>`}
 function shell(){
- $('#fpRoot').innerHTML=`<div id="fpHero"></div><div class="fp-wrap"><nav class="fp-nav" id="fpNav">${SEC.map((s,i)=>`<button data-go="${i}"><span class="n">${ic(ICON[i],14)}</span>${s}<em>${ic('check',14)}</em></button>`).join('')}</nav><div>${SEC.map((s,i)=>`<section class="fp-sec" data-i="${i}"><header data-go="${i}" data-tog="1"><span class="fp-hl">${ic(ICON[i],15)}${s}</span></header><div class="fp-body"></div></section>`).join('')}</div></div>`;
+ $('#fpRoot').innerHTML=`<div id="fpHero"></div><div class="fp-wrap"><nav class="fp-nav" id="fpNav">${SEC.map((s,i)=>`<button data-go="${i}"><span class="n">${ic(ICON[i],14)}</span>${s}<em>${ic('check',14)}</em></button>`).join('')}</nav><div>${SEC.map((s,i)=>`<section class="fp-sec" data-i="${i}"><header data-go="${i}" data-tog="1" role="button" tabindex="0" aria-expanded="${i===S.open}"><span class="fp-hl">${ic(ICON[i],15)}${s}</span></header><div class="fp-body"></div></section>`).join('')}</div></div>`;
  SEC.forEach((_,i)=>renderSec(i));paint()}
-function renderSec(i){const b=$(`.fp-sec[data-i="${i}"] .fp-body`);if(!b)return;b.innerHTML=R[i]()+(i<11?`<div class="fp-actions"><button class="fp-btn" data-back>Back</button><div><button class="fp-btn" data-act="draft">Save Draft</button><button class="fp-btn" data-next>Next</button><button class="fp-btn pri" data-act="save">Save & Continue</button></div></div>`:'');if(i===0)ageUpd()}
+function renderSec(i){const b=$(`.fp-sec[data-i="${i}"] .fp-body`);if(!b)return;b.innerHTML=R[i]()+(i<11?`<div class="fp-actions"><button type="button" class="fp-btn" data-back>Back</button><div><button type="button" class="fp-btn" data-act="draft" data-sv>Save</button><button type="button" class="fp-btn" data-next>Next</button><button type="button" class="fp-btn pri" data-act="save" data-sv>Save & Continue</button></div></div>`:'');if(i===0)ageUpd();a11y(b)}
 function paint(){$$('.fp-sec').forEach(s=>s.classList.toggle('open',+s.dataset.i===S.open));$$('#fpNav button').forEach((b,i)=>{b.classList.toggle('on',i===S.open);b.classList.toggle('done',!!S.done[i]&&i!==S.open)});$('#fpHero').innerHTML=heroHTML()}
 function go(i){S.open=Math.max(0,Math.min(11,i));renderSec(S.open);paint();const el=$(`.fp-sec[data-i="${S.open}"]`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
 function ageUpd(){const e=$('#fpAge');if(!e)return;const a=age(S.dob);e.style.display=a===null?'none':'inline-block';e.textContent='Age: '+a+' years'}
-function toast(t,ok){const d=document.createElement('div');d.className='fp-toast';d.innerHTML=(ok?ic('check',14):'')+esc(t);document.body.appendChild(d);setTimeout(()=>d.remove(),2000)}
+function toast(t,ok,bad){const d=document.createElement('div');d.className='fp-toast'+(bad?' bad':'');d.setAttribute('role',bad?'alert':'status');d.innerHTML=(ok?ic('check',14):bad?ic('alert',14):'')+esc(t);document.body.appendChild(d);setTimeout(()=>d.remove(),bad?5000:2500)}
 /* validation */
 function check(el){const r=el.dataset.v,v=el.value.trim();let m='';
  if(r==='req'&&!v)m='This field is required.';
  else if(r==='dob'){if(!v)m='This field is required.';else if(age(v)===null)m='Please enter a valid date of birth.'}
  else if(r==='email'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))m=v?'Please enter a valid email address.':'This field is required.';
- else if(r==='phone'&&!/^[+\d][\d\s-]{8,}$/.test(v))m=v?'Please enter a valid phone number.':'This field is required.';
+ else if(r==='phone'&&!/^\+?\d[\d\s-]{7,18}$/.test(v))m=v?'Please enter a valid phone number.':'This field is required.';
  else if(r==='pin'&&!/^\d{6}$/.test(v))m=v?'Enter a valid 6-digit PIN code.':'This field is required.';
  else if(r==='url'&&v&&!/^https?:\/\/[^\s.]+\.[^\s]{2,}$/i.test(v))m='Please enter a valid website URL.';
- el.classList.toggle('bad',!!m);const e=el.closest('.fp-f')&&el.closest('.fp-f').querySelector('[data-e]');if(e)e.textContent=m;return!m}
+ el.classList.toggle('bad',!!m);el.setAttribute('aria-invalid',m?'true':'false');const e=el.closest('.fp-f')&&el.closest('.fp-f').querySelector('[data-e]');if(e)e.textContent=m;return!m}
 function checkSec(){let ok=true,first=null;$$(`.fp-sec.open [data-v]`).forEach(e=>{if(e.disabled)return;if(!check(e)){ok=false;first=first||e}});if(first)first.focus();return ok}
 /* events */
 document.addEventListener('input',e=>{const t=e.target;if(!t.closest||!t.closest('#fpRoot'))return;
  if(t.matches('.fp-ms input')){msOpen(t.closest('.fp-ms'),t.value);return}
  const k=t.dataset.k;if(!k||t.type==='radio'||t.type==='checkbox')return;set(k,t.value);
  if(k==='dob'){ageUpd();if(t.value.length===2||t.value.length===5){}}
- if(k==='pin'&&/^\d{6}$/.test(t.value)){const p=PIN[t.value];if(p){['state','district','city','area'].forEach((f,i)=>set(f,p[i]));$$('[data-k="state"],[data-k="district"],[data-k="city"],[data-k="area"]').forEach((x,i)=>{x.value=p[i]});$('#fpPinMsg').innerHTML=ic('check',12)+' Location auto-filled — you can edit any value.'}else $('#fpPinMsg').textContent='PIN not in demo list — please enter location manually.'}
  clearTimeout(window._fh);window._fh=setTimeout(()=>{$('#fpHero').innerHTML=heroHTML()},250)});
 document.addEventListener('focusout',e=>{const t=e.target;if(t.dataset&&t.dataset.v&&t.closest('#fpRoot'))check(t)});
 document.addEventListener('change',e=>{const t=e.target;if(!t.closest||!t.closest('#fpRoot'))return;
- if(t.dataset.vs){S.ver[t.dataset.vs]=t.value;renderSec(10);paint();return}
  if(t.type==='file'){upload(t);return}
  const k=t.dataset.k;if(!k)return;set(k,t.type==='checkbox'?t.checked:t.value);
  if(t.type==='checkbox'&&/\.cur$/.test(k)){const i=+k.split('.')[1];if(t.checked)S.jobs[i].end='';}
  if(t.dataset.re==='edu'){$('#fpEdu').innerHTML=(EDU[S.high]||[]).map(eduBlock).join('');}
  if(t.dataset.re==='jobs'){$('#fpJobs').innerHTML=jobsHTML()}
  paint()});
-function upload(inp){const p=inp.dataset.p,f=inp.files[0];const box=$(`.fp-up[data-up="${p}"]`);if(!f)return;
- const ok=/\.(pdf|jpe?g|png)$/i.test(f.name),mb=f.size/1048576;let m='';
- if(!ok)m='Unsupported file type. Please upload PDF, JPG, JPEG or PNG.';else if(mb>5)m='File exceeds the 5 MB limit.';
- if(m){box.classList.add('bad');box.classList.remove('has');box.innerHTML=`<span class="nm" style="color:#B42318">${m}</span><button class="fp-btn sm" data-pick="${p}">Try again</button>`;return}
- S.files[p]={name:f.name,size:mb.toFixed(1)};box.classList.remove('bad');box.classList.add('has');box.innerHTML=UPin(p);paint()}
+function upload(inp){const p=inp.dataset.p,f=inp.files[0];if(f)uploadFile(p,f)}
 function msOpen(box,q){let dd=$('.fp-dd',box);if(!dd){dd=document.createElement('div');dd.className='fp-dd';box.appendChild(dd)}
  const p=box.dataset.ms,sel=get(p)||[],all=OPT[box.dataset.opts];q=(q||'').toLowerCase();const l=all.filter(x=>x.toLowerCase().includes(q));
  dd.innerHTML=l.length?l.map(x=>`<div data-opt="${esc(x)}" class="${sel.includes(x)?'sel':''}">${sel.includes(x)?ic('check',12):''}${esc(x)}</div>`).join(''):`<em>No match</em>`}
@@ -213,20 +202,84 @@ document.addEventListener('click',e=>{const t0=e.target;if(!t0.closest)return;co
  $$('.fp-dd').forEach(d=>d.remove());
  const b=t.closest('[data-go]');if(b){if(b.dataset.tog&&+b.dataset.go===S.open){S.open=-1;paint()}else go(+b.dataset.go);return}
  if(t.matches('[data-next]')){go(S.open+1);return}if(t.matches('[data-back]')){go(S.open-1);return}
- if(t.dataset.pick){const i=document.createElement('input');i.type='file';i.accept='.pdf,.jpg,.jpeg,.png';i.dataset.p=t.dataset.pick;i.style.display='none';root.appendChild(i);i.onchange=()=>{upload(i);i.remove()};i.click();return}
- if(t.dataset.del){delete S.files[t.dataset.del];const bx=$(`.fp-up[data-up="${t.dataset.del}"]`);bx.classList.remove('has');bx.innerHTML=UPin(t.dataset.del);paint();return}
+ if(t.dataset.pick){const i=document.createElement('input');i.type='file';i.accept=RULES[kindOf(t.dataset.pick)].ext.map(x=>'.'+x).join(',');i.dataset.p=t.dataset.pick;i.style.display='none';root.appendChild(i);i.onchange=()=>{upload(i);i.remove()};i.click();return}
+ if(t.dataset.del){removeFile(t.dataset.del);return}
  const a=t.dataset.act;if(!a)return;const [x,y]=a.split(':');
- if(x==='draft'){toast('Draft saved');return}
- if(x==='save'){if(!checkSec()){toast('Please fix the highlighted fields');return}S.done[S.open]=1;toast('Section saved',1);go(S.open+1);return}
+ if(x==='draft'){saveProfile();return}
+ if(x==='save'){if(!checkSec()){toast('Please fix the highlighted fields',0,1);return}const sec=S.open,had=S.done[sec];S.done[sec]=1;saveProfile(true).then(ok=>{if(ok)go(sec+1);else{if(!had)delete S.done[sec];paint()}});return}
+ if(x==='retry'){retryLoad();return}
+ if(x==='discard'){if(confirm('Discard all unsaved changes?')){load();shell();toast('Changes discarded',1)}return}
  if(x==='addjob'){S.jobs.push({org:'',desig:'',dept:'',type:'',level:'',subs:[],start:'',end:'',cur:false,docs:{}});$('#fpJobs').innerHTML=jobsHTML();return}
- if(x==='rmjob'){S.jobs.splice(+y,1);$('#fpJobs').innerHTML=jobsHTML();paint();return}
+ if(x==='rmjob'){if(!confirm('Remove this employment entry and its uploaded documents?'))return;dropFiles(+y,/^j(\d+)(exp|app|rel)$/).then(()=>{S.jobs.splice(+y,1);$('#fpJobs').innerHTML=jobsHTML();paint()});return}
  if(x==='addtq'){const v=$('#fpTqSel').value;if(!v)return;S.tq.push({name:v});$('#fpTq').innerHTML=S.tq.map(tqCard).join('');return}
- if(x==='rmtq'){S.tq.splice(+y,1);renderSec(4);return}
+ if(x==='rmtq'){if(!confirm('Remove this qualification and its uploaded certificate?'))return;dropFiles(+y,/^tq(\d+)()$/).then(()=>{S.tq.splice(+y,1);renderSec(4);paint()});return}
  if(x==='addlink'){const u=$('#fpLu');u.dataset.v='url';const bad=!u.value.trim()?(u.classList.add('bad'),u.nextElementSibling.textContent='This field is required.',1):!check(u);if(bad)return;S.links.push({t:$('#fpLt').value,u:u.value.trim()});$('#fpLinks').innerHTML=linksHTML();u.value='';paint();toast('Link added',1);return}
- if(x==='rmlink'){S.links.splice(+y,1);$('#fpLinks').innerHTML=linksHTML();paint();return}
+ if(x==='rmlink'){if(!confirm('Remove this link?'))return;S.links.splice(+y,1);$('#fpLinks').innerHTML=linksHTML();paint();return}
  if(x==='editlink'){const l=S.links.splice(+y,1)[0];$('#fpLinks').innerHTML=linksHTML();$('#fpLt').value=l.t;$('#fpLu').value=l.u;$('#fpLu').focus();paint();return}
- if(x==='ver'){S.ver[y]='pend';renderSec(10);paint();toast('Submitted — status: Pending')}
 });
-window.fpMount=function(){if($('#fpRoot')&&!$('#fpRoot').dataset.m){$('#fpRoot').dataset.m=1;shell()}};
-fpMount();
+
+/* ---------- real data: load / save / upload / sync ---------- */
+const PERSIST=()=>{const o=JSON.parse(JSON.stringify(S));delete o.open;delete o.email;const f={};Object.keys(o.files||{}).forEach(k=>{if(k!=='photo'&&o.files[k]&&o.files[k].id)f[k]={id:o.files[k].id,name:o.files[k].name,size:o.files[k].size,url:o.files[k].url||''}});o.files=f;return o};
+const snap=()=>JSON.stringify(PERSIST()),dirty=()=>snap()!==SAVED;
+const isoDob=d=>{const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d||'');return m?`${m[3]}-${m[2]}-${m[1]}`:''};
+const PLACEHOLDER=u=>!u||u.indexOf('data:')===0;
+function load(){const U=window.currentUser||{};S=Object.assign(blank(),JSON.parse(JSON.stringify(U.fp||{})));S.open=0;
+ S.email=U.email||'';S.phone=U.phone||'';
+ if(!S.first&&!S.last&&U.name){const tm=/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i.exec(U.name);if(tm&&!S.title)S.title=({dr:'Dr.',prof:'Prof.',mr:'Mr.',ms:'Ms.',mrs:'Mrs.'})[tm[1].toLowerCase()];const n=U.name.replace(/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i,'').trim().split(/\s+/);S.first=n.shift()||'';S.last=n.join(' ')}
+ if(!S.dob&&/^\d{4}-\d{2}-\d{2}$/.test(U.dob||'')){const q=U.dob.split('-');S.dob=q[2]+'/'+q[1]+'/'+q[0]}
+ if(!S.city&&U.city)S.city=U.city;if(!S.state&&U.state)S.state=U.state;if(!S.desig&&U.currentDesignation)S.desig=U.currentDesignation;
+ if(!PLACEHOLDER(U.avatar))S.files.photo={name:'Profile photo',url:U.avatar};
+ SAVED=snap()}
+function avatarHTML(){const f=S.files.photo,ini=esc((S.first[0]||'')+(S.last[0]||'')||'?');return `<div class="fp-av lg">${f&&f.url?`<img src="${esc(f.url)}" alt="">`:ini}</div>`}
+function bannerHTML(){let h='';if(!S.savedAt)h+=`<div class="fp-banner" role="note"><div><b>Create your faculty profile</b><div class="fp-hint">You haven't saved a profile yet. Fill in your details and press Save &amp; Continue.</div></div><button type="button" class="fp-btn pri" data-go="0">Create profile</button></div>`;
+ if(dirty())h+=`<div class="fp-banner warn" role="status"><div><b>Unsaved changes</b></div><div><button type="button" class="fp-btn" data-act="discard">Discard</button> <button type="button" class="fp-btn pri" data-act="draft" data-sv>Save now</button></div></div>`;return h}
+function setBusy(on){ST.saving=on;$$('#fpRoot [data-sv]').forEach(b=>{b.disabled=on;b.setAttribute('aria-busy',on?'true':'false')})}
+const KEYS=['name','phone','gender','dob','city','state','location','currentDesignation','experience','avatar','fp'];
+function applyToUser(){const U=window.currentUser,m=months();
+ U.name=[S.title,S.first,S.middle,S.last].filter(Boolean).join(' ')||U.name;U.phone=S.phone;U.gender=S.gender;U.dob=isoDob(S.dob);U.city=S.city;U.state=S.state;
+ U.location=[S.city,S.state].filter(Boolean).join(', ');U.currentDesignation=S.desig;U.experience=String(Math.round(m/12*10)/10);S.savedAt=S.savedAt||new Date().toISOString();U.fp=PERSIST()}
+function softCheck(){const bad=[];if(S.phone&&!/^\+?\d[\d\s-]{7,18}$/.test(S.phone))bad.push('Enter a valid phone number.');if(S.dob&&age(S.dob)===null)bad.push('Enter a valid date of birth (DD/MM/YYYY).');return bad}
+function showServerErrors(e){const er=e&&e.errors;if(er){const map={phone:'phone',date_of_birth:'dob',name:'first',gender:'gender'};Object.keys(er).forEach(k=>{const f=map[k]&&$(`[data-k="${map[k]}"]`);if(f){f.classList.add('bad');const x=f.closest('.fp-f')&&f.closest('.fp-f').querySelector('[data-e]');if(x)x.textContent=String([].concat(er[k])[0])}})}}
+function refreshChrome(){try{if(typeof refreshDashTopAccount==='function')refreshDashTopAccount();if(typeof updateNavForLogin==='function')updateNavForLogin()}catch(e){}paint()}
+async function saveProfile(validated){if(ST.saving)return false;const bad=softCheck();if(bad.length){toast(bad[0],0,1);return false}
+ const U=window.currentUser,prev={};KEYS.forEach(k=>prev[k]=U[k]===undefined?undefined:JSON.parse(JSON.stringify(U[k])));
+ setBusy(true);
+ try{applyToUser();await window.bkSaveSeekerProfile();SAVED=snap();refreshChrome();toast('Profile saved',1);return true}
+ catch(e){KEYS.forEach(k=>{if(prev[k]===undefined)delete U[k];else U[k]=prev[k]});S.savedAt=U.fp&&U.fp.savedAt||'';showServerErrors(e);
+  toast(e&&e.status===0?'Could not reach the server. Your changes are still on this page — try again.':'Could not save: '+((e&&e.message)||'unknown error'),0,1);return false}
+ finally{setBusy(false);paint()}}
+function checkFile(p,f){const r=RULES[kindOf(p)],ext=(f.name.split('.').pop()||'').toLowerCase();if(f.name.indexOf('.')<0||r.ext.indexOf(ext)<0)return 'Unsupported file type. Accepted: '+r.label.split(' · ')[0]+'.';if(f.size>r.mb*1048576)return 'File exceeds the '+r.mb+' MB limit.';if(f.size===0)return 'This file is empty.';return''}
+const DOCNAME=p=>({resume:'Resume',phdcert:'Ph.D. certificate',ugcert:"Bachelor's certificate",pgcert:"Master's certificate",mphilcert:'M.Phil certificate',dipcert:'Diploma certificate',othcert:'Certificate'}[p]||(/^tq/.test(p)?'Teaching qualification certificate':/^j\d/.test(p)?'Employment document':'Document'));
+function paintUp(p,msg){const box=$(`.fp-up[data-up="${p}"]`);if(!box)return;box.classList.toggle('has',!!S.files[p]);box.classList.toggle('bad',!!msg);box.innerHTML=msg?`<span class="nm" role="alert" style="color:#B42318">${esc(msg)}</span><button type="button" class="fp-btn sm" data-pick="${p}">Try again</button>`:UPin(p);paint()}
+async function uploadFile(p,f){if(ST.busy[p]||ST.saving)return;const m=checkFile(p,f);if(m){paintUp(p,m);return}
+ const k=kindOf(p),fd=new FormData(),prev=S.files[p];fd.append('file',f,f.name);let path;
+ if(k==='photo'){path='/files/upload';fd.append('category','profile_photo')}else if(k==='resume'){path='/candidate/resume'}else{path='/candidate/certificates';fd.append('name',DOCNAME(p))}
+ ST.busy[p]=1;paintUp(p);
+ try{const d=await api.post(path,fd),file=d&&d.file?d.file:d;if(!file||!file.id)throw new Error('The server did not confirm the upload.');
+  if(k==='photo'&&!file.url)throw new Error('Photo stored, but the server has no public file URL configured (AWS_URL), so it cannot be shown.');
+  S.files[p]={id:file.id,name:file.original_name||f.name,size:(f.size/1048576).toFixed(1),url:file.url||''};
+  delete ST.busy[p];paintUp(p);
+  if(k==='photo'){window.currentUser.avatar=file.url;if(typeof saveState==='function')saveState();refreshChrome();toast('Photo updated',1)}
+  else if(await saveProfile())toast('File uploaded',1);else toast('File uploaded, but the profile was not saved. Press Save.',0,1)}
+ catch(e){delete ST.busy[p];if(prev)S.files[p]=prev;else delete S.files[p];paintUp(p,(e&&e.message)||'Upload failed. Please try again.')}}
+async function removeFile(p){const f=S.files[p];if(!f||ST.busy[p]||ST.saving)return;if(!confirm('Remove this file?'))return;ST.busy[p]=1;paintUp(p);
+ try{if(p==='photo'){await api.del('/candidate/profile/photo');window.currentUser.avatar=window.DEFAULT_USER?DEFAULT_USER.avatar:'';delete S.files.photo;if(typeof saveState==='function')saveState();delete ST.busy[p];paintUp(p);refreshChrome();toast('Photo removed',1)}
+  else{if(f.id)await api.del('/files/'+f.id);delete S.files[p];delete ST.busy[p];paintUp(p);if(await saveProfile())toast('File removed',1)}}
+ catch(e){delete ST.busy[p];paintUp(p);toast('Could not remove the file: '+((e&&e.message)||'error'),0,1)}}
+async function dropFiles(i,re){const ks=Object.keys(S.files),out={};for(const k of ks){const m=re.exec(k);if(!m){out[k]=S.files[k];continue}const n=+m[1];if(n===i){const f=S.files[k];if(f&&f.id){try{await api.del('/files/'+f.id)}catch(e){}}}else if(n>i){out[k.replace(/\d+/,n-1)]=S.files[k]}else out[k]=S.files[k]}S.files=out}
+let uidN=0;function a11y(root){$$('.fp-f',root).forEach(f=>{const l=$('label',f),c=$('input:not([type=radio]):not([type=checkbox]):not([type=file]),select,textarea',f);if(!l||!c)return;if(!c.id)c.id='fpc'+(++uidN);l.htmlFor=c.id;const e=$('[data-e]',f);if(e){e.id=c.id+'-e';e.setAttribute('role','alert');c.setAttribute('aria-describedby',e.id)}if(/Required/.test(l.textContent))c.setAttribute('aria-required','true')})}
+window.addEventListener('beforeunload',e=>{if($('#fpRoot')&&$('#fpRoot').dataset.m&&dirty()){e.preventDefault();e.returnValue=''}});
+document.addEventListener('keydown',e=>{const t=e.target;if(!t.closest||!t.closest('#fpRoot'))return;
+ if(t.matches('header[data-tog]')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();t.click();return}
+ if(t.matches('.fp-ms input')){if(e.key==='Escape'){$$('.fp-dd').forEach(d=>d.remove())}if(e.key==='Enter'){e.preventDefault();const o=$('.fp-dd [data-opt]',t.closest('.fp-ms'));if(o)o.click()}}});
+let _lastRefresh=Date.now();
+window.addEventListener('focus',async()=>{const r=$('#fpRoot');if(!r||!r.dataset.m||dirty()||ST.saving||Object.keys(ST.busy).length||Date.now()-_lastRefresh<30000||!window.bkRefreshSeeker)return;_lastRefresh=Date.now();
+ try{await bkRefreshSeeker();const before=SAVED,o=S.open;load();if(SAVED!==before){S.open=o;shell();refreshChrome()}}catch(e){}});
+async function retryLoad(){const r=$('#fpRoot');r.innerHTML='<div class="fp-empty" role="status">Loading your profile…</div>';try{await bkRefreshSeeker();delete r.dataset.m;window.bkProfileLoaded=true;fpMount()}catch(e){errView(r,e)}}
+function errView(r,e){r.innerHTML=`<div class="fp-banner warn" role="alert"><div><b>We couldn't load your profile</b><div class="fp-hint">${esc((e&&e.message)||window.bkProfileError||'Network error')}. Nothing has been changed.</div></div><button type="button" class="fp-btn pri" data-act="retry">Retry</button></div>`}
+window.fpMount=async function(){const r=$('#fpRoot');if(!r||r.dataset.m)return;r.innerHTML='<div class="fp-empty" role="status">Loading your profile…</div>';
+ try{if(window.bkHydrate)await bkHydrate()}catch(e){}
+ if(window.bkProfileLoaded!==true){errView(r);return}
+ r.dataset.m=1;load();shell()};
+
 })();
