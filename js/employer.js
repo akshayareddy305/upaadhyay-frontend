@@ -255,13 +255,13 @@
     document.getElementById('cpAvatar').style.backgroundImage = `url('${p.avatar}')`;
     document.getElementById('cpName').textContent = p.name;
     document.getElementById('cpRole').textContent = p.role;
-    document.getElementById('cpTags').innerHTML = p.tags.map(t=>`<span class="hp-tag">${t}</span>`).join('');
+    document.getElementById('cpTags').innerHTML = p.tags.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('');
     document.getElementById('cpAbout').textContent = p.about || '';
-    document.getElementById('cpStats').innerHTML = p.stats.map(([num,label])=>`<div class="hp-stat"><span class="num tabular">${num}</span><span class="label">${label}</span></div>`).join('');
-    document.getElementById('cpExperience').innerHTML = p.experience.map(([t1,t2])=>`<div class="slide-exp-item"><div class="slide-exp-dot"></div><div><div class="t1">${t1}</div><div class="t2">${t2}</div></div></div>`).join('');
-    document.getElementById('cpEducation').innerHTML = (p.education||[]).map(([t1,t2])=>`<div class="slide-exp-item"><div class="slide-exp-dot"></div><div><div class="t1">${t1}</div><div class="t2">${t2}</div></div></div>`).join('');
-    document.getElementById('cpSkills').innerHTML = (p.skills||[]).map(s=>`<span class="hp-tag">${s}</span>`).join('');
-    document.getElementById('cpLinks').innerHTML = p.links.map(([label,type])=>`<a class="slide-link" href="javascript:void(0)">${docIcon(type)}${label}</a>`).join('');
+    document.getElementById('cpStats').innerHTML = p.stats.map(([num,label])=>`<div class="hp-stat"><span class="num tabular">${jbEsc(num)}</span><span class="label">${jbEsc(label)}</span></div>`).join('');
+    document.getElementById('cpExperience').innerHTML = p.experience.map(([t1,t2])=>`<div class="slide-exp-item"><div class="slide-exp-dot"></div><div><div class="t1">${jbEsc(t1)}</div><div class="t2">${jbEsc(t2)}</div></div></div>`).join('');
+    document.getElementById('cpEducation').innerHTML = (p.education||[]).map(([t1,t2])=>`<div class="slide-exp-item"><div class="slide-exp-dot"></div><div><div class="t1">${jbEsc(t1)}</div><div class="t2">${jbEsc(t2)}</div></div></div>`).join('');
+    document.getElementById('cpSkills').innerHTML = (p.skills||[]).map(s=>`<span class="hp-tag">${jbEsc(s)}</span>`).join('');
+    document.getElementById('cpLinks').innerHTML = p.links.map(([label,type,fid])=>`<a class="slide-link" href="javascript:void(0)" ${fid?`onclick="bkOpenFile(${fid})"`:''}>${docIcon(type)}${jbEsc(label)}</a>`).join('');
     document.getElementById('cpCollege').textContent = p.college || '—';
 
     // Roles / departments the candidate is interested in
@@ -279,8 +279,8 @@
       cpInterests.innerHTML = rows.length
         ? rows.map(([label,vals])=>`
             <div class="cp-interest-row">
-              <div class="cp-interest-label">${label}</div>
-              <div class="jc-tags">${vals.map(v=>`<span class="hp-tag">${v}</span>`).join('')}</div>
+              <div class="cp-interest-label">${jbEsc(label)}</div>
+              <div class="jc-tags">${vals.map(v=>`<span class="hp-tag">${jbEsc(v)}</span>`).join('')}</div>
             </div>`).join('')
         : '<p class="slide-side-note">Not specified by the candidate yet.</p>';
     }
@@ -374,8 +374,8 @@
       <div class="job-card" onclick="openApplicantsView('${id}')" style="cursor:pointer;">
         <div class="job-card-top">
           <div class="job-logo" style="width:34px; height:34px; border-radius:8px; ${companyLogoStyle()}"></div>
-          <div><p class="jc-title">${job.title}</p><p class="jc-org">${[job.category,job.qualification,job.location].filter(Boolean).join(' · ') || 'Posted just now'}</p>${jobExtra(job) ? `<p class="jc-org" style="white-space:normal; margin-top:3px;">${jbEsc(jobExtra(job))}</p>` : ''}${typeof instJobMeta==='function' ? instJobMeta(job) : ''}</div>
-          <span class="badge-live">Live</span>
+          <div><p class="jc-title">${jbEsc(job.title)}</p><p class="jc-org">${jbEsc([job.category,job.qualification,job.location].filter(Boolean).join(' · ') || 'Posted just now')}</p>${jobExtra(job) ? `<p class="jc-org" style="white-space:normal; margin-top:3px;">${jbEsc(jobExtra(job))}</p>` : ''}${typeof instJobMeta==='function' ? instJobMeta(job) : ''}</div>
+          ${bkStatusBadge(job)}
         </div>
         <div class="jc-foot">
           <span class="jc-posted">${count} ${count===1?'applicant':'applicants'}</span>
@@ -483,17 +483,17 @@
       <div class="job-card profile-card profile-card-banner" onclick="openProfile('${id}')" style="cursor:pointer;">
         <div class="pc-banner" style="background:${bannerGradient(p.name)};">
           ${statusBadge(id)}
-          ${p.college ? `<span class="pc-college-badge">${p.college}</span>` : ''}
+          ${p.college ? `<span class="pc-college-badge">${jbEsc(p.college)}</span>` : ''}
         </div>
         <div class="pc-avatar-wrap">
-          <div class="job-logo pc-avatar" style="background-image:url('${p.avatar}'); background-size:cover;"></div>
+          <div class="job-logo pc-avatar" style="background-image:url('${jbEsc(p.avatar)}'); background-size:cover;"></div>
         </div>
         <div class="pc-body">
           <div class="pc-headline">
-            <p class="jc-title">${p.name}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
-            <p class="jc-org">${p.role}</p>
+            <p class="jc-title">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
+            <p class="jc-org">${jbEsc(p.role)}</p>
           </div>
-          <div class="jc-tags">${p.tags.map(t=>`<span class="hp-tag">${t}</span>`).join('')}</div>
+          <div class="jc-tags">${p.tags.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('')}</div>
           <div class="jc-foot">
             <span class="jc-posted">Open to opportunities</span>
             <div class="pc-actions">
@@ -617,21 +617,12 @@
       if(opt){ campus = opt.n; campusLoc = opt.loc; }
     }
     const location = v('jbLocation') || campusLoc;
-    postedJobCount++;
-    const jobCount = postedJobCount;
-    const id = 'job' + jobCount;
-    // demo: attach a rotating slice of the candidate pool as applicants
-    const applicantIds = allCandidateIds.filter((_,i)=> i % ((jobCount % 3)+1) === 0);
-    jobsData[id] = {
+    const jobPayload = {
       title, role, dept, type, category, qualification, notice,
       vacancies: v('jbVac'), expMin, expMax, salMin, salMax, salPeriod, salNeg, salNorms,
-      campus, campusLoc, location, desc: v('jbDesc'), skills: v('jbSkills'), deadline: v('jbDeadline'),
-      applicantIds: applicantIds.length ? applicantIds : allCandidateIds
+      campus, campusLoc, location, desc: v('jbDesc'), skills: v('jbSkills'), deadline: v('jbDeadline')
     };
-
-    saveState();
-    renderPostedJobs();
-    pushNotif(`Job posted: ${title}.`);
+    bkPostJob(jobPayload).then(function(){
 
     // reset the form and confirm
     ['jbTitle','jbRole','jbRoleOther','jbCategory','jbCategoryOther','jbDept','jbType','jbTypeOther','jbVac','jbQualification','jbQualificationOther','jbNotice','jbNoticeOther','jbExpMin','jbExpMax','jbSalMin','jbSalMax','jbLocation','jbDesc','jbSkills','jbDeadline','jbCampus'].forEach(i=>{ const el = document.getElementById(i); if(el) el.value = ''; });
@@ -647,6 +638,7 @@
       
       setTimeout(()=>{ ok.style.display = 'none'; }, 7000);
     }
+    }).catch(function(err){ api.toast(err.message || 'Could not post the job.'); });
   }
 
   // Rebuilds the "your posted jobs" list from saved data (so it survives page loads)
@@ -664,8 +656,8 @@
       item.onclick = ()=> openApplicantsView(id);
       item.innerHTML = `
         <div class="job-logo" style="width:34px; height:34px; border-radius:8px; margin-right:10px; ${companyLogoStyle()}"></div>
-        <div style="flex:1;"><div class="jt">${job.title}</div><div class="jm">${[job.category,job.qualification,job.location].filter(Boolean).join(' · ') || 'Posted just now'} · ${job.applicantIds.length} applicants</div>${jobExtra(job) ? `<div class="jm">${jbEsc(jobExtra(job))}</div>` : ''}${typeof instJobMeta==='function' ? instJobMeta(job) : ''}</div>
-        <span class="badge-live">Live</span>`;
+        <div style="flex:1;"><div class="jt">${jbEsc(job.title)}</div><div class="jm">${jbEsc([job.category,job.qualification,job.location].filter(Boolean).join(' · ') || 'Posted just now')} · ${job.applicantIds.length} applicants</div>${jobExtra(job) ? `<div class="jm">${jbEsc(jobExtra(job))}</div>` : ''}${typeof instJobMeta==='function' ? instJobMeta(job) : ''}</div>
+        ${bkStatusBadge(job)}`;
       list.prepend(item);
     });
   }
