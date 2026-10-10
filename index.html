@@ -86,7 +86,7 @@
 <script src="js/employer.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/faculty.js"></script>
-<script src="js/layout.js"></script>
+<script src="js/layout.js"></script><script src="js/backend.js"></script>
 <script>
   mountNav('home');
   mountChrome();
@@ -116,7 +116,12 @@
   $('fhForm').onsubmit=function(e){ e.preventDefault(); var p={}; if(state.cat) p.cat=state.cat; if($('fhQuery').value.trim()) p.q=$('fhQuery').value.trim(); if($('fhLoc').value.trim()) p.loc=$('fhLoc').value.trim(); go(p); };
 
   // carousel
-  INST.forEach(function(c){ var d=document.createElement('div'); d.className='fh-co'; d.innerHTML='<b>'+c[0]+'</b><small>'+c[1]+'</small>'; d.onclick=function(){ go({q:c[0]}); }; $('fhCarousel').appendChild(d); });
+  function drawInst(list){
+    var wrap=$('fhCarousel'); wrap.innerHTML='';
+    list.forEach(function(c){ var d=document.createElement('div'); d.className='fh-co'; var b=document.createElement('b'); b.textContent=c[0]; var sm=document.createElement('small'); sm.textContent=c[1]; d.appendChild(b); d.appendChild(sm); d.onclick=function(){ go({q:c[0]}); }; wrap.appendChild(d); });
+  }
+  drawInst(INST);   // placeholder until the API answers; replaced by real institutions below
+  if(window.bkLoadInstitutions) bkLoadInstitutions().then(function(list){ if(list.length) drawInst(list); });
   $('fhPrev').onclick=function(){ $('fhCarousel').scrollBy({left:-480}); };
   $('fhNext').onclick=function(){ $('fhCarousel').scrollBy({left:480}); };
 
