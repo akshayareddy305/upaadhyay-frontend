@@ -11,7 +11,7 @@
 <style>
 /* login: single centred card, no side panel */
 .auth-page{grid-template-columns:1fr !important;background:#f3f1f7 !important;overflow-y:auto}
-.auth-page .auth-card{margin:20px auto !important;border-radius:16px !important;box-shadow:0 10px 40px rgba(75,31,158,.12) !important;padding:26px 26px !important;max-width:380px !important}
+.auth-page .auth-card{margin:20px auto !important;border-radius:5px !important;box-shadow:0 10px 40px rgba(75,31,158,.12) !important;padding:26px 26px !important;max-width:380px !important}
 /* compact sizing */
 .auth-card h2{font-size:24px !important;margin-bottom:4px !important;letter-spacing:-.5px}
 .auth-card .sub{font-size:14px !important}
@@ -173,7 +173,7 @@
 <script src="../js/layout.js"></script><script src="../js/backend.js"></script>
 <script>initAuthPage('login');</script>
 <script>
-function asSoon(){var t=document.createElement('div');t.textContent='Coming soon';t.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1f1637;color:#fff;padding:11px 22px;border-radius:99px;font:600 14px Poppins,sans-serif;z-index:999';document.body.appendChild(t);setTimeout(function(){t.remove()},1800);}
+function asSoon(){var t=document.createElement('div');t.textContent='Coming soon';t.style.cssText='position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#1f1637;color:#fff;padding:11px 22px;border-radius:5px;font:600 14px Poppins,sans-serif;z-index:999';document.body.appendChild(t);setTimeout(function(){t.remove()},1800);}
 (function(){var a=document.getElementById('asSwitchA'); if(a && location.search) a.href+=location.search;})();
 </script>
 
