@@ -276,10 +276,11 @@ let _lastRefresh=Date.now();
 window.addEventListener('focus',async()=>{const r=$('#fpRoot');if(!r||!r.dataset.m||dirty()||ST.saving||Object.keys(ST.busy).length||Date.now()-_lastRefresh<30000||!window.bkRefreshSeeker)return;_lastRefresh=Date.now();
  try{await bkRefreshSeeker();const before=SAVED,o=S.open;load();if(SAVED!==before){S.open=o;shell();refreshChrome()}}catch(e){}});
 async function retryLoad(){const r=$('#fpRoot');r.innerHTML='<div class="fp-empty" role="status">Loading your profile…</div>';try{await bkRefreshSeeker();delete r.dataset.m;window.bkProfileLoaded=true;fpMount()}catch(e){errView(r,e)}}
-function errView(r,e){r.innerHTML=`<div class="fp-banner warn" role="alert"><div><b>We couldn't load your profile</b><div class="fp-hint">${esc((e&&e.message)||window.bkProfileError||'Network error')}. Nothing has been changed.</div></div><button type="button" class="fp-btn pri" data-act="retry">Retry</button></div>`}
+function errView(r,e){r.innerHTML=`<div class="fp-banner warn" role="alert"><div><b>We couldn't load your profile</b><div class="fp-hint">${esc((e&&e.message)||window.bkProfileError||'Unknown error')}${e&&e.status?' (HTTP '+e.status+')':''}. Nothing has been changed.</div></div><button type="button" class="fp-btn pri" data-act="retry">Retry</button></div>`}
 window.fpMount=async function(){const r=$('#fpRoot');if(!r||r.dataset.m)return;r.innerHTML='<div class="fp-empty" role="status">Loading your profile…</div>';
  try{if(window.bkHydrate)await bkHydrate()}catch(e){}
- if(window.bkProfileLoaded!==true){errView(r);return}
+ if(!window.bkSaveSeekerProfile||!window.bkRefreshSeeker){errView(r,new Error('js/backend.js on the server is outdated. Upload the new backend.js, then hard-refresh (Ctrl/Cmd+Shift+R)'));return}
+ if(window.bkProfileLoaded!==true){try{await bkRefreshSeeker()}catch(e){errView(r,e);return}}
  r.dataset.m=1;load();shell()};
 
 })();
