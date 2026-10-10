@@ -13,20 +13,20 @@ const BELL_SVG  = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" x
 
 const NAV_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-.nav{background:#fff !important;border-bottom:0 !important;border-radius:0 0 22px 22px;box-shadow:0 4px 20px rgba(75,31,158,.10);backdrop-filter:none !important;font-family:'Poppins','Inter',sans-serif}
+.nav{background:#fff !important;border-bottom:0 !important;border-radius:0 0 3px 3px;box-shadow:0 4px 20px rgba(75,31,158,.10);backdrop-filter:none !important;font-family:'Poppins','Inter',sans-serif}
 .nav-inner{max-width:1360px !important;padding:10px 28px !important;gap:22px !important;justify-content:flex-start !important}
 .fn-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
 .fn-mark{height:38px;width:auto;display:block}
 .fn-word{font-family:'Poppins',sans-serif;font-weight:800;font-size:24px;letter-spacing:-1.2px;color:#3a1580;line-height:1}
 .fn-word span{color:#e0359a}
-.fn-badge{background:#ebe3ff;color:#4b1f9e;font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;align-self:center;margin-top:4px}
+.fn-badge{background:#ebe3ff;color:#4b1f9e;font-size:10px;font-weight:600;padding:2px 8px;border-radius:2px;align-self:center;margin-top:4px}
 .nav-links{justify-content:flex-start !important;gap:22px !important;flex:1}
 .nav-links a{white-space:nowrap;font-size:13.5px !important;font-weight:500 !important;color:#1f1637 !important;position:relative;padding:6px 0}
 .nav-links a::after{content:"";position:absolute;left:0;bottom:-2px;height:2px;width:0;background:#4b1f9e;transition:width .25s}
 .nav-links a:hover,.nav-links a.active{color:#4b1f9e !important}
 .nav-links a:hover::after,.nav-links a.active::after{width:100%}
 .nav-cta{display:flex;align-items:center;gap:10px;white-space:nowrap;margin-left:auto}
-.fn-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:99px;font-weight:600;font-size:13.5px;text-decoration:none;transition:.2s}
+.fn-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:3px;font-weight:600;font-size:13.5px;text-decoration:none;transition:.2s}
 .fn-btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .fn-login{border:1.5px solid #4b1f9e;color:#4b1f9e;background:#fff}
 .fn-login:hover{background:#4b1f9e;color:#fff}
