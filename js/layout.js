@@ -151,22 +151,6 @@ function mountChrome(opts){
   if(!el) return;
   el.innerHTML = `
   ${opts.noFooter ? '' : `
-  <div class="fb-wrap">
-    <div class="fb-banner">
-      <div class="fb-arch"></div>
-      <div class="fb-text">
-        <h3>Complete your profile</h3>
-        <p>A complete profile gets you noticed by schools, colleges and universities hiring right now. Add your qualifications and experience in a few minutes.</p>
-        <a class="fb-btn" href="${PAGES.home}">Update profile</a>
-      </div>
-      <div class="fb-visual">
-        <span class="fb-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg></span>
-        <svg class="fb-girl-fallback" viewBox="0 0 220 300" aria-hidden="true"><path d="M30 300c4-70 30-100 80-104s76 34 80 104z" fill="#3b3f4a"/><path d="M92 190h36v30H92z" fill="#f1c3a5"/><ellipse cx="110" cy="130" rx="42" ry="52" fill="#f6cdb0"/><path d="M62 128c-6-60 30-86 62-78 34 6 46 40 40 90-6-26-18-44-44-48-26 4-44 14-58 36z" fill="#a8452a"/><path d="M62 128c-10 40-4 80 12 96-14-30-10-60-4-80zM164 132c8 36 4 70-12 90 20-20 22-60 12-90z" fill="#a8452a"/></svg>
-        <img class="fb-girl" src="${location.pathname.includes('/pages/')?'../':''}assets/profile-girl.png" alt="" onerror="this.style.display='none'">
-        <div class="fb-mini"><svg viewBox="0 0 92 92" aria-hidden="true"><rect width="92" height="92" fill="#ffd9bd"/><path d="M8 92c2-26 16-36 38-36s36 10 38 36z" fill="#4b5563"/><ellipse cx="46" cy="38" rx="17" ry="20" fill="#f1c3a5"/><path d="M28 34c0-18 12-24 20-24s20 6 18 24c-4-8-10-12-19-12s-15 4-19 12z" fill="#3b2a20"/></svg></div>
-      </div>
-    </div>
-  </div>
   <footer>
     <div class="footer-inner">
       <div class="footer-grid">
