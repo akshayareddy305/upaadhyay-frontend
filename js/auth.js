@@ -537,7 +537,7 @@
       : (currentUser.name || 'Your name');
     document.getElementById('miniDegree').textContent = isBranch ? (nwBranchInfo().line || 'Sub-branch account') : isCompany
       ? ([currentCompany.type, currentCompany.city].filter(Boolean).join(' · ') || 'Company account')
-      : (currentUser.qualification ? `${currentUser.qualification}${currentUser.college ? ' · '+currentUser.college : ''}` : 'Add your qualification');
+      : miniSeekerHeadline();
 
     const linksFaculty = document.getElementById('miniLinksFaculty');
     const linksCompany = document.getElementById('miniLinksCompany');
@@ -545,7 +545,7 @@
     if(linksFaculty) linksFaculty.style.display = (isCompany || isBranch) ? 'none' : 'flex';
     if(linksCompany) linksCompany.style.display = isCompany ? 'flex' : 'none';
     if(linksBranch) linksBranch.style.display = isBranch ? 'flex' : 'none';
-    ['miniStatsSection','miniPrefSection'].forEach(function(id){ const el=document.getElementById(id); if(el) el.style.display = (isBranch || isCompany) ? 'none' : ''; });
+    miniSeekerRender(!(isBranch || isCompany));
     const coSec = document.getElementById('miniCompanySection');
     if(coSec){
       coSec.style.display = isCompany ? '' : 'none';
@@ -599,14 +599,6 @@
         stat1Box.style.cursor = 'pointer';
         stat1Box.onclick = ()=>{ closeMiniProfile(); goTo('employer', {tab:'myjobs'}); };
       }
-    } else {
-      if(statsHeading) statsHeading.textContent = 'Your profile performance';
-      if(stat1Num) stat1Num.textContent = '12';
-      if(stat1Label) stat1Label.textContent = 'Search appearances';
-      if(stat2Num) stat2Num.textContent = '4';
-      if(stat2Label) stat2Label.textContent = 'Recruiter actions';
-      const stat1Box = document.getElementById('miniStat1Box');
-      if(stat1Box){ stat1Box.style.cursor = 'default'; stat1Box.onclick = null; }
     }
 
     const prefHeading = document.getElementById('miniPrefHeading');
@@ -621,16 +613,46 @@
           ? tags.map(t=>`<span class="bj-pref-tag">${t}</span>`).join('')
           : `<span style="font-size:12px; color:var(--ink-faint);">Add your institution type and city on your company profile.</span>`;
       }
-    } else {
-      if(prefHeading) prefHeading.textContent = 'Your preferences';
-      if(prefSub) prefSub.textContent = 'Matched roles are based on these.';
-      if(tagsWrap){
-        const tags = [currentUser.category, currentUser.subject, currentUser.location].filter(Boolean);
-        tagsWrap.innerHTML = tags.length
-          ? tags.map(t=>`<span class="bj-pref-tag">${t}</span>`).join('')
-          : `<span style="font-size:12px; color:var(--ink-faint);">Add preferences on your profile to see matches.</span>`;
-      }
     }
+  }
+
+  /* ---- Faculty card: live preview of the SAVED profile (re-rendered by refreshMiniProfile after every save) ---- */
+  function miniFp(){ return (currentUser && currentUser.fp) || {}; }
+  function miniSeekerHeadline(){
+    const fp = miniFp();
+    return fp.headline || fp.desig || currentUser.currentDesignation || (currentUser.qualification ? currentUser.qualification : 'Add your designation');
+  }
+  function miniStrength(){
+    const fp = miniFp(), U = currentUser, files = fp.files || {};
+    const req = [!!(fp.first && fp.last && fp.dob), !!(U.email && U.phone), !!fp.high, !!fp.desig, !!(fp.subjects && fp.subjects.length)];
+    const rec = [!!files.resume, !!(fp.jobs && fp.jobs.length), !!(fp.links && fp.links.length), Object.keys(files).some(function(k){ return k !== 'resume'; })];
+    const hints = ['Add personal details','Add contact details','Add your highest qualification','Add your designation','Add subject specialization','Upload your resume','Add employment history','Add professional links','Upload a certificate'];
+    const all = req.concat(rec), next = all.indexOf(false);
+    return { pct: req.filter(Boolean).length * 16 + rec.filter(Boolean).length * 5, hint: next === -1 ? 'Looking great!' : hints[next] };
+  }
+  function miniChips(id, wrapId, list){
+    const box = document.getElementById(id), wrap = document.getElementById(wrapId); if(!box || !wrap) return;
+    box.innerHTML = ''; (list || []).forEach(function(t){ const c = document.createElement('span'); c.textContent = t; box.appendChild(c); });
+    wrap.style.display = (list && list.length) ? '' : 'none';
+  }
+  function miniSeekerRender(show){
+    const sec = document.getElementById('miniSeekerSection'); if(!sec) return;
+    sec.style.display = show ? '' : 'none'; if(!show) return;
+    const fp = miniFp(), U = currentUser, saved = !!fp.savedAt, st = miniStrength();
+    const pct = saved ? st.pct : 0;
+    document.getElementById('miniPct').textContent = pct + '%';
+    document.getElementById('miniPctBar').style.width = pct + '%';
+    document.getElementById('miniPctHint').textContent = saved ? st.hint : '';
+    document.getElementById('miniEmpty').style.display = saved ? 'none' : '';
+    const loc = [fp.city || U.city, fp.state || U.state].filter(Boolean).join(', ');
+    const yrs = parseFloat(U.experience);
+    const meta = document.getElementById('miniMeta');
+    if(meta) meta.textContent = saved ? [loc, isFinite(yrs) ? (yrs > 0 ? yrs + ' yr experience' : 'Fresher') : ''].filter(Boolean).join(' · ') : '';
+    const rows = saved ? [['Qualification', fp.high], ['Designation', fp.desig], ['Email', U.email], ['Phone', U.phone], ['Visibility', fp.vis]].filter(function(r){ return r[1]; }) : [];
+    const box = document.getElementById('miniRows'); box.innerHTML = '';
+    rows.forEach(function(r){ const row = document.createElement('div'); row.className = 'mini-co-row'; const k = document.createElement('span'); k.textContent = r[0]; const v = document.createElement('b'); v.textContent = r[1]; row.appendChild(k); row.appendChild(v); box.appendChild(row); });
+    miniChips('miniSubjects','miniSubjectsWrap', saved ? fp.subjects : []);
+    miniChips('miniLevels','miniLevelsWrap', saved ? fp.levels : []);
   }
 
   function computeCompleteness(){
