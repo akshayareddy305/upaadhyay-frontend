@@ -16,7 +16,7 @@
   if(typeof api === 'undefined' || typeof saveState !== 'function') return;
 
   const COLORS = ['var(--blue-700)','var(--green)','#7C3AED','#B45309','#BE123C','#0F766E','#4338CA'];
-  const DEFAULT_AVATAR = 'https://i.pravatar.cc/160?img=68';
+  const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCc+PHJlY3Qgd2lkdGg9JzI0JyBoZWlnaHQ9JzI0JyBmaWxsPScjRUVGMkY3Jy8+PGcgZmlsbD0nbm9uZScgc3Ryb2tlPScjOTRBM0I4JyBzdHJva2Utd2lkdGg9JzEuNSc+PGNpcmNsZSBjeD0nMTInIGN5PSc5JyByPSczLjUnLz48cGF0aCBkPSdNNSAyMGMwLTMuNSAzLTUuNSA3LTUuNXM3IDIgNyA1LjUnLz48L2c+PC9zdmc+';
 
   /* ---------------- small helpers ---------------- */
   function esc(x){ return String(x == null ? '' : x).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
@@ -159,7 +159,7 @@
     if(cp.location && !currentUser.location) currentUser.location = cp.location;
     if(cp.current_job_title && !currentUser.currentDesignation) currentUser.currentDesignation = cp.current_job_title;
     if(cp.total_experience != null && !currentUser.experience) currentUser.experience = String(cp.total_experience);
-    if(cp.profile_photo && (!currentUser.avatar || currentUser.avatar === DEFAULT_AVATAR)) currentUser.avatar = fileUrl(cp.profile_photo);
+    if(cp.profile_photo) currentUser.avatar = fileUrl(cp.profile_photo);   // server column is the source of truth
     _lastSig = JSON.stringify(seekerPayload());
   }
   function seekerPayload(){
@@ -168,7 +168,7 @@
     const g = String(U.gender || '').toLowerCase();
     const exp = parseFloat(U.experience);
     body.date_of_birth = dob;
-    body.gender = ['male','female','other'].indexOf(g) > -1 ? g : undefined;
+    body.gender = g ? (g === 'male' || g === 'female' ? g : 'other') : undefined;   // 'Non-binary' / 'Prefer not to say' -> other (full label kept in profile_data)
     body.location = (U.location || U.currentLocation || '').slice(0, 190) || undefined;
     body.city = (U.city || '').slice(0, 100) || undefined;
     body.state = (U.state || '').slice(0, 100) || undefined;
@@ -225,6 +225,19 @@
       if(e.status && e.status !== 401) api.toast('Could not save your profile: ' + e.message);
     }
   }
+  /* Explicit, awaited save for the faculty profile form: resolves only after the server confirms (throws ApiError otherwise). */
+  window.bkSaveSeekerProfile = async function(){
+    if(currentRole !== 'seeker') throw new Error('Only faculty accounts have a faculty profile.');
+    const body = seekerPayload();
+    const u = await api.put('/candidate/profile', body, { silent403: true });
+    _lastSig = JSON.stringify(body);
+    const cp = (u && (u.candidate_profile || u.candidateProfile)) || {};
+    if(cp.profile_photo) currentUser.avatar = fileUrl(cp.profile_photo);
+    _origSaveState();
+    return u;
+  };
+  /* Re-read the saved profile from the server (used on tab focus so other tabs/devices' edits show up). */
+  window.bkRefreshSeeker = async function(){ await hydrateSeeker(); window.bkProfileLoaded = true; window.bkProfileError = ''; _syncReady = true; _origSaveState(); };
   function schedulePush(){ clearTimeout(_timer); _timer = setTimeout(pushProfile, 900); }
 
   /* Every existing saveState() call now also syncs to the backend (debounced, only if something changed). */
@@ -240,7 +253,7 @@
     if(!_hydration){
       _hydration = (async function(){
         try{
-          if(currentRole === 'seeker') await hydrateSeeker();
+          if(currentRole === 'seeker'){ await hydrateSeeker(); window.bkProfileLoaded = true; window.bkProfileError = ''; }
           else if(currentRole === 'company'){ await hydrateCompany(); }
           _syncReady = true;
           _origSaveState();
@@ -248,6 +261,7 @@
           loadNotifs();
         }catch(e){
           console.warn('[backend] hydrate failed', e);
+          if(currentRole === 'seeker'){ window.bkProfileLoaded = false; window.bkProfileError = (e && e.message) || 'Network error'; }
           if(e && e.status === 404){ _syncReady = true; }
         }
       })();
