@@ -391,3 +391,13 @@
 /* first-time setup note on the employer dashboard: compact banner, aligned with the profile wizard below */
 #employerSetupNote{max-width:1100px;margin:0 auto 16px;padding:12px 16px;font-size:13.5px;line-height:1.5;color:var(--ink-soft,#475569);background:var(--blue-50,#EEF3FF);border:1px solid var(--blue-100,#D6E2FF);border-left:4px solid var(--blue-700,#1A3FBF);border-radius:8px;box-sizing:border-box}
 @media(max-width:640px){#employerSetupNote{font-size:12.5px;padding:10px 12px}}
+
+/* ===== Sidebar stays visible while scrolling (sits below site nav + tab bar) ===== */
+#dashInnerWide .in-side{top:104px;max-height:calc(100vh - 120px);overflow-y:auto;align-self:start;z-index:10}
+@media(max-width:900px){#dashInnerWide .in-side{position:static;max-height:none;overflow:visible}}
+
+/* ===== Tabs locked until admin approves the institution ===== */
+.dash-subtab.is-locked{opacity:.55;cursor:not-allowed;position:relative}
+.dash-subtab.is-locked::before{content:"\1F512";font-size:11px;margin-right:6px}
+.dash-subtab.is-locked:hover{background:transparent}
+.emp-lock-note{margin:0 0 14px;padding:10px 14px;background:#FFF8E6;border:1px solid #F0D58A;border-radius:2px;font-size:13px;color:#6b4a00}
