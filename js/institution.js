@@ -432,7 +432,7 @@ function wiz(){
   const s=I.step;
   const steps=STEPS.map((t,i)=>`<button class="in-step${i===s?' on':i<=I.max?' done':''}" role="tab" aria-selected="${i===s}" onclick="IN.jump(${i})"><span class="in-step-n">${i+1}</span><span class="in-step-t">${t}</span></button>`).join('');
   const last=s===STEPS.length-1;
-  return `<div class="in-wrap"><div class="in-head"><h3>${I.sub?'Edit your institution profile':'Create your institution profile'}</h3><p>Add your official institution details so candidates can identify and trust your organization.</p></div>
+  return `<div class="in-wrap in-fixed"><div class="in-head"><h3>${I.sub?'Edit your institution profile':'Create your institution profile'}</h3><p>Add your official institution details so candidates can identify and trust your organization.</p></div>
   <div class="in-layout">
     <aside class="in-side"><div class="in-steps" role="tablist" aria-orientation="vertical">${steps}</div>
       <div class="in-side-foot"><div class="in-bar"><div style="width:${pct()}%"></div></div><span>${pct()}% complete</span>
