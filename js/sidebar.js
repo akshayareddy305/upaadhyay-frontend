@@ -55,7 +55,7 @@
     var c = UpCard.data('company'), ok = c.approved;
     return { active:companyActive(), edit:function(){ hideOv(); tab('company'); if(window.IN && IN.edit) IN.edit(0); },
       list:[ { k:'ov', t:'Overview', i:'grid', go:overview },
-        { k:'profile', t:'Institution profile', i:'building', go:function(){ sec('profile'); } },
+        { k:'profile', t:'Institution profile', i:'building', go:function(){ sec('profile'); }, sub:true },
         { k:'verify', t:'Verification', i:'shield', go:function(){ sec('verify'); }, flag:!ok },
         { k:'branches', t:'Branches / campuses', i:'tree', go:function(){ sec('branches'); }, lock:!ok },
         { k:'reqs', t:'Sub-branch requests', i:'inbox', go:function(){ sec('branches'); }, lock:!ok, n:c.pending },
@@ -77,7 +77,7 @@
     var c = UpCard.data('branch'), ok = c.approved, sd = 'profile';
     try{ if(typeof S === 'object' && S && S.sd) sd = S.sd; }catch(e){}
     return { active:sd, edit:function(){ bt('profile'); },
-      list:[ { k:'profile', t:'Branch profile', i:'building', go:function(){ bt('profile'); } },
+      list:[ { k:'profile', t:'Branch profile', i:'building', go:function(){ bt('profile'); }, sub:true },
         { k:'post', t:'Post a job', i:'plus', go:function(){ bt('post', !ok); }, lock:!ok },
         { k:'jobs', t:'Posted jobs', i:'list', go:function(){ bt('jobs', !ok); }, lock:!ok, n:c.stats[0][0] },
         { k:'cands', t:'Browse faculty', i:'search', go:function(){ bt('cands', !ok); }, lock:!ok },
@@ -166,6 +166,8 @@
       var b = e.target.closest('[data-k]'); if(!b) return;
       var fk = b.getAttribute('data-k');
       if(fk.indexOf('fp:') === 0){ state.og = 'profile'; hideEmbed(); if(window.FP) FP.go(+fk.slice(3)); window.scrollTo(0, 0); toggle(false); schedule(); return; }
+      if(fk.indexOf('in:') === 0){ state.og = 'profile'; var n = +fk.slice(3); hideOv(); tab('company'); if(window.IN && IN.can(n)) IN.open(n); window.scrollTo(0, 0); toggle(false); schedule(); return; }
+      if(fk.indexOf('nb:') === 0){ state.og = 'profile'; var m = +fk.slice(3); if(window.NWP && NWP.can(m)) NWP.open(m); toggle(false); schedule(); return; }
       if(b.getAttribute('data-k') === '_edit'){ side._cfg.edit(); }
       else { var it = items.filter(function(x){ return x.k === b.getAttribute('data-k'); })[0]; if(it){ it.go(); if(it.sub) state.og = it.k; else if(it.k !== 'notif' && it.k !== 'out') state.og = ''; } }
       toggle(false); schedule();
@@ -180,6 +182,13 @@
   function subMenu(it, cfg){
     if(!it.sub || openKey(cfg) !== it.k) return '';
     if(it.k === 'jobs') return '<div class="up-sub up-sub-f">' + filtersHTML() + '</div>';
+    var role = UpCard.role(), H = role === 'company' ? window.IN : role === 'branch' ? window.NWP : null;
+    if(H && H.steps){
+      var pre = role === 'company' ? 'in:' : 'nb:', hc = H.cur();
+      return '<div class="up-sub">' + H.steps().map(function(n, i){
+        var off = !H.can(i);
+        return '<button type="button" class="up-subitem' + (i === hc ? ' on' : '') + (off ? ' off' : '') + '" data-k="' + pre + i + '"' + (off ? ' disabled title="Complete the earlier steps first"' : '') + (i === hc ? ' aria-current="step"' : '') + '>' + (i + 1) + '. ' + esc(n) + '</button>'; }).join('') + '</div>';
+    }
     if(!window.FP || !FP.sections) return '';
     var cur = state.emb ? -1 : FP.open();
     return '<div class="up-sub">' + FP.sections.map(function(n, i){
