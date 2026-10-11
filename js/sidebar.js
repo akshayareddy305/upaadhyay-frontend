@@ -4,7 +4,7 @@
 (function(){
   if(!window.UpCard) return;
   var $ = function(id){ return document.getElementById(id); };
-  var esc = UpCard.esc, state = { ov:false }, items = [], side, fab, scrim;
+  var esc = UpCard.esc, state = { ov:false, set:false }, items = [], side, fab, scrim;
 
   var P = { grid:'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', building:'M4 21V4.5L12 2l8 2.5V21M9 21v-5h6v5M8 8h2M14 8h2M8 12h2M14 12h2',
     shield:'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z M9 12l2 2 4-4', tree:'M12 3v6m0 0L5 15m7-6l7 6M5 15v6m14-6v6', inbox:'M4 5h16v11H8l-4 4z',
@@ -19,6 +19,23 @@
 
   /* ---------- main institution ---------- */
   function hideOv(){ state.ov = false; var o = $('upOverview'); if(o) o.style.display = 'none'; }
+  function hideSet(){ state.set = false; var s = $('upSettings'); if(s && UpCard.role() !== 'branch') s.style.display = 'none'; }
+  function setEl(r){
+    var el = $('upSettings'); if(el) return el;
+    var host = r === 'company' ? $('dashCompanyTab') : $('dashProfileTab'); if(!host) return null;
+    el = document.createElement('div'); el.id = 'upSettings'; el.className = 'up-set';
+    host.parentNode.insertBefore(el, r === 'company' ? host : host.nextSibling); return el;
+  }
+  function openSet(i){
+    var r = UpCard.role(); if(!window.UpSettings) return;
+    if(i !== undefined) UpSettings.idx(i);
+    if(r === 'branch'){ if(window.NWP && NWP.settings) NWP.settings(); return; }
+    if(r === 'company'){ hideOv(); tab('company'); var h = $('dashCompanyTab'); if(h) h.style.display = 'none'; }
+    else { hideEmbed(); var p = $('dashProfileTab'); if(p) p.style.display = 'none'; }
+    var el = setEl(r); if(!el) return;
+    state.set = true; el.style.display = 'block'; UpSettings.refresh(); window.scrollTo(0, 0);
+  }
+  function goProfile(){ var it = items.filter(function(x){ return x.k === 'profile'; })[0]; if(!it) return; hideSet(); it.go(); state.og = 'profile'; schedule(); }
   function tab(t){ if(typeof switchEmployerTab === 'function') switchEmployerTab(t); }
   function sec(k){
     var I = lsj('upadyay_inst_v1') || {};
@@ -45,6 +62,7 @@
     [].forEach.call(o.querySelectorAll('[data-ov]'), function(b){ b.onclick = function(){ var t = b.getAttribute('data-ov'); if(t === 'verify' || t === 'profile') sec(t); else tab(t); schedule(); }; });
   }
   function companyActive(){
+    if(state.set) return 'set';
     if(state.ov) return 'ov';
     var t = 'company'; try{ t = sessionStorage.getItem('upadyay_emp_tab') || 'company'; }catch(e){}
     if(t === 'post') return 'post'; if(t === 'myjobs') return 'myjobs'; if(t === 'candidates') return 'cands';
@@ -64,6 +82,7 @@
         { k:'apps', t:'Applicants', i:'people', go:function(){ tab('myjobs'); }, lock:!ok, n:c.stats[3][0] },
         { k:'cands', t:'Browse faculty', i:'search', go:function(){ tab('candidates'); }, lock:!ok },
         { k:'rep', t:'Representative & authority', i:'user', go:function(){ sec('rep'); } },
+        { k:'set', t:'Settings', i:'cog', go:function(){ openSet(); }, sub:true },
         { k:'out', t:'Log out', i:'out', go:function(){ logoutUser(); }, out:1 } ] };
   }
 
@@ -76,12 +95,13 @@
   function branchItems(){
     var c = UpCard.data('branch'), ok = c.approved, sd = 'profile';
     try{ if(typeof S === 'object' && S && S.sd) sd = S.sd; }catch(e){}
-    return { active:sd, edit:function(){ bt('profile'); },
+    return { active:sd === 'settings' ? 'set' : sd, edit:function(){ bt('profile'); },
       list:[ { k:'profile', t:'Branch profile', i:'building', go:function(){ bt('profile'); }, sub:true },
         { k:'post', t:'Post a job', i:'plus', go:function(){ bt('post', !ok); }, lock:!ok },
         { k:'jobs', t:'Posted jobs', i:'list', go:function(){ bt('jobs', !ok); }, lock:!ok, n:c.stats[0][0] },
         { k:'cands', t:'Browse faculty', i:'search', go:function(){ bt('cands', !ok); }, lock:!ok },
         { k:'reqs', t:'Requests', i:'inbox', go:function(){ bt('reqs', !ok); }, lock:!ok },
+        { k:'set', t:'Settings', i:'cog', go:function(){ openSet(); }, sub:true },
         { k:'out', t:'Log out', i:'out', go:function(){ logoutUser(); }, out:1 } ] };
   }
 
@@ -132,13 +152,13 @@
   }
   function facultyItems(){
     var onPage = !!$('dashProfileTab');
-    function mine(){ if(onPage){ hideEmbed(); if(typeof switchDashTab === 'function') switchDashTab('profile'); window.scrollTo(0, 0); } else goTo('faculty'); }
-    function jobs(){ if(onPage && showEmbed((window.PAGES && PAGES.jobs ? PAGES.jobs : '../pages/jobs.html') + '?embed=1')) return; goTo('jobs'); }
-    return { active:onPage ? (state.emb ? 'jobs' : 'profile') : '', edit:mine,
+    function mine(){ if(onPage){ hideSet(); hideEmbed(); if(typeof switchDashTab === 'function') switchDashTab('profile'); window.scrollTo(0, 0); } else goTo('faculty'); }
+    function jobs(){ hideSet(); if(onPage && showEmbed((window.PAGES && PAGES.jobs ? PAGES.jobs : '../pages/jobs.html') + '?embed=1')) return; goTo('jobs'); }
+    return { active:onPage ? (state.set ? 'set' : state.emb ? 'jobs' : 'profile') : '', edit:mine,
       list:[ { k:'profile', t:'My profile', i:'user', go:mine, sub:true },
         { k:'jobs', t:'Browse jobs', i:'search', go:jobs, sub:true },
         { k:'notif', t:'Notifications', i:'bell', go:function(){ var b = document.querySelector('.nav-bell'); if(b) b.click(); } },
-        { k:'set', t:'Settings', i:'cog', go:mine },
+        { k:'set', t:'Settings', i:'cog', go:function(){ openSet(); }, sub:true },
         { k:'out', t:'Log out', i:'out', go:function(){ logoutUser(); }, out:1 } ] };
   }
 
@@ -165,7 +185,8 @@
       if(tg){ var tk = tg.getAttribute('data-tog'); state.og = openKey(side._cfg) === tk ? '' : tk; schedule(); return; }
       var b = e.target.closest('[data-k]'); if(!b) return;
       var fk = b.getAttribute('data-k');
-      if(fk.indexOf('fp:') === 0){ state.og = 'profile'; hideEmbed(); if(window.FP) FP.go(+fk.slice(3)); window.scrollTo(0, 0); toggle(false); schedule(); return; }
+      if(fk.indexOf('ss:') === 0){ state.og = 'set'; openSet(+fk.slice(3)); toggle(false); schedule(); return; }
+      if(fk.indexOf('fp:') === 0){ state.og = 'profile'; hideSet(); hideEmbed(); if(window.FP) FP.go(+fk.slice(3)); window.scrollTo(0, 0); toggle(false); schedule(); return; }
       if(fk.indexOf('in:') === 0){ state.og = 'profile'; var n = +fk.slice(3); hideOv(); tab('company'); if(window.IN && IN.can(n)) IN.open(n); window.scrollTo(0, 0); toggle(false); schedule(); return; }
       if(fk.indexOf('nb:') === 0){ state.og = 'profile'; var m = +fk.slice(3); if(window.NWP && NWP.can(m)) NWP.open(m); toggle(false); schedule(); return; }
       if(b.getAttribute('data-k') === '_edit'){ side._cfg.edit(); }
@@ -182,6 +203,12 @@
   function subMenu(it, cfg){
     if(!it.sub || openKey(cfg) !== it.k) return '';
     if(it.k === 'jobs') return '<div class="up-sub up-sub-f">' + filtersHTML() + '</div>';
+    if(it.k === 'set'){
+      if(!window.UpSettings) return '';
+      var sc = cfg.active === 'set' ? UpSettings.cur() : -1;
+      return '<div class="up-sub">' + UpSettings.sections(UpCard.role()).map(function(n, i){
+        return '<button type="button" class="up-subitem' + (i === sc ? ' on' : '') + '" data-k="ss:' + i + '"' + (i === sc ? ' aria-current="page"' : '') + '>' + esc(n) + '</button>'; }).join('') + '</div>';
+    }
     var role = UpCard.role(), H = role === 'company' ? window.IN : role === 'branch' ? window.NWP : null;
     if(H && H.steps){
       var pre = role === 'company' ? 'in:' : 'nb:', hc = H.cur();
@@ -219,7 +246,7 @@
   /* keep the active item right when tabs or sections change from inside the page */
   if(typeof switchEmployerTab === 'function' && !switchEmployerTab.__up){
     var _sw = switchEmployerTab;
-    window.switchEmployerTab = function(){ hideOv(); var r = _sw.apply(this, arguments); schedule(); return r; };
+    window.switchEmployerTab = function(){ hideOv(); hideSet(); var r = _sw.apply(this, arguments); schedule(); return r; };
     window.switchEmployerTab.__up = 1;
   }
   var app = $('app'); if(app && window.MutationObserver && !$('instRoot')) new MutationObserver(schedule).observe(app, { childList:true });
@@ -228,5 +255,5 @@
   window.addEventListener('fp:paint', schedule);
   var go = function(){ render(); setTimeout(render, 400); setTimeout(render, 1500); };   /* pages build their state async after login */
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
-  window.UpSide = { render:render };
+  window.UpSide = { render:render, profile:goProfile };
 })();
