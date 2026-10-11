@@ -308,6 +308,7 @@ function upload(k,f){
   if(!/\.(pdf|jpe?g|png)$/i.test(f.name)){ ERR[k]='Unsupported file. Upload a PDF, JPG or PNG.'; render(); return; }
   if(!f.size){ ERR[k]='This file is empty. Choose another file.'; render(); return; }
   if(f.size>5*1048576){ ERR[k]='File is larger than 5 MB. Upload a smaller file.'; render(); return; }
+  const oldFid=k==='new'?null:(I.docs[k]&&I.docs[k].fid); /* replaced file is deleted server-side after the new one is saved */
   let id=k, rec={name:f.name,size:fsz(f.size),st:'up'};
   if(k==='new'){ id='x'+Date.now(); rec.id=id; rec.type=XT; I.extra.push(rec); XOPEN=false; } else I.docs[k]=rec;
   if(FILES[id]) URL.revokeObjectURL(FILES[id].u);
@@ -315,7 +316,7 @@ function upload(k,f){
   render();
   const fail=m=>{ if(k==='new') I.extra=I.extra.filter(x=>x.id!==id); else delete I.docs[k]; if(FILES[id]){ URL.revokeObjectURL(FILES[id].u); delete FILES[id]; } ERR[k]=m; render(); };
   if(!window.bkUploadFile){ fail('Upload is not available. Reload the page and try again.'); return; }
-  bkUploadFile(f,'other',f.name).then(up=>{ rec.st='ok'; rec.fid=up.id; rec.url=up.url||''; save(); render(); })
+  bkUploadFile(f,'other',f.name,oldFid).then(up=>{ rec.st='ok'; rec.fid=up.id; rec.url=up.url||''; save(); render(); })
     .catch(e=>fail((e&&e.message)||'Upload failed. Try again.'));
 }
 function preview(k){
@@ -688,7 +689,8 @@ window.IN={
     else { const r=new FileReader(); r.onload=x=>pushLogo(x.target.result); r.readAsDataURL(f); }
     inp.value=''; },
   setLogo(url){ if(url&&String(url).indexOf('data:')===0){ pushLogo(url); return; } I.d.logo=url||''; save(); render(); },
-  rmLogo(){ const id=I.d.logoFileId; I.d.logo=''; delete I.d.logoFileId; save(); render(); if(id&&window.bkDeleteFile) bkDeleteFile(id).catch(()=>{}); },
+  rmLogo(){ const prev={logo:I.d.logo,id:I.d.logoFileId}; I.d.logo=''; delete I.d.logoFileId; save(); render();
+    if(window.bkRemoveLogo) bkRemoveLogo().catch(e=>{ I.d.logo=prev.logo; if(prev.id) I.d.logoFileId=prev.id; save(); render(); toast('Could not remove logo: '+((e&&e.message)||'error')); }); },
   send(){ const m=chk(EMAILF,I.d.email); mark('d',EMAILF,m); if(m) return; I.em='sending'; render(); setTimeout(()=>{ I.em='sent'; save(); render(); },900); },
   resend(){ toast('A new code was sent to '+I.d.email); },
   otp(el,i){ el.value=el.value.replace(/\D/g,''); if(el.value&&el.nextElementSibling) el.nextElementSibling.focus(); },
@@ -725,7 +727,7 @@ window.IN={
   bImg(e){ const f=e.target.files[0]; e.target.value=''; if(!f) return; if(!/^image\/(png|jpeg)$/.test(f.type)){ toast('Use a PNG or JPG image'); return; } if(f.size>2*1048576){ toast('Image must be under 2 MB'); return; }
     if(!window.bkUploadFile){ toast('Upload is not available. Reload the page.'); return; }
     toast('Uploading image…');
-    bkUploadFile(f,'job_image',f.name).then(up=>{ if(!up.url) throw new Error('The server has no public file URL configured.'); BR.img=up.url; BR.imgId=up.id; modal(bForm()); toast('Image uploaded'); }).catch(er=>toast('Could not upload image: '+((er&&er.message)||'error'))); },
+    bkUploadFile(f,'job_image',f.name,BR.imgId).then(up=>{ if(!up.url) throw new Error('The server has no public file URL configured.'); BR.img=up.url; BR.imgId=up.id; modal(bForm()); toast('Image uploaded'); }).catch(er=>toast('Could not upload image: '+((er&&er.message)||'error'))); },
   bSave(){ if(!valid(FB,'b')) return; if(BRi<0) I.branches.push(BR); else I.branches[BRi]=BR; save(); closeM(); render(); toast('Branch saved'); },
   reqView(){ const r=subReq(); if(!r) return;
     const chk=(ok,t)=>`<li>${ok?ck(13):CLKs} ${t}</li>`;
