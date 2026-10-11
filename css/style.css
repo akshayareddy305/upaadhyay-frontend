@@ -1280,3 +1280,18 @@ body.page-auth .auth-card, .role-popup-card{margin-left:auto; margin-right:auto;
 .mini-panel .mini-links a{border-radius:14px;color:#1f1637}
 .mini-panel .mini-links a:hover{background:#f4efff;color:#4b1f9e}
 @media(max-width:560px){.mini-panel{padding:14px;border-radius:20px}}
+
+/* ---- slide-in profile card (main institution / sub-branch / faculty): 2px card edges + collapsible details ---- */
+#miniPanel{border-radius:2px}
+#miniPanel .mini-head,#miniPanel .mini-seeker,#miniPanel .btn.btn-light,#miniPanel .mini-links a{border-radius:2px}
+#miniPanel .mini-section.mini-dd-wrap{border-top:0;padding:8px 0 4px}
+#miniPanel .mini-dd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0;padding:11px 12px;border:1px solid var(--line);border-radius:4px;background:#faf8ff;cursor:pointer;user-select:none}
+#miniPanel .mini-dd h4{margin:0}
+#miniPanel .mini-dd::after{content:"";flex:none;width:7px;height:7px;border:solid var(--ink-faint);border-width:0 2px 2px 0;transform:rotate(45deg);margin-top:-3px;transition:transform .2s,margin .2s}
+#miniPanel .dd-open>.mini-dd{border-radius:4px 4px 0 0}
+#miniPanel .dd-open>.mini-dd::after{transform:rotate(-135deg);margin-top:3px}
+#miniPanel .mini-dd:hover{background:var(--blue-50)}
+#miniPanel .mini-dd:focus-visible{outline:2px solid #7b4fd6;outline-offset:1px}
+#miniPanel .mini-dd-wrap:not(.dd-open) #miniCompanyInfo,#miniPanel .mini-dd-wrap:not(.dd-open) #miniBranchInfo,
+#miniPanel #miniSeekerSection:not(.dd-open) #miniRows,#miniPanel #miniSeekerSection:not(.dd-open) #miniSubjectsWrap,#miniPanel #miniSeekerSection:not(.dd-open) #miniLevelsWrap{display:none!important}
+#miniPanel .dd-open #miniCompanyInfo,#miniPanel .dd-open #miniBranchInfo,#miniPanel #miniSeekerSection.dd-open #miniRows{border:1px solid var(--line);border-top:0;border-radius:0 0 4px 4px;padding:2px 12px;background:#fff}
