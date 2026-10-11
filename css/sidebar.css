@@ -74,3 +74,16 @@ body.up-has-side #app .dash-tabs{display:none !important}
 .up-subitem.on{background:var(--blue-900);color:#fff;font-weight:600}
 body.up-has-side #fpRoot .fp-nav{display:none}
 body.up-has-side #fpRoot .fp-wrap{grid-template-columns:minmax(0,1fr)}
+
+/* Browse jobs filters inside the sidebar */
+.up-sub-f{border-left:0;margin-left:6px;padding-left:0}
+.up-filters{display:flex;flex-direction:column;gap:2px;padding:4px 6px 8px 10px;border-left:1px solid var(--line);margin-left:16px}
+.up-fhead{display:flex;align-items:center;justify-content:space-between;padding:4px 0 6px}
+.up-fhead b{font-size:13px;color:var(--blue-900)}
+.up-fclear{border:0;background:none;color:var(--green);font:600 12px inherit;font-family:inherit;cursor:pointer;padding:0}
+.up-fgroup{padding:8px 0;border-top:1px solid var(--line)}
+.up-fgroup h5{margin:0 0 6px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft)}
+.up-fopt{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:13px;color:var(--ink);cursor:pointer}
+.up-fopt input{margin:0;accent-color:var(--green)}
+.up-fgroup input[type=range]{width:100%;accent-color:var(--green)}
+.up-frange{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-faint)}
