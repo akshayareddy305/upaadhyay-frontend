@@ -86,6 +86,39 @@
   }
 
   /* ---------- faculty ---------- */
+  /* ---------- Browse jobs filters (live in the sidebar, drive the embedded jobs page) ---------- */
+  var F0 = function(){ return { cat:[], exp:20, date:'all', dist:'all' }; };
+  state.f = F0();
+  function jobsWin(){ var fr = document.querySelector('#upEmbed iframe'); try{ return fr && fr.contentWindow && fr.contentWindow.document ? fr.contentWindow : null; }catch(e){ return null; } }
+  function applyFilters(){
+    var w = jobsWin(); if(!w) return;
+    try{
+      var d = w.document, f = state.f;
+      [].forEach.call(d.querySelectorAll('.bj-cat-check'), function(c){ c.checked = f.cat.indexOf(c.value) > -1; });
+      var r = d.getElementById('bjExpRange'); if(r) r.value = f.exp;
+      var ev = d.getElementById('bjExpVal'); if(ev) ev.textContent = f.exp;
+      [].forEach.call(d.querySelectorAll('input[name="bjDate"]'), function(x){ x.checked = x.value === f.date; });
+      [].forEach.call(d.querySelectorAll('input[name="bjDist"]'), function(x){ x.checked = x.value === f.dist; });
+      if(typeof w.renderBrowseJobs === 'function') w.renderBrowseJobs();
+    }catch(e){}
+  }
+  function filtersHTML(){
+    var f = state.f;
+    function radios(name, cur, opts){ return opts.map(function(o){ return '<label class="up-fopt"><input type="radio" name="up' + name + '" data-f="' + name + '" value="' + o[0] + '"' + (String(cur) === o[0] ? ' checked' : '') + '> ' + o[1] + '</label>'; }).join(''); }
+    return '<div class="up-filters"><div class="up-fhead"><b>Filters</b><button type="button" class="up-fclear" data-fclear="1">Clear all</button></div>'
+      + '<div class="up-fgroup"><h5>Category</h5>' + ['Schools', 'Intermediate', 'Higher Education'].map(function(c){ return '<label class="up-fopt"><input type="checkbox" data-f="cat" value="' + c + '"' + (f.cat.indexOf(c) > -1 ? ' checked' : '') + '> ' + c + '</label>'; }).join('') + '</div>'
+      + '<div class="up-fgroup"><h5>Experience</h5><input type="range" data-f="exp" min="0" max="20" value="' + f.exp + '"><div class="up-frange"><span>0 yrs</span><span id="upExpVal">' + f.exp + '</span><span>20+ yrs</span></div></div>'
+      + '<div class="up-fgroup"><h5>Date posted</h5>' + radios('date', f.date, [['all', 'All'], ['1', 'Last 24 hours'], ['3', 'Last 3 days'], ['7', 'Last 7 days']]) + '</div>'
+      + '<div class="up-fgroup"><h5>Distance</h5>' + radios('dist', f.dist, [['all', 'All'], ['5', 'Within 5 km'], ['10', 'Within 10 km'], ['20', 'Within 20 km']]) + '</div></div>';
+  }
+  function onFilter(e){
+    var t = e.target; if(!t || !t.getAttribute) return; var k = t.getAttribute('data-f'); if(!k) return;
+    if(k === 'cat'){ state.f.cat = [].filter.call(side.querySelectorAll('[data-f="cat"]'), function(c){ return c.checked; }).map(function(c){ return c.value; }); }
+    else if(k === 'exp'){ state.f.exp = +t.value; var v = $('upExpVal'); if(v) v.textContent = t.value; }
+    else state.f[k] = t.value;
+    applyFilters();
+  }
+
   function hideEmbed(){
     var e = $('upEmbed'), h = $('dashProfileTab'); state.emb = false;
     if(e) e.style.display = 'none'; if(h) h.style.display = 'block';
@@ -94,7 +127,7 @@
     var h = $('dashProfileTab'); if(!h) return false;
     var e = $('upEmbed');
     if(!e){ e = document.createElement('div'); e.id = 'upEmbed'; e.className = 'up-embed'; h.parentNode.insertBefore(e, h.nextSibling); }
-    if(e.getAttribute('data-src') !== src){ e.setAttribute('data-src', src); e.innerHTML = '<iframe src="' + src + '" title="Browse jobs" loading="eager"></iframe>'; }
+    if(e.getAttribute('data-src') !== src){ e.setAttribute('data-src', src); e.innerHTML = '<iframe src="' + src + '" title="Browse jobs" loading="eager"></iframe>'; e.firstChild.addEventListener('load', applyFilters); }
     h.style.display = 'none'; e.style.display = 'block'; state.emb = true; window.scrollTo(0, 0); return true;
   }
   function facultyItems(){
@@ -102,7 +135,7 @@
     function mine(){ if(onPage){ hideEmbed(); if(typeof switchDashTab === 'function') switchDashTab('profile'); window.scrollTo(0, 0); } else goTo('faculty'); }
     function jobs(){ if(onPage && showEmbed((window.PAGES && PAGES.jobs ? PAGES.jobs : '../pages/jobs.html') + '?embed=1')) return; goTo('jobs'); }
     return { active:onPage ? (state.emb ? 'jobs' : 'profile') : '', edit:mine,
-      list:[ { k:'profile', t:'My profile', i:'user', go:mine },
+      list:[ { k:'profile', t:'My profile', i:'user', go:mine, sub:true },
         { k:'jobs', t:'Browse jobs', i:'search', go:jobs },
         { k:'notif', t:'Notifications', i:'bell', go:function(){ var b = document.querySelector('.nav-bell'); if(b) b.click(); } },
         { k:'set', t:'Settings', i:'cog', go:mine },
@@ -125,12 +158,23 @@
     document.body.appendChild(side); document.body.appendChild(fab); document.body.appendChild(scrim);
     var toggle = function(on){ side.classList.toggle('open', on); scrim.classList.toggle('open', on); };
     fab.onclick = function(){ toggle(!side.classList.contains('open')); }; scrim.onclick = function(){ toggle(false); };
+    side.addEventListener('change', onFilter); side.addEventListener('input', function(e){ if(e.target && e.target.getAttribute && e.target.getAttribute('data-f') === 'exp') onFilter(e); });
     side.addEventListener('click', function(e){
+      if(e.target.closest && e.target.closest('[data-fclear]')){ state.f = F0(); applyFilters(); schedule(); return; }
       var b = e.target.closest('[data-k]'); if(!b) return;
+      var fk = b.getAttribute('data-k');
+      if(fk.indexOf('fp:') === 0){ hideEmbed(); if(window.FP) FP.go(+fk.slice(3)); window.scrollTo(0, 0); toggle(false); schedule(); return; }
       if(b.getAttribute('data-k') === '_edit'){ side._cfg.edit(); }
       else { var it = items.filter(function(x){ return x.k === b.getAttribute('data-k'); })[0]; if(it) it.go(); }
       toggle(false); schedule();
     });
+  }
+  function subMenu(it, cfg){
+    if(it.k === 'jobs' && it.k === cfg.active) return '<div class="up-sub up-sub-f">' + filtersHTML() + '</div>';
+    if(!it.sub || it.k !== cfg.active || !window.FP || !FP.sections) return '';
+    var cur = FP.open();
+    return '<div class="up-sub">' + FP.sections.map(function(n, i){
+      return '<button type="button" class="up-subitem' + (i === cur ? ' on' : '') + '" data-k="fp:' + i + '">' + esc(n) + '</button>'; }).join('') + '</div>';
   }
   function render(){
     var r = UpCard.role(), on = visible(r);
@@ -145,7 +189,7 @@
       + '<nav class="up-nav">' + items.map(function(it){
           return '<button type="button" class="up-item' + (it.k === cfg.active ? ' on' : '') + (it.out ? ' out' : '') + (it.lock ? ' locked' : '') + '" data-k="' + it.k + '"' + (it.k === cfg.active ? ' aria-current="page"' : '') + '>'
             + ic(it.i) + '<span class="t">' + esc(it.t) + '</span>'
-            + (it.n ? '<em>' + esc(it.n) + '</em>' : '') + (it.flag ? '<em class="flag">!</em>' : '') + (it.lock ? '<i class="lk" title="Locked until approved">' + ic('lock') + '</i>' : '') + '</button>'; }).join('') + '</nav>';
+            + (it.n ? '<em>' + esc(it.n) + '</em>' : '') + (it.flag ? '<em class="flag">!</em>' : '') + (it.lock ? '<i class="lk" title="Locked until approved">' + ic('lock') + '</i>' : '') + '</button>' + subMenu(it, cfg); }).join('') + '</nav>';
     side.scrollTop = scrollY;
     paintOverview();
   }
@@ -160,6 +204,7 @@
   var app = $('app'); if(app && window.MutationObserver && !$('instRoot')) new MutationObserver(schedule).observe(app, { childList:true });
   var root = $('instRoot'); if(root && window.MutationObserver) new MutationObserver(schedule).observe(root, { childList:true, subtree:true });
   UpCard.onChange(render);
+  window.addEventListener('fp:paint', schedule);
   var go = function(){ render(); setTimeout(render, 400); setTimeout(render, 1500); };   /* pages build their state async after login */
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
   window.UpSide = { render:render };
