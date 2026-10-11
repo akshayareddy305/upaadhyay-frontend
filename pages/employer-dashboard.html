@@ -272,6 +272,7 @@ requireLogin('company').then(function(ok){ if(!ok) return;
   openDash(currentCompany.name || 'Institution', 'post');
   const _t = getParam('tab') || _kept;
   if(_t==='candidates' || _t==='company' || _t==='myjobs' || _t==='post') switchEmployerTab(_t);
+  if(typeof applyEmployerLock==='function') applyEmployerLock();
   window.scrollTo(0,0);
 });
 </script>
