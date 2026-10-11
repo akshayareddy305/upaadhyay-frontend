@@ -254,7 +254,7 @@
       _hydration = (async function(){
         try{
           if(currentRole === 'seeker'){ await hydrateSeeker(); window.bkProfileLoaded = true; window.bkProfileError = ''; }
-          else if(currentRole === 'company'){ await hydrateCompany(); }
+          else if(currentRole === 'company'){ await hydrateCompany(); if(typeof applyEmployerLock === 'function') applyEmployerLock(); }
           _syncReady = true;
           _origSaveState();
           if(currentRole === 'company'){ try{ await loadEmployer(); }catch(e){ console.warn('[backend] employer data', e); } }
