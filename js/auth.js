@@ -640,6 +640,7 @@
           : `<span style="font-size:12px; color:var(--ink-faint);">Add your institution type and city on your company profile.</span>`;
       }
     }
+    try{ if(window.UpCard) UpCard.mountMini(); }catch(e){}   /* live status / completion / counts card */
   }
 
   /* ---- Faculty card: live preview of the SAVED profile (re-rendered by refreshMiniProfile after every save) ---- */
