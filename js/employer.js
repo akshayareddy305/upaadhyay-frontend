@@ -327,9 +327,39 @@
   }
 
 
+  /* Post a job / Posted jobs / Browse candidates stay locked until an admin approves the institution. */
+  const LOCKED_EMP_TABS = ['post','myjobs','candidates'];
+  function employerApproved(){ return String((currentCompany && currentCompany.verification) || '').toLowerCase() === 'approved'; }
+  function applyEmployerLock(){
+    const $ = id => document.getElementById(id);
+    const locked = !employerApproved();
+    [['subtabPost','post'],['subtabMyJobs','myjobs'],['subtabCandidates','candidates']].forEach(function(x){
+      const b = $(x[0]); if(!b) return;
+      b.classList.toggle('is-locked', locked);
+      b.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      b.title = locked ? 'Locked until an admin approves your institution' : '';
+    });
+    const bar = $('employerTabsBar'); if(!bar) return;
+    let note = $('empLockNote');
+    if(locked && !note){
+      note = document.createElement('div'); note.id = 'empLockNote'; note.className = 'emp-lock-note';
+      note.textContent = 'Post a job, Posted jobs and Browse candidates unlock once an admin approves your institution. Complete and submit your institution profile to get reviewed.';
+      bar.insertAdjacentElement('afterend', note);
+    } else if(!locked && note){ note.remove(); }
+    if(locked){
+      const cur = (function(){ try{ return sessionStorage.getItem('upadyay_emp_tab'); }catch(e){ return null; } })();
+      if(LOCKED_EMP_TABS.indexOf(cur) !== -1) switchEmployerTab('company');
+    }
+  }
+  window.applyEmployerLock = applyEmployerLock;
+
   function switchEmployerTab(which){
     const $ = id => document.getElementById(id);
     if(!$('dashCompanyTab')) return;               // not on the employer page
+    if(LOCKED_EMP_TABS.indexOf(which) !== -1 && !employerApproved()){
+      which = 'company';
+      if(typeof showGenericToast === 'function') showGenericToast('Locked until an admin approves your institution.');
+    }
     try{ sessionStorage.setItem('upadyay_emp_tab', which); }catch(e){}   // so a reload stays on this tab
     $('dashCompanyTab').style.display = which==='company' ? 'block' : 'none';
     $('dashPostTab').style.display = which==='post' ? 'block' : 'none';
