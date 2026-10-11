@@ -289,6 +289,19 @@ function docsLine(){
   return n?ck(12)+' '+n+(n===1?' document':' documents')+' uploaded'+(m.length?' · missing: '+m.map(c=>esc(c.t)).join(', '):''):'No documents uploaded';
 }
 
+/* ---------- logo upload (cropped data URL -> server file; only the URL is kept) ---------- */
+async function pushLogo(dataUrl){
+  const prev={logo:I.d.logo,id:I.d.logoFileId};
+  I.d.logo=dataUrl; render();   /* instant preview */
+  try{
+    if(!window.bkUploadFile) throw new Error('Upload is not available. Reload the page.');
+    const blob=bkDataUrlToBlob(dataUrl);
+    const up=await bkUploadFile(blob,'company_logo','logo.'+(blob.type==='image/jpeg'?'jpg':'png'));
+    if(!up.url) throw new Error('The server has no public file URL configured.');
+    I.d.logo=up.url; I.d.logoFileId=up.id; save(); render(); toast('Logo updated');
+  }catch(e){ I.d.logo=prev.logo; if(prev.id) I.d.logoFileId=prev.id; else delete I.d.logoFileId; render(); toast('Could not upload logo: '+((e&&e.message)||'error')); }
+}
+
 /* ---------- document upload ---------- */
 function upload(k,f){
   delete ERR[k];
@@ -300,10 +313,14 @@ function upload(k,f){
   if(FILES[id]) URL.revokeObjectURL(FILES[id].u);
   FILES[id]={u:URL.createObjectURL(f),t:f.type||''};
   render();
-  setTimeout(()=>{ rec.st='ok'; save(); render(); },700);
+  const fail=m=>{ if(k==='new') I.extra=I.extra.filter(x=>x.id!==id); else delete I.docs[k]; if(FILES[id]){ URL.revokeObjectURL(FILES[id].u); delete FILES[id]; } ERR[k]=m; render(); };
+  if(!window.bkUploadFile){ fail('Upload is not available. Reload the page and try again.'); return; }
+  bkUploadFile(f,'other',f.name).then(up=>{ rec.st='ok'; rec.fid=up.id; rec.url=up.url||''; save(); render(); })
+    .catch(e=>fail((e&&e.message)||'Upload failed. Try again.'));
 }
 function preview(k){
   const u=FILES[k], n=k[0]==='x'?I.extra.find(x=>x.id===k):I.docs[k];
+  if(!u&&n&&(n.fid||n.url)){ if(n.fid&&window.bkOpenFile) bkOpenFile(n.fid); else window.open(n.url,'_blank','noopener'); return; }
   if(!u||!n){ toast('Preview is only available for files uploaded in this session. Replace the file to preview it.'); return; }
   const img=/^image\//.test(u.t);
   modal(`<h4 style="margin:0 0 12px;font-size:16px;overflow-wrap:anywhere">${esc(n.name)}</h4>${img?`<img src="${u.u}" alt="Preview of ${esc(n.name)}" style="max-width:100%;display:block;margin:0 auto">`:`<iframe src="${u.u}" title="Preview of ${esc(n.name)}" style="width:100%;height:60vh;border:1px solid var(--line)"></iframe>`}<div class="in-actions" style="margin-top:12px"><span></span><div class="r"><button class="btn btn-primary btn-sm" onclick="IN.closeM()">Close</button></div></div>`);
@@ -652,11 +669,11 @@ window.IN={
     if(!/^image\/(png|jpeg)$/.test(f.type)){ er.textContent='Use a PNG or JPG image.'; return; }
     if(f.size>2*1048576){ er.textContent='Logo must be under 2 MB.'; return; }
     er.textContent=''; const inp=e.target;
-    if(window.LogoCrop){ LogoCrop.open(f,url=>{ I.d.logo=url; save(); render(); toast('Logo updated'); }); }
-    else { const r=new FileReader(); r.onload=x=>{ I.d.logo=x.target.result; save(); render(); toast('Logo updated'); }; r.readAsDataURL(f); }
+    if(window.LogoCrop){ LogoCrop.open(f,url=>pushLogo(url)); }
+    else { const r=new FileReader(); r.onload=x=>pushLogo(x.target.result); r.readAsDataURL(f); }
     inp.value=''; },
-  setLogo(url){ I.d.logo=url||''; save(); render(); },
-  rmLogo(){ I.d.logo=''; save(); render(); },
+  setLogo(url){ if(url&&String(url).indexOf('data:')===0){ pushLogo(url); return; } I.d.logo=url||''; save(); render(); },
+  rmLogo(){ const id=I.d.logoFileId; I.d.logo=''; delete I.d.logoFileId; save(); render(); if(id&&window.bkDeleteFile) bkDeleteFile(id).catch(()=>{}); },
   send(){ const m=chk(EMAILF,I.d.email); mark('d',EMAILF,m); if(m) return; I.em='sending'; render(); setTimeout(()=>{ I.em='sent'; save(); render(); },900); },
   resend(){ toast('A new code was sent to '+I.d.email); },
   otp(el,i){ el.value=el.value.replace(/\D/g,''); if(el.value&&el.nextElementSibling) el.nextElementSibling.focus(); },
@@ -669,7 +686,8 @@ window.IN={
   pick(k,e){ const f=e.target.files[0]; e.target.value=''; if(f) upload(k,f); },
   drop(k,e){ const f=e.dataTransfer&&e.dataTransfer.files[0]; if(f) upload(k,f); },
   prev(k){ preview(k); },
-  rm(k){ if(k[0]==='x') I.extra=I.extra.filter(x=>x.id!==k); else delete I.docs[k]; delete FILES[k]; delete ERR[k]; save(); render(); },
+  rm(k){ { const rc=k[0]==='x'?I.extra.find(x=>x.id===k):I.docs[k]; if(rc&&rc.fid&&window.bkDeleteFile) bkDeleteFile(rc.fid).catch(()=>{}); }
+    if(k[0]==='x') I.extra=I.extra.filter(x=>x.id!==k); else delete I.docs[k]; delete FILES[k]; delete ERR[k]; save(); render(); },
   xopen(v){ XOPEN=!!v; delete ERR['new']; render(); },
   xt(v){ XT=v; },
   asend(){ const m=chk({req:1,v:'email'},I.d.aemail); if(m){ toast(m); return; } I.aem='sending'; render(); setTimeout(()=>{ I.aem='sent'; save(); render(); },900); },
@@ -687,7 +705,10 @@ window.IN={
   tab(w){ switchEmployerTab(w); },
   closeM,
   bEdit(i){ BRi=i; BR=i<0?{}:Object.assign({},I.branches[i]); closeM(); modal(bForm()); },
-  bImg(e){ const f=e.target.files[0]; if(!f) return; if(f.size>2*1048576){ toast('Image must be under 2 MB'); return; } const r=new FileReader(); r.onload=x=>{ BR.img=x.target.result; modal(bForm()); }; r.readAsDataURL(f); },
+  bImg(e){ const f=e.target.files[0]; e.target.value=''; if(!f) return; if(!/^image\/(png|jpeg)$/.test(f.type)){ toast('Use a PNG or JPG image'); return; } if(f.size>2*1048576){ toast('Image must be under 2 MB'); return; }
+    if(!window.bkUploadFile){ toast('Upload is not available. Reload the page.'); return; }
+    toast('Uploading image…');
+    bkUploadFile(f,'job_image',f.name).then(up=>{ if(!up.url) throw new Error('The server has no public file URL configured.'); BR.img=up.url; BR.imgId=up.id; modal(bForm()); toast('Image uploaded'); }).catch(er=>toast('Could not upload image: '+((er&&er.message)||'error'))); },
   bSave(){ if(!valid(FB,'b')) return; if(BRi<0) I.branches.push(BR); else I.branches[BRi]=BR; save(); closeM(); render(); toast('Branch saved'); },
   reqView(){ const r=subReq(); if(!r) return;
     const chk=(ok,t)=>`<li>${ok?ck(13):CLKs} ${t}</li>`;
