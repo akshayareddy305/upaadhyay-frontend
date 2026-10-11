@@ -56,3 +56,6 @@ body.up-has-side #instRoot .in-dash .in-layout{display:block}
 .up-tile{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column}
 .up-tile b{font-size:26px;color:var(--blue-900);line-height:1.1}.up-tile span{font-size:12.5px;color:var(--ink-soft)}
 .up-acts{display:flex;flex-wrap:wrap;gap:8px}
+
+/* institution dashboard: the sidebar replaces the top tab bar (Company profile / Post a job / Posted jobs / Browse candidates) */
+body.up-has-side #employerTabsBar{display:none !important}
