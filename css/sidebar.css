@@ -1,0 +1,58 @@
+/* sidebar.css — dashboard sidebar + profile card (used by js/sidebar.js and js/profile-card.js) */
+
+/* ---------- profile card ---------- */
+.upc{display:flex;flex-direction:column;gap:8px;padding:14px;background:#fff;border:1px solid var(--line);border-radius:var(--radius)}
+.upc-compact{margin:10px 0 4px;padding:12px;background:var(--blue-50)}
+.upc-top{display:flex;gap:10px;align-items:center;min-width:0}
+.upc-av{width:46px;height:46px;flex:none;border-radius:var(--radius);overflow:hidden;background:var(--blue-50);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--blue-700);font-size:15px}
+.upc-av img{width:100%;height:100%;object-fit:contain;background:#fff}
+.upc-id{min-width:0;display:flex;flex-direction:column}
+.upc-id b{font-size:14px;color:var(--blue-900);line-height:1.25;overflow-wrap:anywhere}
+.upc-id span{font-size:12px;color:var(--ink-faint);overflow-wrap:anywhere}
+.upc-badge{align-self:flex-start;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:#FFF4DB;color:#8A5A00}
+.upc-badge.ok{background:#E3F6EC;color:#1D8A5E}.upc-badge.warn{background:#FFF0D6;color:#9A5B00}.upc-badge.bad{background:#FDE7E5;color:#B3261E}
+.upc-bar{height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+.upc-bar i{display:block;height:100%;background:var(--blue-700);border-radius:99px;transition:width .35s ease}
+.upc-hint{font-size:11.5px;color:var(--ink-soft);line-height:1.35}.upc-hint b{color:var(--blue-900)}
+.upc-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:6px}
+.upc-stats div{background:var(--blue-50);border-radius:var(--radius);padding:7px 8px;display:flex;flex-direction:column}
+.upc-compact .upc-stats div{background:#fff}
+.upc-stats b{font-size:17px;color:var(--blue-900);line-height:1.1}.upc-stats span{font-size:11px;color:var(--ink-faint)}
+.upc-row{display:flex;flex-direction:column;font-size:12px;border-top:1px solid var(--line);padding-top:6px}
+.upc-row span{color:var(--ink-faint)}.upc-row b{color:var(--ink);font-weight:600;overflow-wrap:anywhere}
+
+/* ---------- sidebar ---------- */
+.up-side,.up-fab,.up-scrim{display:none}
+@media (min-width:1000px){
+  body.up-has-side{padding-left:264px}
+  .up-side{display:flex;flex-direction:column;gap:10px;position:fixed;z-index:30;left:0;top:var(--nav-h,65px);bottom:0;width:264px;padding:14px 12px 20px;overflow-y:auto;background:#fff;border-right:1px solid var(--line)}
+}
+@media (max-width:999px){
+  body.up-has-side .up-side{display:flex;flex-direction:column;gap:10px;position:fixed;z-index:60;left:0;top:0;bottom:0;width:min(300px,86vw);padding:16px 12px 24px;overflow-y:auto;background:#fff;box-shadow:4px 0 24px rgba(0,0,0,.14);transform:translateX(-102%);transition:transform .25s ease}
+  body.up-has-side .up-side.open{transform:none}
+  body.up-has-side .up-fab{display:block;position:fixed;z-index:50;left:12px;bottom:14px;padding:9px 16px;border:0;border-radius:99px;background:var(--blue-700);color:#fff;font:600 13px inherit;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.2);cursor:pointer}
+  body.up-has-side .up-scrim.open{display:block;position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.35)}
+}
+.up-edit{width:100%}
+.up-nav{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.up-item{display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border:0;border-left:3px solid transparent;background:none;border-radius:var(--radius);font:600 13.5px/1.2 inherit;font-family:inherit;color:var(--ink-soft);text-align:left;cursor:pointer}
+.up-item:hover{background:var(--blue-50);color:var(--blue-900)}
+.up-item:focus-visible{outline:2px solid var(--blue-700);outline-offset:1px}
+.up-item.on{background:var(--blue-50);border-left-color:var(--blue-700);color:var(--blue-900);font-weight:700}
+.up-item svg{flex:none}.up-item .t{flex:1;min-width:0}
+.up-item.out{margin-top:8px;border-top:1px solid var(--line);border-radius:0;color:#B3261E}
+.up-item.locked:not(.on){color:var(--ink-faint)}
+.up-item em{font-style:normal;font-size:11px;font-weight:700;min-width:20px;padding:2px 6px;border-radius:99px;background:var(--blue-700);color:#fff;text-align:center}
+.up-item em.flag{background:#E0432B}
+.up-item .lk{display:inline-flex;opacity:.7}.up-item .lk svg{width:13px;height:13px}
+
+/* hide the old in-page section list on the institution dashboard — the sidebar replaces it (wizard keeps its own steps) */
+body.up-has-side #instRoot .in-dash .in-side{display:none}
+body.up-has-side #instRoot .in-dash .in-layout{display:block}
+
+/* overview panel */
+.up-ov{margin-bottom:18px}
+.up-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
+.up-tile{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column}
+.up-tile b{font-size:26px;color:var(--blue-900);line-height:1.1}.up-tile span{font-size:12.5px;color:var(--ink-soft)}
+.up-acts{display:flex;flex-wrap:wrap;gap:8px}
