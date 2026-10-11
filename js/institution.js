@@ -451,7 +451,7 @@ function wiz(){
   const last=s===STEPS.length-1;
   return `<div class="in-wrap in-fixed"><div class="in-head"><h3>${I.sub?'Edit your institution profile':'Create your institution profile'}</h3><p>Add your official institution details so candidates can identify and trust your organization.</p></div>
   <div class="in-layout">
-    <aside class="in-side"><div class="in-steps" role="tablist" aria-orientation="vertical">${steps}</div>
+    <aside class="in-side in-side-wiz"><div class="in-steps" role="tablist" aria-orientation="vertical">${steps}</div>
       <div class="in-side-foot"><div class="in-bar"><div style="width:${pct()}%"></div></div><span>${pct()}% complete</span>
       <button class="btn btn-ghost btn-sm" onclick="IN.later()">Save and continue later</button></div></aside>
     <div class="in-main">
