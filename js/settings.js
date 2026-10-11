@@ -165,7 +165,19 @@
     r = r || role(); var names = sections(r), i = Math.min(Math.max(cur, 0), names.length - 1), n = names[i];
     return '<div class="st-head"><h3>' + esc(n) + '</h3><p>' + esc(SUBS[n] || '') + '</p></div><div class="st-body">' + BUILD[n](r) + '</div>';
   }
-  function refresh(){ var el = document.getElementById('upSettings'); if(el) el.innerHTML = html(role()); }
+  /* the settings panel fills the space under whatever sits above it (nav, notice banner) and scrolls on its own */
+  function fit(){
+    var el = document.getElementById('upSettings'); if(!el || el.offsetParent === null) return;
+    el.style.height = 'auto';
+    var top = el.getBoundingClientRect().top;
+    el.style.height = Math.max(window.innerHeight - top - 12, 360) + 'px';
+  }
+  function refresh(){
+    var el = document.getElementById('upSettings'); if(!el) return;
+    var keep = el.scrollTop; el.innerHTML = html(role()); fit(); el.scrollTop = keep;
+    requestAnimationFrame(fit);
+  }
+  window.addEventListener('resize', fit);
 
   /* ---------------- actions (delegated, so they survive re-renders) ---------------- */
   function inside(t){ return t && t.closest && t.closest('#upSettings'); }
@@ -225,5 +237,5 @@
     if(ACT[b.getAttribute('data-act')]) ACT[b.getAttribute('data-act')]();
   });
 
-  window.UpSettings = { sections:sections, html:html, refresh:refresh, cur:function(){ return cur; }, idx:function(i){ cur = i; } };
+  window.UpSettings = { sections:sections, html:html, refresh:refresh, fit:fit, cur:function(){ return cur; }, idx:function(i){ cur = i; } };
 })();
