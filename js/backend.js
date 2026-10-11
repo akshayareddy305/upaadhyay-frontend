@@ -62,7 +62,7 @@
 
   /* ---------------- upload limits (same numbers the backend enforces: GET /limits) ---------------- */
   const LIMIT_FALLBACK = { categories: {
-    profile_photo: { mimes: ['jpg','jpeg','png','webp'], max_kb: 2048 }, company_logo: { mimes: ['jpg','jpeg','png','webp','svg'], max_kb: 2048 },
+    profile_photo: { mimes: ['jpg','jpeg','png','webp'], max_kb: 2048 }, company_logo: { mimes: ['jpg','jpeg','png','webp'], max_kb: 2048 },
     job_image: { mimes: ['jpg','jpeg','png','webp'], max_kb: 4096 }, resume: { mimes: ['pdf','doc','docx'], max_kb: 5120 },
     certificate: { mimes: ['pdf','jpg','jpeg','png'], max_kb: 5120 }, video: { mimes: ['mp4','webm'], max_kb: 51200 }, other: { mimes: ['pdf','jpg','jpeg','png'], max_kb: 5120 } } };
   let _limits = null;
@@ -262,14 +262,20 @@
       try{ if(!sessionStorage.getItem('upadyay_inst_reload')){ sessionStorage.setItem('upadyay_inst_reload', '1'); location.reload(); return; } }catch(e){}
     }else{
       try{ sessionStorage.removeItem('upadyay_inst_reload'); if(uid && !owner) localStorage.setItem('upadyay_inst_owner', uid); }catch(e){}
-      if(pd.inst && !instState()){ try{ localStorage.setItem('upadyay_inst_v1', JSON.stringify(pd.inst)); }catch(e){} } /* new device */
+      if(pd.inst && !instState()){ /* new device / cleared browser: bring the saved institution form in and redraw it */
+        try{ localStorage.setItem('upadyay_inst_v1', JSON.stringify(pd.inst)); }catch(e){}
+        if(typeof instReload === 'function') instReload();
+      }
     }
     _instSig = JSON.stringify(instState());
     _lastSig = JSON.stringify(companyPayload());
   }
   function companyPayload(){
-    const C = currentCompany;
-    const body = { company_name: C.name || undefined, industry: C.type || null, city: C.city || null,
+    const C = currentCompany, inst = instState(), d = (inst && inst.d) || {};
+    /* Main-campus address lives in the institution form; mirror it into the real columns so search/admin/jobs see it. */
+    const place = [d.area, d.city, d.state].map(function(x){ return String(x || '').trim(); }).filter(Boolean).join(', ');
+    const body = { company_name: C.name || undefined, industry: C.type || null, city: String(d.city || C.city || '').slice(0, 100) || null,
+                   state: String(d.state || '').slice(0, 100) || null, location: place.slice(0, 190) || null,
                    website: normUrl(C.website) || (C.website ? undefined : null), description: C.desc ? String(C.desc).slice(0, 5000) : null,
                    phone: C.phone ? String(C.phone).slice(0, 20) : null };
     if(/^\S+@\S+\.\S+$/.test(C.email || '')) body.email = C.email; else if(!C.email) body.email = null;
@@ -309,7 +315,19 @@
   /* Re-read the saved profile from the server (used on tab focus so other tabs/devices' edits show up). */
   window.bkRefreshSeeker = async function(){ await hydrateSeeker(); window.bkProfileLoaded = true; window.bkProfileError = ''; _syncReady = true; _origSaveState(); };
   function schedulePush(){ clearTimeout(_timer); _timer = setTimeout(pushProfile, 900); }
-  function flushPush(){ if(_timer){ clearTimeout(_timer); _timer = null; pushProfile(); } }
+  function flushPush(){
+    if(currentRole === 'company' && _syncReady){                 // institution form edits not yet noticed by the 3s poll
+      const s = JSON.stringify(instState());
+      if(s !== _instSig){ _instSig = s; clearTimeout(_timer); _timer = null; pushProfile(); return; }
+    }
+    if(_timer){ clearTimeout(_timer); _timer = null; pushProfile(); }
+  }
+  /* institution.js calls this on every save() so the server copy follows right away instead of waiting for the poll. */
+  window.bkInstChanged = function(){
+    if(currentRole !== 'company' || !_syncReady) return;
+    const s = JSON.stringify(instState());
+    if(s !== _instSig){ _instSig = s; schedulePush(); }
+  };
   document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') flushPush(); });
   window.addEventListener('pagehide', flushPush);
 
@@ -540,15 +558,16 @@
     return '<span class="badge badge-pending" title="Visible after admin approval">Draft</span>';
   };
 
-  /* Post a job → POST /company/jobs */
-  window.bkPostJob = async function(f){
+  /* Form fields -> API job body (shared by post and edit). `keepDeadline` = the deadline already saved on the job being edited:
+     an unchanged, already-past deadline is allowed so an old job can still be edited, closed or reopened. */
+  async function jobBody(f, keepDeadline){
     const typeMap = { 'Full-time': 'full-time', 'Part-time': 'part-time', 'Contract': 'contract', 'Visiting faculty': 'part-time' };
     const loc = f.location || f.campusLoc || 'India';
     const num = function(x){ return x === '' || x == null || isNaN(Number(x)) ? null : Number(x); };
     if(num(f.expMin) != null && num(f.expMax) != null && num(f.expMin) > num(f.expMax)) throw new Error('Minimum experience cannot be more than maximum.');
     if(!f.salNorms && num(f.salMin) != null && num(f.salMax) != null && num(f.salMin) > num(f.salMax)) throw new Error('Minimum salary cannot be more than maximum.');
-    if(f.deadline && new Date(f.deadline + 'T23:59:59') < new Date()) throw new Error('Application deadline is in the past.');
-    const body = {
+    if(f.deadline && f.deadline !== keepDeadline && new Date(f.deadline + 'T23:59:59') < new Date()) throw new Error('Application deadline is in the past.');
+    return {
       title: f.title,
       description: f.desc || [f.role, f.dept, f.qualification && ('Qualification: ' + f.qualification)].filter(Boolean).join(' · ') || f.title,
       requirements: f.qualification ? ('Qualification: ' + f.qualification + (f.notice ? ' · Notice period: ' + f.notice : '')) : null,
@@ -557,10 +576,49 @@
       experience_min: num(f.expMin), experience_max: num(f.expMax),
       salary_min: f.salNorms ? null : num(f.salMin), salary_max: f.salNorms ? null : num(f.salMax),
       vacancy_count: Math.max(1, parseInt(f.vacancies, 10) || 1), application_deadline: f.deadline || null,
-      status: 'published', skills: splitList(f.skills).slice(0, 30),
+      skills: splitList(f.skills).slice(0, 30),
       meta: { role: f.role, dept: f.dept, qualification: f.qualification, notice: f.notice, type_label: f.type, category_label: f.category,
               salary_period: f.salPeriod, salary_negotiable: !!f.salNeg, salary_as_per_norms: !!f.salNorms, campus: f.campus, campus_loc: f.campusLoc }
     };
+  }
+  /* Put a job returned by the API into the posted-jobs list, keeping the applicant list the page already has. */
+  function storeJob(job){
+    const key = 'j' + job.id, prev = postedJobs[key], m = mapPostedJob(job);
+    if(prev){ m.applicantIds = prev.applicantIds || []; if(!job.applications_count) m.applicantCount = prev.applicantCount || 0; }
+    postedJobs[key] = m;
+    _origSaveState();
+    if(typeof renderPostedJobs === 'function') renderPostedJobs();
+    if(typeof renderMyJobsCards === 'function') renderMyJobsCards();
+    return m;
+  }
+
+  /* Edit a job → PUT /company/jobs/{id}. Status is left as it is (use bkSetJobStatus to close / reopen). */
+  window.bkUpdateJob = async function(id, f){
+    const prev = postedJobs['j' + id];
+    const body = await jobBody(f, prev && prev.deadline);
+    const job = await api.put('/company/jobs/' + id, body);
+    storeJob(job);
+    return job;
+  };
+  /* Close / reopen / publish → PUT /company/jobs/{id} {status}. */
+  window.bkSetJobStatus = async function(id, status){
+    const job = await api.put('/company/jobs/' + id, { status: status });
+    storeJob(job);
+    return job;
+  };
+  /* Delete a job (its applications go with it) → DELETE /company/jobs/{id}. */
+  window.bkDeleteJob = async function(id){
+    await api.del('/company/jobs/' + id);
+    delete postedJobs['j' + id];
+    _origSaveState();
+    if(typeof renderPostedJobs === 'function') renderPostedJobs();
+    if(typeof renderMyJobsCards === 'function') renderMyJobsCards();
+  };
+
+  /* Post a job → POST /company/jobs */
+  window.bkPostJob = async function(f){
+    const body = await jobBody(f);
+    body.status = 'published';
     let job;
     try{ job = await api.post('/company/jobs', body, { silent403: true }); }
     catch(e){
