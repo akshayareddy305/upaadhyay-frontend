@@ -391,13 +391,39 @@
     return false;
   }
 
+  /* Role-specific placeholder avatars (inline SVG) — each account type gets its own icon,
+     so a sub-branch never shows a faculty member's photo in the nav. */
+  const PLACEHOLDER_AVATARS = {
+    seeker:  ['#E8EEFF','#1D4ED8','<circle cx="12" cy="9" r="3.5"/><path d="M5 20c0-3.6 3.1-5.5 7-5.5s7 1.9 7 5.5"/>'],
+    company: ['#F3E8FF','#6D28D9','<path d="M3 10l9-6 9 6"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>'],
+    branch:  ['#E6F6EE','#0F766E','<circle cx="12" cy="5.5" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="18" r="2.3"/><path d="M12 7.8v4.2M12 12H6v3.7M12 12h6v3.7"/>']
+  };
+  function placeholderAvatar(kind){
+    const a = PLACEHOLDER_AVATARS[kind] || PLACEHOLDER_AVATARS.seeker;
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" fill="'+a[0]+'"/><g fill="none" stroke="'+a[1]+'" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+a[2]+'</g></svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  function isRealPhoto(src){ return !!src && src !== DEFAULT_USER.avatar && src.indexOf('data:image/svg+xml') !== 0; }
+  /* Which image the nav bar / mini profile should show for the signed-in account. */
+  function avatarForRole(){
+    if(currentRole === 'branch'){
+      let logo = ''; try{ logo = nwBranchInfo().logo || ''; }catch(e){}
+      return isRealPhoto(logo) ? logo : placeholderAvatar('branch');
+    }
+    if(currentRole === 'company'){
+      const logo = currentCompany && currentCompany.logo;
+      return isRealPhoto(logo) ? logo : placeholderAvatar('company');
+    }
+    return isRealPhoto(currentUser.avatar) ? currentUser.avatar : placeholderAvatar('seeker');
+  }
+
   // Single source of truth for nav state across all three states:
   // logged-out visitor, logged-in faculty (seeker), logged-in company (employer).
   function updateNavForLogin(){
     const cta = document.getElementById('navCta'); if(cta) cta.style.display = isLoggedIn ? 'none' : 'flex';
     const usr = document.getElementById('navUser'); if(usr) usr.style.display = isLoggedIn ? 'flex' : 'none';
     if(isLoggedIn){
-      const av = document.getElementById('navAvatarImg'); if(av) av.src = (currentRole==='company' && currentCompany && currentCompany.logo) ? currentCompany.logo : currentUser.avatar;
+      const av = document.getElementById('navAvatarImg'); if(av) av.src = avatarForRole();
       if(document.getElementById('miniPanel')) refreshMiniProfile();
     }
     const navEl = document.querySelector('.nav'); if(navEl) navEl.classList.toggle('logged-in', isLoggedIn);
@@ -529,7 +555,7 @@
     document.getElementById('miniPanel').classList.remove('open');
   }
   function refreshMiniProfile(){
-    document.getElementById('miniAvatar').src = currentRole==='company' ? (currentCompany.logo || currentUser.avatar) : currentRole==='branch' ? (nwBranchInfo().logo || currentUser.avatar) : currentUser.avatar;
+    document.getElementById('miniAvatar').src = avatarForRole();
     const isBranch = currentRole==='branch';
     const isCompany = currentRole==='company';
     document.getElementById('miniName').textContent = isBranch ? (nwBranchInfo().name || currentUser.name || 'Your sub-branch') : isCompany
