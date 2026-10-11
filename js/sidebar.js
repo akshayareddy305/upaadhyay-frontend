@@ -127,8 +127,9 @@
     ensure(); side.style.display = fab.style.display = on ? '' : 'none'; if(!on) return;
     var cfg = r === 'company' ? companyItems() : r === 'branch' ? branchItems() : facultyItems(); side._cfg = cfg; items = cfg.list;
     var c = UpCard.data(r), scrollY = side.scrollTop;
-    side.innerHTML = UpCard.html(c, { noRows:r === 'seeker' })
-      + '<button type="button" class="btn btn-ghost btn-sm up-edit" data-k="_edit">' + esc(c.editLabel) + '</button>'
+    var plain = r === 'company';   /* main institution: menu only, no profile card / edit button */
+    side.innerHTML = (plain ? '' : UpCard.html(c, { noRows:r === 'seeker' })
+      + '<button type="button" class="btn btn-ghost btn-sm up-edit" data-k="_edit">' + esc(c.editLabel) + '</button>')
       + '<nav class="up-nav">' + items.map(function(it){
           return '<button type="button" class="up-item' + (it.k === cfg.active ? ' on' : '') + (it.out ? ' out' : '') + (it.lock ? ' locked' : '') + '" data-k="' + it.k + '"' + (it.k === cfg.active ? ' aria-current="page"' : '') + '>'
             + ic(it.i) + '<span class="t">' + esc(it.t) + '</span>'
