@@ -224,7 +224,7 @@ const PERSIST=()=>{const o=JSON.parse(JSON.stringify(S));delete o.open;delete o.
 const snap=()=>JSON.stringify(PERSIST()),dirty=()=>snap()!==SAVED;
 const isoDob=d=>{const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(d||'');return m?`${m[3]}-${m[2]}-${m[1]}`:''};
 const PLACEHOLDER=u=>!u||u.indexOf('data:')===0;
-function load(){const U=window.currentUser||{};S=Object.assign(blank(),JSON.parse(JSON.stringify(U.fp||{})));S.open=0;
+function load(){const U=currentUser||{};S=Object.assign(blank(),JSON.parse(JSON.stringify(U.fp||{})));S.open=0;
  S.email=U.email||'';S.phone=U.phone||'';
  if(!S.first&&!S.last&&U.name){const tm=/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i.exec(U.name);if(tm&&!S.title)S.title=({dr:'Dr.',prof:'Prof.',mr:'Mr.',ms:'Ms.',mrs:'Mrs.'})[tm[1].toLowerCase()];const n=U.name.replace(/^(Dr|Prof|Mr|Ms|Mrs)\.?\s+/i,'').trim().split(/\s+/);S.first=n.shift()||'';S.last=n.join(' ')}
  if(!S.dob&&/^\d{4}-\d{2}-\d{2}$/.test(U.dob||'')){const q=U.dob.split('-');S.dob=q[2]+'/'+q[1]+'/'+q[0]}
@@ -236,14 +236,14 @@ function bannerHTML(){let h='';
  if(dirty())h+=`<div class="fp-banner warn" role="status"><div><b>Unsaved changes</b></div><div><button type="button" class="fp-btn" data-act="discard">Discard</button> <button type="button" class="fp-btn pri" data-act="draft" data-sv>Save now</button></div></div>`;return h}
 function setBusy(on){ST.saving=on;$$('#fpRoot [data-sv]').forEach(b=>{b.disabled=on;b.setAttribute('aria-busy',on?'true':'false')})}
 const KEYS=['name','phone','gender','dob','city','state','location','currentDesignation','experience','avatar','fp'];
-function applyToUser(){const U=window.currentUser,m=months();
+function applyToUser(){const U=currentUser,m=months();
  U.name=[S.title,S.first,S.middle,S.last].filter(Boolean).join(' ')||U.name;U.phone=S.phone;U.gender=S.gender;U.dob=isoDob(S.dob);U.city=S.city;U.state=S.state;
  U.location=[S.city,S.state].filter(Boolean).join(', ');U.currentDesignation=S.desig;U.experience=String(Math.round(m/12*10)/10);S.savedAt=S.savedAt||new Date().toISOString();U.fp=PERSIST()}
 function softCheck(){const bad=[];if(S.phone&&!/^\+?\d[\d\s-]{7,18}$/.test(S.phone))bad.push('Enter a valid phone number.');if(S.dob&&age(S.dob)===null)bad.push('Enter a valid date of birth (DD/MM/YYYY).');return bad}
 function showServerErrors(e){const er=e&&e.errors;if(er){const map={phone:'phone',date_of_birth:'dob',name:'first',gender:'gender'};Object.keys(er).forEach(k=>{const f=map[k]&&$(`[data-k="${map[k]}"]`);if(f){f.classList.add('bad');const x=f.closest('.fp-f')&&f.closest('.fp-f').querySelector('[data-e]');if(x)x.textContent=String([].concat(er[k])[0])}})}}
 function refreshChrome(){try{if(typeof refreshDashTopAccount==='function')refreshDashTopAccount();if(typeof updateNavForLogin==='function')updateNavForLogin()}catch(e){}paint()}
 async function saveProfile(validated){if(ST.saving)return false;const bad=softCheck();if(bad.length){toast(bad[0],0,1);return false}
- const U=window.currentUser,prev={};KEYS.forEach(k=>prev[k]=U[k]===undefined?undefined:JSON.parse(JSON.stringify(U[k])));
+ const U=currentUser,prev={};KEYS.forEach(k=>prev[k]=U[k]===undefined?undefined:JSON.parse(JSON.stringify(U[k])));
  setBusy(true);
  try{applyToUser();await window.bkSaveSeekerProfile();SAVED=snap();refreshChrome();toast('Profile saved',1);return true}
  catch(e){KEYS.forEach(k=>{if(prev[k]===undefined)delete U[k];else U[k]=prev[k]});S.savedAt=U.fp&&U.fp.savedAt||'';showServerErrors(e);
@@ -261,11 +261,11 @@ async function uploadFile(p,f){if(ST.busy[p]||ST.saving)return;const m=checkFile
   S.files[p]={id:file.id,name:file.original_name||f.name,size:(f.size/1048576).toFixed(1),url:file.url||''};
   if(k!=='photo'&&prev&&prev.id&&prev.id!==file.id){try{await api.del('/files/'+prev.id)}catch(e){}} /* old file is removed, not orphaned */
   delete ST.busy[p];paintUp(p);
-  if(k==='photo'){window.currentUser.avatar=file.url;if(typeof saveState==='function')saveState();refreshChrome();toast('Photo updated',1)}
+  if(k==='photo'){currentUser.avatar=file.url;if(typeof saveState==='function')saveState();refreshChrome();toast('Photo updated',1)}
   else if(await saveProfile())toast('File uploaded',1);else toast('File uploaded, but the profile was not saved. Press Save.',0,1)}
  catch(e){delete ST.busy[p];if(prev)S.files[p]=prev;else delete S.files[p];paintUp(p,(e&&e.message)||'Upload failed. Please try again.')}}
 async function removeFile(p){const f=S.files[p];if(!f||ST.busy[p]||ST.saving)return;if(!confirm('Remove this file?'))return;ST.busy[p]=1;paintUp(p);
- try{if(p==='photo'){await api.del('/candidate/profile/photo');window.currentUser.avatar=window.DEFAULT_USER?DEFAULT_USER.avatar:'';delete S.files.photo;if(typeof saveState==='function')saveState();delete ST.busy[p];paintUp(p);refreshChrome();toast('Photo removed',1)}
+ try{if(p==='photo'){await api.del('/candidate/profile/photo');currentUser.avatar=(typeof DEFAULT_USER!=="undefined"?DEFAULT_USER.avatar:"")||'';delete S.files.photo;if(typeof saveState==='function')saveState();delete ST.busy[p];paintUp(p);refreshChrome();toast('Photo removed',1)}
   else{if(f.id)await api.del('/files/'+f.id);delete S.files[p];delete ST.busy[p];paintUp(p);if(await saveProfile())toast('File removed',1)}}
  catch(e){delete ST.busy[p];paintUp(p);toast('Could not remove the file: '+((e&&e.message)||'error'),0,1)}}
 async function dropFiles(i,re){const ks=Object.keys(S.files),out={};for(const k of ks){const m=re.exec(k);if(!m){out[k]=S.files[k];continue}const n=+m[1];if(n===i){const f=S.files[k];if(f&&f.id){try{await api.del('/files/'+f.id)}catch(e){}}}else if(n>i){out[k.replace(/\d+/,n-1)]=S.files[k]}else out[k]=S.files[k]}S.files=out}
