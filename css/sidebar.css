@@ -111,7 +111,8 @@ body.up-has-side #fpRoot .fp-wrap{grid-template-columns:minmax(0,1fr)}
 .up-subitem.off,.up-subitem:disabled{opacity:.5;cursor:not-allowed}
 .up-subitem.off:hover,.up-subitem:disabled:hover{background:#fff;border-color:var(--line)}
 
-/* profile wizard steps live in the sidebar dropdown; keep only progress + save-later in the page */
-body.up-has-side .in-side-wiz .in-steps{display:none !important}
-body.up-has-side .in-side-wiz{align-self:start}
-body.up-has-side .in-side-wiz .in-side-foot{border-top:0 !important;margin-top:0 !important;padding-top:0 !important}
+/* profile wizard: steps live in the sidebar dropdown, so the in-page card (steps + progress + save-later) is removed and the form uses the full width */
+body.up-has-side .in-side-wiz{display:none !important}
+body.up-has-side .in-layout:has(> .in-side-wiz){display:block !important;grid-template-columns:1fr !important}
+body.up-has-side .in-layout:has(> .in-side-wiz) .in-main{max-width:none !important;width:100% !important}
+body.up-has-side .in-wrap:has(.in-side-wiz) .in-head{max-width:none !important;margin-left:0 !important;margin-right:0 !important}
