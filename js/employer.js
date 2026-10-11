@@ -350,6 +350,7 @@
       const cur = (function(){ try{ return sessionStorage.getItem('upadyay_emp_tab'); }catch(e){ return null; } })();
       if(LOCKED_EMP_TABS.indexOf(cur) !== -1) switchEmployerTab('company');
     }
+    if(typeof instRender === 'function') instRender();   // refresh the Branches section when approval status is known
   }
   window.applyEmployerLock = applyEmployerLock;
 
