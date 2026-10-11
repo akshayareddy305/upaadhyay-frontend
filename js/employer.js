@@ -410,7 +410,7 @@
         </div>
         <div class="jc-foot">
           <span class="jc-posted">${count} ${count===1?'applicant':'applicants'}</span>
-          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants</button>
+          <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${jobActionButtons(id, job)}<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants</button></span>
         </div>
       </div>`;
     }).join('');
@@ -576,6 +576,7 @@
   // ---------- Jobs + applicants ----------
   // job counter now lives in store.js as postedJobCount
   let activeJobId = null;
+  let editingJobId = null;   // set while the Post-a-job form is editing an existing job
   const jobsData = postedJobs; // persisted in store.js: id -> {title, category, qualification, location, applicantIds}
   const allCandidateIds = Object.keys(facultyProfiles);
 
@@ -653,7 +654,9 @@
       vacancies: v('jbVac'), expMin, expMax, salMin, salMax, salPeriod, salNeg, salNorms,
       campus, campusLoc, location, desc: v('jbDesc'), skills: v('jbSkills'), deadline: v('jbDeadline')
     };
-    bkPostJob(jobPayload).then(function(){
+    const editing = (editingJobId && jobsData[editingJobId]) ? jobsData[editingJobId] : null;
+    (editing ? bkUpdateJob(editing.id, jobPayload) : bkPostJob(jobPayload)).then(function(){
+    if(editing) endEditJob();
 
     // reset the form and confirm
     ['jbTitle','jbRole','jbRoleOther','jbCategory','jbCategoryOther','jbDept','jbType','jbTypeOther','jbVac','jbQualification','jbQualificationOther','jbNotice','jbNoticeOther','jbExpMin','jbExpMax','jbSalMin','jbSalMax','jbLocation','jbDesc','jbSkills','jbDeadline','jbCampus'].forEach(i=>{ const el = document.getElementById(i); if(el) el.value = ''; });
@@ -664,12 +667,81 @@
     if(typeof instCampusChange === 'function') instCampusChange();
     const ok = document.getElementById('jbOk');
     if(ok){
-      ok.innerHTML = '<b>Job posted.</b> ' + jbEsc(title) + (campus ? ' · ' + jbEsc(campus) : '') + ' is now live. Find it under Posted jobs.';
+      ok.innerHTML = editing
+        ? '<b>Changes saved.</b> ' + jbEsc(title) + (campus ? ' · ' + jbEsc(campus) : '') + ' has been updated. Find it under Posted jobs.'
+        : '<b>Job posted.</b> ' + jbEsc(title) + (campus ? ' · ' + jbEsc(campus) : '') + ' is now live. Find it under Posted jobs.';
       ok.style.display = 'block';
       
       setTimeout(()=>{ ok.style.display = 'none'; }, 7000);
     }
-    }).catch(function(err){ api.toast(err.message || 'Could not post the job.'); });
+    }).catch(function(err){ api.toast(err.message || (editing ? 'Could not save the changes.' : 'Could not post the job.')); });
+  }
+
+  // ---------- Edit / close / reopen / delete a posted job (all saved on the server) ----------
+  function jbSetSelect(id, v){
+    const el = document.getElementById(id), o = document.getElementById(id + 'Other'); if(!el) return;
+    v = String(v == null ? '' : v);
+    const has = Array.prototype.some.call(el.options, function(x){ return x.value === v; });
+    const hasOther = Array.prototype.some.call(el.options, function(x){ return x.value === 'Other'; });
+    if(!v || has){ el.value = v; if(o){ o.value = ''; o.style.display = 'none'; } }
+    else if(hasOther){ el.value = 'Other'; if(o){ o.value = v === 'Other' ? '' : v; o.style.display = ''; } }
+    else el.value = v;
+  }
+  function jbSetVal(id, v){ const el = document.getElementById(id); if(el) el.value = (v == null ? '' : v); }
+  function editJob(id){
+    const j = jobsData[id]; if(!j) return;
+    if(typeof closeApplicantsView === 'function' && activeJobId) closeApplicantsView();
+    switchEmployerTab('post');
+    if(typeof instFillCampuses === 'function') instFillCampuses();
+    editingJobId = id; window.__jbEditing = true;
+    jbSetVal('jbTitle', j.title); jbSetSelect('jbRole', j.role); jbSetSelect('jbCategory', j.category); jbSetVal('jbDept', j.dept);
+    jbSetSelect('jbType', j.type); jbSetVal('jbVac', j.vacancies); jbSetSelect('jbQualification', j.qualification); jbSetSelect('jbNotice', j.notice);
+    jbSetVal('jbExpMin', j.expMin); jbSetVal('jbExpMax', j.expMax); jbSetVal('jbSalMin', j.salMin); jbSetVal('jbSalMax', j.salMax);
+    jbSetVal('jbSalPeriod', j.salPeriod || 'month');
+    const neg = document.getElementById('jbSalNeg'), norms = document.getElementById('jbSalNorms');
+    if(neg) neg.checked = !!j.salNeg; if(norms) norms.checked = !!j.salNorms;
+    jbSetVal('jbLocation', j.location); jbSetVal('jbDesc', j.desc); jbSetVal('jbSkills', j.skills); jbSetVal('jbDeadline', j.deadline);
+    const camp = document.getElementById('jbCampus');
+    if(camp && typeof instCampusOptions === 'function'){ const o = instCampusOptions().find(function(x){ return x.n === j.campus; }); camp.value = o ? o.v : ''; if(typeof instCampusChange === 'function') instCampusChange(); }
+    const bar = document.getElementById('jbEditBar');
+    if(bar){ bar.innerHTML = '<b>Editing:</b> ' + jbEsc(j.title) + ' &nbsp; <button type="button" class="btn btn-ghost btn-sm" onclick="cancelEditJob()">Cancel editing</button>'; bar.style.display = 'block'; }
+    if(typeof jbJump === 'function') jbJump(0);
+    window.scrollTo(0, 0);
+  }
+  function endEditJob(){
+    editingJobId = null; window.__jbEditing = false;
+    const bar = document.getElementById('jbEditBar'); if(bar) bar.style.display = 'none';
+    const f = document.getElementById('jobPostForm'); if(f) f.dispatchEvent(new Event('change', { bubbles: true }));   // repaint the step button text
+  }
+  function cancelEditJob(){
+    endEditJob();
+    ['jbTitle','jbRole','jbRoleOther','jbCategory','jbCategoryOther','jbDept','jbType','jbTypeOther','jbVac','jbQualification','jbQualificationOther','jbNotice','jbNoticeOther','jbExpMin','jbExpMax','jbSalMin','jbSalMax','jbLocation','jbDesc','jbSkills','jbDeadline','jbCampus'].forEach(function(i){ const el = document.getElementById(i); if(el) el.value = ''; });
+    ['jbRoleOther','jbCategoryOther','jbTypeOther','jbQualificationOther','jbNoticeOther'].forEach(function(i){ const el = document.getElementById(i); if(el) el.style.display = 'none'; });
+    const p = document.getElementById('jbSalPeriod'); if(p) p.value = 'month';
+    const n1 = document.getElementById('jbSalNeg'), n2 = document.getElementById('jbSalNorms'); if(n1) n1.checked = false; if(n2) n2.checked = false;
+    if(typeof instCampusChange === 'function') instCampusChange();
+    if(typeof jbJump === 'function') jbJump(0);
+  }
+  async function jobSetStatus(id, status){
+    const j = jobsData[id]; if(!j) return;
+    try{ await bkSetJobStatus(j.id, status); api.toast(status === 'closed' ? 'Job closed. Candidates can no longer apply.' : 'Job is live again.'); if(activeJobId === id) openApplicantsView(id); }
+    catch(e){ api.toast(e.message || 'Could not update the job.'); }
+  }
+  async function jobDelete(id){
+    const j = jobsData[id]; if(!j) return;
+    if(!confirm('Delete "' + j.title + '"? Its applications are deleted with it. This cannot be undone.')) return;
+    try{
+      await bkDeleteJob(j.id);
+      if(editingJobId === id) cancelEditJob();
+      if(activeJobId === id) closeApplicantsView();
+      api.toast('Job deleted.');
+    }catch(e){ api.toast(e.message || 'Could not delete the job.'); }
+  }
+  function jobActionButtons(id, job){
+    const toggle = job.status === 'published' ? ['Close job', 'closed'] : [job.status === 'draft' ? 'Publish' : 'Reopen', 'published'];
+    return '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); editJob(\'' + id + '\')">Edit</button>'
+      + '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); jobSetStatus(\'' + id + '\',\'' + toggle[1] + '\')">' + toggle[0] + '</button>'
+      + '<button class="btn btn-ghost btn-sm" style="color:#B3261E;border-color:#B3261E" onclick="event.stopPropagation(); jobDelete(\'' + id + '\')">Delete</button>';
   }
 
   // Rebuilds the "your posted jobs" list from saved data (so it survives page loads)
@@ -708,6 +780,8 @@
     if(apExtra) apExtra.textContent = jobExtra(job);
     const apInst = document.getElementById('apJobInst');
     if(apInst && typeof instJobHeader==='function') apInst.innerHTML = instJobHeader(job);
+    const apAct = document.getElementById('apJobActions');
+    if(apAct) apAct.innerHTML = bkStatusBadge(job) + ' ' + jobActionButtons(jobId, job);
     renderApplicants(jobId);
   }
   function closeApplicantsView(){
