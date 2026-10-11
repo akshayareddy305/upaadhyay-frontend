@@ -59,3 +59,10 @@ body.up-has-side #instRoot .in-dash .in-layout{display:block}
 
 /* institution dashboard: the sidebar replaces the top tab bar (Company profile / Post a job / Posted jobs / Browse candidates) */
 body.up-has-side #employerTabsBar{display:none !important}
+
+/* sub-branch dashboard: sidebar replaces the in-page tab row */
+body.up-has-side #app .dash-tabs{display:none !important}
+
+/* job seeker: Browse jobs is shown inside the dashboard content area */
+.up-embed{display:none}
+.up-embed iframe{display:block;width:100%;height:calc(100vh - var(--nav-h,65px) - 40px);min-height:520px;border:0;background:transparent}
