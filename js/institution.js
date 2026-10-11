@@ -556,6 +556,17 @@ function statusBody(){
    <ul class="in-list">${vRows().map(x=>`<li>${dot(x[0],rowIc(x[0]))}${x[1]}</li>`).join('')}<li>${dot('wait',CLKd)}Admin review pending</li></ul>
    ${missPanel()}${m?'':note('We\'ll show your institution as verified after the submitted information has been reviewed.')}`;
 }
+/* ---------- guided verification flow (dashboard > Verification): Next / Back through each part ---------- */
+const VSTEPS=['Status','Representative','Authority','Documents']; let VS=0;
+function verifyFlow(){
+  const last=VS===VSTEPS.length-1;
+  const tabs=VSTEPS.map((t,i)=>`<button class="in-step${i===VS?' on':i<VS?' done':''}" onclick="IN.vstep(${i})"><span class="in-step-n">${i+1}</span><span class="in-step-t">${t}</span></button>`).join('');
+  const body=[()=>`<div class="in-card">${statusBody()}</div>`,repVCard,authVCard,docsCard][VS]();
+  return `<div class="in-layout"><aside class="in-side"><div class="in-steps" role="tablist" aria-orientation="vertical">${tabs}</div></aside>
+<div class="in-main">${body}
+<div class="in-actions"><span class="in-stepof">Step ${VS+1} of ${VSTEPS.length}</span><div class="r">${VS>0?'<button class="btn btn-ghost btn-sm" onclick="IN.vback()">Back</button>':''}<button class="btn btn-primary btn-sm" onclick="IN.vnext()">${last?'Finish':'Next'}</button></div></div></div></div>`;
+}
+
 const demoBar=()=>`<div class="in-demo">Demo: preview a state <button onclick="IN.vs('pending')">Pending</button><button onclick="IN.vs('verified')">Verified</button><button onclick="IN.vs('changes')">Changes required</button></div>`;
 function statusPage(){
   return `<div class="in-wrap"><div class="in-head"><h3>Institution verification</h3></div><div class="in-card">${statusBody()}<div class="in-actions" style="justify-content:flex-end"><button class="btn btn-primary btn-sm" onclick="IN.dash()">Go to dashboard</button></div></div>${demoBar()}</div>`;
@@ -567,7 +578,7 @@ function dash(){
   let body='';
   if(sc==='profile') body=profileBody();
   if(sc==='branches') body=branchMgr();
-  if(sc==='verify') body=`<div class="in-card">${statusBody()}</div>${repVCard()}${authVCard()}${docsCard()}${demoBar()}`;
+  if(sc==='verify') body=verifyFlow()+demoBar();
   if(sc==='rep') body=card('Person Registering / Institution Representative','The person responsible for managing this institution profile.',rows([['Name',d.rname],['Designation',d.rdes],['Registration role',I.regRole],['Department',d.rdep],['Employee ID',d.eid],['Work email',d.remail+(I.em==='ok'?' (verified)':'')],['Work phone',d.rphone],['Connection',I.auth==='behalf'?'On behalf: '+I.role:'Authorized to represent']])+`<button class="btn btn-ghost btn-sm" onclick="IN.edit(2)">Edit details</button>`)+authDashCard();
   if(sc==='jobs'){ const n=typeof postedJobs!=='undefined'?Object.keys(postedJobs).length:0;
     body=card('Posted jobs',n?`${n} ${n===1?'job':'jobs'} posted from this institution.`:'',n?'<button class="btn btn-primary btn-sm" onclick="IN.tab(\'myjobs\')">View posted jobs</button> <button class="btn btn-ghost btn-sm" onclick="IN.tab(\'post\')">Post another job</button>':'<div class="empty-state"><h4>No jobs posted yet</h4><p>Post your first faculty opening and choose which campus it belongs to.</p></div><button class="btn btn-primary btn-sm" onclick="IN.tab(\'post\')">Post a job</button>'); }
@@ -669,7 +680,10 @@ window.IN={
   auth(v){ I.auth=v; save(); render(); }, role(v){ I.role=v; save(); }, c1(v){ I.c1=v; save(); }, c2(v){ I.c2=v; save(); },
   vs(v){ I.vs=v; save(); render(); },
   dash(){ I.view='dash'; save(); render(); top(); },
-  sec(k){ I.sec=k; render(); },
+  sec(k){ I.sec=k; if(k==='verify') VS=0; render(); },
+  vstep(i){ VS=i; render(); },
+  vback(){ VS=Math.max(0,VS-1); render(); },
+  vnext(){ if(VS>=VSTEPS.length-1){ I.sec='profile'; VS=0; toast('Verification details saved'); } else VS++; render(); window.scrollTo(0,0); },
   tab(w){ switchEmployerTab(w); },
   closeM,
   bEdit(i){ BRi=i; BR=i<0?{}:Object.assign({},I.branches[i]); closeM(); modal(bForm()); },
