@@ -453,7 +453,7 @@
     document.getElementById('dashName').textContent = currentCompany.name;
     document.getElementById('dashAvatar').textContent = currentCompany.name.slice(0,2).toUpperCase();
     document.getElementById('dashSub').textContent = 'Your poster panel — post jobs, review and invite candidates';
-    document.getElementById('employerSetupNote').style.display = 'none';
+    
     document.getElementById('employerTabsBar').style.display = 'flex';
     refreshDashTopAccount();
     switchEmployerTab('post');
