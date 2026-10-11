@@ -1,5 +1,5 @@
 /* Embedded inside the dashboard content area (sidebar "Browse jobs"): no nav bar or footer, just the page content. */
-(function(){ try{ if(window.self !== window.top){ var st = document.createElement('style'); st.textContent = '#siteNav,#siteChrome,footer,.nav{display:none !important}body{padding-top:0 !important}'; (document.head || document.documentElement).appendChild(st); } }catch(e){} })();
+(function(){ try{ if(window.self !== window.top){ var st = document.createElement('style'); st.textContent = '#siteNav,#siteChrome,footer,.nav{display:none !important}body{padding-top:0 !important}.bj-filters{display:none !important}.bj-layout{grid-template-columns:minmax(0,1fr) !important}'; (document.head || document.documentElement).appendChild(st); } }catch(e){} })();
 /* ==========================================================================
    layout.js — shared page chrome (nav bar, footer, toast, notifications, mini-profile)
    --------------------------------------------------------------------------
