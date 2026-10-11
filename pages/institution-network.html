@@ -93,7 +93,7 @@
 .nw-lg{margin:10px 0 0}
 .nw.nw-wide{max-width:none;padding:0}
 </style>
-<link rel="stylesheet" href="../css/sidebar.css?v=7">
+<link rel="stylesheet" href="../css/sidebar.css?v=8">
 <link rel="icon" type="image/x-icon" href="../assets/logo/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/logo/favicon-32.png">
 <link rel="apple-touch-icon" href="../assets/logo/apple-touch-icon.png">
@@ -391,7 +391,7 @@ function pfReview(){const m=S.main,loc=[pv('addr'),pv('city'),pv('state'),pv('pi
  return `<div class="in-card"><h4>Review your institution profile</h4><p class="sub2">Check everything before you submit.</p>${rows.map((x,i)=>`<div class="in-acc${i==0?' open':''}"><button type="button" onclick="this.parentNode.classList.toggle('open')"><span>${x[0]}</span><span><a href="#" onclick="event.stopPropagation();pfGo(${x[1]});return false" style="color:var(--blue-700);font-size:13px">Edit</a></span></button><div class="body">${x[2]}</div></div>`).join('')}</div>`}
 const PSUB=['Your branch name, type and logo.','Where is your campus located?','Who should candidates and your main institution contact?','Verify your official email and upload your affiliation document.','Link your sub-branch to its main institution.','Check everything before you submit.'];
 const ppct=()=>{let t=2,f=0;PFLD.forEach(a=>a.forEach(x=>{if(x[2]){t++;if(pv(x[0]))f++}}));if(P.ver.em)f++;if(S.main)f++;return Math.round(f/t*100)};
-const inSide=(names,cur,max,pc,go,extra)=>`<aside class="in-side"><div class="in-steps" role="tablist" aria-orientation="vertical">${names.map((t,i)=>`<button type="button" class="in-step${i==cur?' on':i<=max?' done':''}" role="tab" aria-selected="${i==cur}" ${i>max?'disabled style="opacity:.55;cursor:not-allowed"':''} onclick="${go}(${i})"><span class="in-step-n">${i!=cur&&i<=max?'✓':i+1}</span><span class="in-step-t">${t}</span></button>`).join('')}</div><div class="in-side-foot"><div class="in-bar"><div style="width:${pc}%"></div></div><span>${pc}% complete</span>${extra||''}</div></aside>`;
+const inSide=(names,cur,max,pc,go,extra)=>`<aside class="in-side${go==='pfGo'?' in-side-wiz':''}"><div class="in-steps" role="tablist" aria-orientation="vertical">${names.map((t,i)=>`<button type="button" class="in-step${i==cur?' on':i<=max?' done':''}" role="tab" aria-selected="${i==cur}" ${i>max?'disabled style="opacity:.55;cursor:not-allowed"':''} onclick="${go}(${i})"><span class="in-step-n">${i!=cur&&i<=max?'✓':i+1}</span><span class="in-step-t">${t}</span></button>`).join('')}</div><div class="in-side-foot"><div class="in-bar"><div style="width:${pc}%"></div></div><span>${pc}% complete</span>${extra||''}</div></aside>`;
 function pfLater(){grabStep();saveP();S.welcome=false;S.saved=true;render()}
 function vProfile(){
  if(P.done)return `<div class="in-note in-ok" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:0"><span><b>✓ Profile verified &amp; submitted</b></span><button class="btn btn-light btn-sm" onclick="pfEdit()">Edit profile</button></div>`+vSub0();
