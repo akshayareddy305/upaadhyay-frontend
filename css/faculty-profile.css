@@ -203,3 +203,12 @@
 .fp-in:focus-visible,.fp-btn:focus-visible,.fp-sec>header:focus-visible{outline:2px solid #1D4ED8;outline-offset:2px}
 .fp-in:disabled{background:#F3F4F6;color:#6B7280}
 @media(max-width:640px){.fp-banner{flex-direction:column;align-items:stretch}.fp-actions{flex-wrap:wrap;gap:8px}.fp-actions>div{display:flex;flex-wrap:wrap;gap:8px}}
+
+/* --- app-style layout (desktop): banner + hero card and the left menu stay put; only the form area scrolls --- */
+@media(min-width:900px){
+#fpRoot{display:flex;flex-direction:column;height:calc(100vh - var(--nav-h,65px) - 32px);min-height:520px}
+#fpRoot>#fpHero{flex:none}
+#fpRoot>.fp-wrap{flex:1;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch}
+#fpRoot .fp-nav{position:static;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}   /* many menu items -> the menu itself scrolls */
+#fpRoot .fp-wrap>div{min-height:0;overflow-y:auto;overscroll-behavior:contain}                              /* clicking a menu item swaps only this content */
+}
