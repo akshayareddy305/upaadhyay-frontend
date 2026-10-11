@@ -159,7 +159,10 @@ function applyBackendUser(u){
   if(authUserId !== u.id){                                  // different account than the saved profile data: don't leak it
     currentUser    = Object.assign({}, JSON.parse(JSON.stringify(DEFAULT_USER)));
     currentCompany = Object.assign({}, DEFAULT_COMPANY);
-    postedJobs = {}; candidateStatus = {}; postedJobCount = 0; dashNotifs = []; hasUnreadNotif = false;
+    /* clear IN PLACE: employer.js keeps a reference to these exact objects (jobsData = postedJobs), so a new {} would leave it showing nothing */
+    Object.keys(postedJobs).forEach(function(k){ delete postedJobs[k]; });
+    Object.keys(candidateStatus).forEach(function(k){ delete candidateStatus[k]; });
+    postedJobCount = 0; dashNotifs = []; hasUnreadNotif = false;
     authUserId = u.id;
   }
   currentUser.name = u.name || currentUser.name;
