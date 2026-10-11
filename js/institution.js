@@ -579,9 +579,7 @@ function verifyFlow(){
   const last=VS===VSTEPS.length-1;
   const tabs=VSTEPS.map((t,i)=>`<button class="in-step${i===VS?' on':i<VS?' done':''}" onclick="IN.vstep(${i})"><span class="in-step-n">${i+1}</span><span class="in-step-t">${t}</span></button>`).join('');
   const body=[()=>`<div class="in-card">${statusBody()}</div>`,repVCard,authVCard,docsCard][VS]();
-  return `<div class="in-layout"><aside class="in-side"><div class="in-steps" role="tablist" aria-orientation="vertical">${tabs}</div></aside>
-<div class="in-main">${body}
-<div class="in-actions"><span class="in-stepof">Step ${VS+1} of ${VSTEPS.length}</span><div class="r">${VS>0?'<button class="btn btn-ghost btn-sm" onclick="IN.vback()">Back</button>':''}<button class="btn btn-primary btn-sm" onclick="IN.vnext()">${last?'Finish':'Next'}</button></div></div></div></div>`;
+  return body;
 }
 
 const demoBar=()=>`<div class="in-demo">Demo: preview a state <button onclick="IN.vs('pending')">Pending</button><button onclick="IN.vs('verified')">Verified</button><button onclick="IN.vs('changes')">Changes required</button></div>`;
@@ -589,9 +587,16 @@ function statusPage(){
   return `<div class="in-wrap"><div class="in-head"><h3>Institution verification</h3></div><div class="in-card">${statusBody()}<div class="in-actions" style="justify-content:flex-end"><button class="btn btn-primary btn-sm" onclick="IN.dash()">Go to dashboard</button></div></div>${demoBar()}</div>`;
 }
 const rows=p=>`<div class="in-grid">${p.map(x=>`<div class="in-f"><label>${x[0]}</label><div style="font-size:14px">${esc(x[1])||'—'}</div></div>`).join('')}</div>`;
+const LOCK_IC='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-1px;margin-left:5px"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+function dashSecs(){ return [['profile','Institution profile'],['branches','Branches'+(approved()?(pendingReqs()?' ('+pendingReqs()+')':''):LOCK_IC)],['verify','Verification'],['rep','Representative &amp; authority'],['jobs','Posted jobs']]; }
+function toLayout(){ const L=document.querySelector('#instRoot .in-layout'); if(L&&L.scrollIntoView) L.scrollIntoView({block:'start'}); }
 function dash(){
   const d=I.d, p=pct(), sc=I.sec;
-  const nav=[['profile','Institution profile'],['branches',approved()?'Branches'+(pendingReqs()?' ('+pendingReqs()+')':''):'Branches 🔒'],['verify','Verification'],['rep','Representative & authority'],['jobs','Posted jobs']].map(x=>`<button class="${sc===x[0]?'on':''}" onclick="IN.sec('${x[0]}')">${x[1]}</button>`).join('');
+  const SEC=dashSecs(), si=Math.max(0,SEC.findIndex(x=>x[0]===sc));
+  const side=SEC.map((x,i)=>`<button class="in-step${i===si?' on':i<si?' done':''}" onclick="IN.sec('${x[0]}')"><span class="in-step-n">${i+1}</span><span class="in-step-t">${x[1]}</span></button>`
+    +(x[0]==='verify'&&sc==='verify'?VSTEPS.map((t,j)=>`<button class="in-step sub${j===VS?' on':j<VS?' done':''}" onclick="IN.vstep(${j})"><span class="in-step-n">${j+1}</span><span class="in-step-t">${t}</span></button>`).join(''):'')).join('');
+  const canBack=si>0||(sc==='verify'&&VS>0), canNext=si<SEC.length-1;
+  const acts=`<div class="in-actions"><span class="in-stepof">Step ${si+1} of ${SEC.length}${sc==='verify'?' · '+VSTEPS[VS]:''}</span><div class="r">${canBack?'<button class="btn btn-ghost btn-sm" onclick="IN.sback()">Back</button>':''}${canNext?'<button class="btn btn-primary btn-sm" onclick="IN.snext()">Next</button>':''}</div></div>`;
   let body='';
   if(sc==='profile') body=profileBody();
   if(sc==='branches') body=branchMgr();
@@ -599,10 +604,15 @@ function dash(){
   if(sc==='rep') body=card('Person Registering / Institution Representative','The person responsible for managing this institution profile.',rows([['Name',d.rname],['Designation',d.rdes],['Registration role',I.regRole],['Department',d.rdep],['Employee ID',d.eid],['Work email',d.remail+(I.em==='ok'?' (verified)':'')],['Work phone',d.rphone],['Connection',I.auth==='behalf'?'On behalf: '+I.role:'Authorized to represent']])+`<button class="btn btn-ghost btn-sm" onclick="IN.edit(2)">Edit details</button>`)+authDashCard();
   if(sc==='jobs'){ const n=typeof postedJobs!=='undefined'?Object.keys(postedJobs).length:0;
     body=card('Posted jobs',n?`${n} ${n===1?'job':'jobs'} posted from this institution.`:'',n?'<button class="btn btn-primary btn-sm" onclick="IN.tab(\'myjobs\')">View posted jobs</button> <button class="btn btn-ghost btn-sm" onclick="IN.tab(\'post\')">Post another job</button>':'<div class="empty-state"><h4>No jobs posted yet</h4><p>Post your first faculty opening and choose which campus it belongs to.</p></div><button class="btn btn-primary btn-sm" onclick="IN.tab(\'post\')">Post a job</button>'); }
-  return `<div class="in-wrap">${vBanner()}<div class="in-card"><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">${logoBox(64)}<div style="flex:1;min-width:200px"><h3 style="margin:0;font-size:20px;color:var(--blue-900)">${esc((d.name||'').toUpperCase())}</h3><div style="margin:5px 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center">${vBadge()}${d.type?`<span class="in-tag">${esc(d.type)}</span>`:''}</div><span style="font-size:13px;color:var(--ink-soft)">${PIN_IC} ${esc(locStr(d))}</span></div></div>
+  return `<div class="in-wrap in-dash">${vBanner()}<div class="in-card"><div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">${logoBox(64)}<div style="flex:1;min-width:200px"><h3 style="margin:0;font-size:20px;color:var(--blue-900)">${esc((d.name||'').toUpperCase())}</h3><div style="margin:5px 0;display:flex;gap:6px;flex-wrap:wrap;align-items:center">${vBadge()}${d.type?`<span class="in-tag">${esc(d.type)}</span>`:''}</div><span style="font-size:13px;color:var(--ink-soft)">${PIN_IC} ${esc(locStr(d))}</span></div></div>
   <div style="margin-top:16px"><b style="font-size:13.5px">Profile completion: ${p}%</b><div class="in-bar" role="progressbar" aria-valuenow="${p}" aria-valuemin="0" aria-valuemax="100"><div style="width:${p}%"></div></div>
   <p style="font-size:13px;color:var(--ink-soft);margin:0 0 10px">Complete your profile to improve your institution's visibility.</p><button class="btn btn-primary btn-sm" onclick="IN.edit(0)">Complete profile</button></div></div>
-  <div class="in-nav">${nav}</div>${body}</div>`;
+  <div class="in-layout">
+    <aside class="in-side"><div class="in-steps" role="tablist" aria-orientation="vertical">${side}</div>
+      <div class="in-side-foot"><div class="in-bar"><div style="width:${p}%"></div></div><span>${p}% complete</span>
+      <button class="btn btn-ghost btn-sm" onclick="IN.edit(0)">Edit institution details</button></div></aside>
+    <div class="in-main">${body}${acts}</div>
+  </div></div>`;
 }
 function instHeader(){
   const av=$('dashAvatar'), nm=$('dashName'); if(!av) return;
@@ -699,6 +709,8 @@ window.IN={
   vs(v){ I.vs=v; save(); render(); },
   dash(){ I.view='dash'; save(); render(); top(); },
   sec(k){ I.sec=k; if(k==='verify') VS=0; render(); },
+  snext(){ const S=dashSecs(), i=S.findIndex(x=>x[0]===I.sec); if(I.sec==='verify'&&VS<VSTEPS.length-1) VS++; else if(i<S.length-1){ I.sec=S[i+1][0]; if(I.sec==='verify') VS=0; } render(); toLayout(); },
+  sback(){ const S=dashSecs(), i=S.findIndex(x=>x[0]===I.sec); if(I.sec==='verify'&&VS>0) VS--; else if(i>0){ I.sec=S[i-1][0]; if(I.sec==='verify') VS=VSTEPS.length-1; } render(); toLayout(); },
   vstep(i){ VS=i; render(); },
   vback(){ VS=Math.max(0,VS-1); render(); },
   vnext(){ if(VS>=VSTEPS.length-1){ I.sec='profile'; VS=0; toast('Verification details saved'); } else VS++; render(); window.scrollTo(0,0); },
