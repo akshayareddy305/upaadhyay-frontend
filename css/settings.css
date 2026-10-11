@@ -1,7 +1,8 @@
 /* settings.css — Settings content (faculty, main institution, sub-branch). Section list lives in the sidebar. */
-.up-set{display:none;max-width:860px;margin:0 auto;padding:22px 18px 60px}
+.up-set{display:none;max-width:860px;margin:0 auto;padding:0 14px 28px 0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#c4cad8 transparent;box-sizing:border-box}
+.up-set::-webkit-scrollbar{width:8px}.up-set::-webkit-scrollbar-thumb{background:#c4cad8;border-radius:8px}
 .up-set.show,#app .up-set{display:block}
-.up-set .st-head{margin:0 0 16px}
+.up-set .st-head{position:sticky;top:0;z-index:2;margin:0 0 14px;padding:18px 0 12px;background:var(--bg,#f6f8fc)}
 .up-set .st-head h3{margin:0 !important;font-family:var(--font-serif,Georgia,serif) !important;font-weight:700 !important;font-size:24px !important;line-height:1.2 !important;color:var(--blue-900,#0b1f4b)}
 .up-set .st-head p{margin:5px 0 0 !important;font-size:14px !important;color:var(--ink-soft,#5b6577)}
 .st-body{display:flex;flex-direction:column;gap:16px}
@@ -68,7 +69,7 @@ select.st-in{min-width:210px}
 .st-danger:disabled{opacity:.45;cursor:not-allowed}
 
 @media(max-width:640px){
-  .up-set{padding:16px 12px 48px}
+  .up-set{padding:0 8px 24px 0}
   .st-row{flex-direction:column;align-items:flex-start;gap:10px}
   .st-ctl{width:100%}
   .st-chips{justify-content:flex-start}
