@@ -160,8 +160,9 @@ function shell(){
  $('#fpRoot').innerHTML=`<div id="fpHero"></div><div class="fp-wrap"><nav class="fp-nav" id="fpNav">${SEC.map((s,i)=>`<button data-go="${i}"><span class="n">${ic(ICON[i],14)}</span>${s}<em>${ic('check',14)}</em></button>`).join('')}</nav><div>${SEC.map((s,i)=>`<section class="fp-sec" data-i="${i}"><header data-go="${i}" data-tog="1" role="button" tabindex="0" aria-expanded="${i===S.open}"><span class="fp-hl">${ic(ICON[i],15)}${s}</span></header><div class="fp-body"></div></section>`).join('')}</div></div>`;
  SEC.forEach((_,i)=>renderSec(i));paint()}
 function renderSec(i){const b=$(`.fp-sec[data-i="${i}"] .fp-body`);if(!b)return;b.innerHTML=R[i]()+(i<11?`<div class="fp-actions"><button type="button" class="fp-btn" data-back>Back</button><div><button type="button" class="fp-btn" data-act="draft" data-sv>Save</button><button type="button" class="fp-btn" data-next>Next</button><button type="button" class="fp-btn pri" data-act="save" data-sv>Save & Continue</button></div></div>`:'');if(i===0)ageUpd();a11y(b)}
-function paint(){$$('.fp-sec').forEach(s=>s.classList.toggle('open',+s.dataset.i===S.open));$$('#fpNav button').forEach((b,i)=>{b.classList.toggle('on',i===S.open);b.classList.toggle('done',!!S.done[i]&&i!==S.open)});$('#fpHero').innerHTML=heroHTML()}
+function paint(){$$('.fp-sec').forEach(s=>s.classList.toggle('open',+s.dataset.i===S.open));$$('#fpNav button').forEach((b,i)=>{b.classList.toggle('on',i===S.open);b.classList.toggle('done',!!S.done[i]&&i!==S.open)});$('#fpHero').innerHTML=heroHTML();try{window.dispatchEvent(new Event('fp:paint'))}catch(e){}}
 function go(i){S.open=Math.max(0,Math.min(11,i));renderSec(S.open);paint();const el=$(`.fp-sec[data-i="${S.open}"]`);const sc=$('.fp-wrap>div');if(window.matchMedia('(min-width:900px)').matches&&sc){sc.scrollTop=0;const nb=$(`#fpNav button[data-go="${S.open}"]`);if(nb&&nb.scrollIntoView)nb.scrollIntoView({block:'nearest'})}else if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}
+window.FP={go:function(i){go(i)},sections:SEC,open:function(){return S.open}};
 function ageUpd(){const e=$('#fpAge');if(!e)return;const a=age(S.dob);e.style.display=a===null?'none':'inline-block';e.textContent='Age: '+a+' years'}
 function toast(t,ok,bad){const d=document.createElement('div');d.className='fp-toast'+(bad?' bad':'');d.setAttribute('role',bad?'alert':'status');d.innerHTML=(ok?ic('check',14):bad?ic('alert',14):'')+esc(t);document.body.appendChild(d);setTimeout(()=>d.remove(),bad?5000:2500)}
 /* validation */
@@ -231,7 +232,7 @@ function load(){const U=window.currentUser||{};S=Object.assign(blank(),JSON.pars
  if(!PLACEHOLDER(U.avatar))S.files.photo={name:'Profile photo',url:U.avatar};
  SAVED=snap()}
 function avatarHTML(){const f=S.files.photo,ini=esc((S.first[0]||'')+(S.last[0]||'')||'?');return `<div class="fp-av lg">${f&&f.url?`<img src="${esc(f.url)}" alt="">`:ini}</div>`}
-function bannerHTML(){let h='';if(!S.savedAt)h+=`<div class="fp-banner" role="note"><div><b>Create your faculty profile</b><div class="fp-hint">You haven't saved a profile yet. Fill in your details and press Save &amp; Continue.</div></div><button type="button" class="fp-btn pri" data-go="0">Create profile</button></div>`;
+function bannerHTML(){let h='';
  if(dirty())h+=`<div class="fp-banner warn" role="status"><div><b>Unsaved changes</b></div><div><button type="button" class="fp-btn" data-act="discard">Discard</button> <button type="button" class="fp-btn pri" data-act="draft" data-sv>Save now</button></div></div>`;return h}
 function setBusy(on){ST.saving=on;$$('#fpRoot [data-sv]').forEach(b=>{b.disabled=on;b.setAttribute('aria-busy',on?'true':'false')})}
 const KEYS=['name','phone','gender','dob','city','state','location','currentDesignation','experience','avatar','fp'];
