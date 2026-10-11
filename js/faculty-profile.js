@@ -259,6 +259,7 @@ async function uploadFile(p,f){if(ST.busy[p]||ST.saving)return;const m=checkFile
  try{const d=await api.post(path,fd),file=d&&d.file?d.file:d;if(!file||!file.id)throw new Error('The server did not confirm the upload.');
   if(k==='photo'&&!file.url)throw new Error('Photo stored, but the server has no public file URL configured (AWS_URL), so it cannot be shown.');
   S.files[p]={id:file.id,name:file.original_name||f.name,size:(f.size/1048576).toFixed(1),url:file.url||''};
+  if(k!=='photo'&&prev&&prev.id&&prev.id!==file.id){try{await api.del('/files/'+prev.id)}catch(e){}} /* old file is removed, not orphaned */
   delete ST.busy[p];paintUp(p);
   if(k==='photo'){window.currentUser.avatar=file.url;if(typeof saveState==='function')saveState();refreshChrome();toast('Photo updated',1)}
   else if(await saveProfile())toast('File uploaded',1);else toast('File uploaded, but the profile was not saved. Press Save.',0,1)}
