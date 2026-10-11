@@ -136,7 +136,7 @@
     function jobs(){ if(onPage && showEmbed((window.PAGES && PAGES.jobs ? PAGES.jobs : '../pages/jobs.html') + '?embed=1')) return; goTo('jobs'); }
     return { active:onPage ? (state.emb ? 'jobs' : 'profile') : '', edit:mine,
       list:[ { k:'profile', t:'My profile', i:'user', go:mine, sub:true },
-        { k:'jobs', t:'Browse jobs', i:'search', go:jobs },
+        { k:'jobs', t:'Browse jobs', i:'search', go:jobs, sub:true },
         { k:'notif', t:'Notifications', i:'bell', go:function(){ var b = document.querySelector('.nav-bell'); if(b) b.click(); } },
         { k:'set', t:'Settings', i:'cog', go:mine },
         { k:'out', t:'Log out', i:'out', go:function(){ logoutUser(); }, out:1 } ] };
@@ -161,18 +161,27 @@
     side.addEventListener('change', onFilter); side.addEventListener('input', function(e){ if(e.target && e.target.getAttribute && e.target.getAttribute('data-f') === 'exp') onFilter(e); });
     side.addEventListener('click', function(e){
       if(e.target.closest && e.target.closest('[data-fclear]')){ state.f = F0(); applyFilters(); schedule(); return; }
+      var tg = e.target.closest && e.target.closest('[data-tog]');
+      if(tg){ var tk = tg.getAttribute('data-tog'); state.og = openKey(side._cfg) === tk ? '' : tk; schedule(); return; }
       var b = e.target.closest('[data-k]'); if(!b) return;
       var fk = b.getAttribute('data-k');
-      if(fk.indexOf('fp:') === 0){ hideEmbed(); if(window.FP) FP.go(+fk.slice(3)); window.scrollTo(0, 0); toggle(false); schedule(); return; }
+      if(fk.indexOf('fp:') === 0){ state.og = 'profile'; hideEmbed(); if(window.FP) FP.go(+fk.slice(3)); window.scrollTo(0, 0); toggle(false); schedule(); return; }
       if(b.getAttribute('data-k') === '_edit'){ side._cfg.edit(); }
-      else { var it = items.filter(function(x){ return x.k === b.getAttribute('data-k'); })[0]; if(it) it.go(); }
+      else { var it = items.filter(function(x){ return x.k === b.getAttribute('data-k'); })[0]; if(it){ it.go(); if(it.sub) state.og = it.k; else if(it.k !== 'notif' && it.k !== 'out') state.og = ''; } }
       toggle(false); schedule();
     });
   }
+  /* accordion: only one dropdown open at a time. Until the user toggles one, the active item's dropdown is open. */
+  function openKey(cfg){
+    if(state.og !== undefined) return state.og;
+    var a = (cfg && cfg.list || []).filter(function(x){ return x.k === cfg.active && x.sub; })[0];
+    return a ? a.k : '';
+  }
   function subMenu(it, cfg){
-    if(it.k === 'jobs' && it.k === cfg.active) return '<div class="up-sub up-sub-f">' + filtersHTML() + '</div>';
-    if(!it.sub || it.k !== cfg.active || !window.FP || !FP.sections) return '';
-    var cur = FP.open();
+    if(!it.sub || openKey(cfg) !== it.k) return '';
+    if(it.k === 'jobs') return '<div class="up-sub up-sub-f">' + filtersHTML() + '</div>';
+    if(!window.FP || !FP.sections) return '';
+    var cur = state.emb ? -1 : FP.open();
     return '<div class="up-sub">' + FP.sections.map(function(n, i){
       return '<button type="button" class="up-subitem' + (i === cur ? ' on' : '') + '" data-k="fp:' + i + '">' + esc(n) + '</button>'; }).join('') + '</div>';
   }
@@ -187,9 +196,12 @@
     side.innerHTML = (plain ? '' : UpCard.html(c, { noRows:r === 'seeker' })
       + '<button type="button" class="btn btn-ghost btn-sm up-edit" data-k="_edit">' + esc(c.editLabel) + '</button>')
       + '<nav class="up-nav">' + items.map(function(it){
-          return '<button type="button" class="up-item' + (it.k === cfg.active ? ' on' : '') + (it.out ? ' out' : '') + (it.lock ? ' locked' : '') + '" data-k="' + it.k + '"' + (it.k === cfg.active ? ' aria-current="page"' : '') + '>'
+          var isOpen = it.sub && openKey(cfg) === it.k;
+          return (it.sub ? '<div class="up-grp' + (isOpen ? ' open' : '') + '">' : '') + '<button type="button" class="up-item' + (it.k === cfg.active ? ' on' : '') + (it.out ? ' out' : '') + (it.lock ? ' locked' : '') + '" data-k="' + it.k + '"' + (it.k === cfg.active ? ' aria-current="page"' : '') + '>'
             + ic(it.i) + '<span class="t">' + esc(it.t) + '</span>'
-            + (it.n ? '<em>' + esc(it.n) + '</em>' : '') + (it.flag ? '<em class="flag">!</em>' : '') + (it.lock ? '<i class="lk" title="Locked until approved">' + ic('lock') + '</i>' : '') + '</button>' + subMenu(it, cfg); }).join('') + '</nav>';
+            + (it.n ? '<em>' + esc(it.n) + '</em>' : '') + (it.flag ? '<em class="flag">!</em>' : '') + (it.lock ? '<i class="lk" title="Locked until approved">' + ic('lock') + '</i>' : '') + '</button>'
+            + (it.sub ? '<button type="button" class="up-tog" data-tog="' + it.k + '" aria-expanded="' + (isOpen ? 'true' : 'false') + '" aria-label="' + (isOpen ? 'Close ' : 'Open ') + esc(it.t) + ' menu" title="' + (isOpen ? 'Close' : 'Open') + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></div>' : '')
+            + subMenu(it, cfg); }).join('') + '</nav>';
     side.scrollTop = scrollY;
     paintOverview();
   }
