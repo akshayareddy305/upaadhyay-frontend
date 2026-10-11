@@ -106,6 +106,7 @@
           <div id="jobPostForm">
             <div class="in-head"><h3>Post a job</h3><p>Fill in the role details so the right candidates can find and apply. Fields marked Required must be completed.</p></div>
             <div class="in-note in-ok" id="jbOk" style="display:none;" role="status"></div>
+            <div class="in-note" id="jbEditBar" style="display:none;" role="status"></div>
 
             <div class="in-layout">
               <aside class="in-side"><div class="in-steps" role="tablist" aria-orientation="vertical"><button type="button" class="in-step on" role="tab" aria-selected="true" onclick="jbJump(0)"><span class="in-step-n">1</span><span class="in-step-t">Job details</span></button><button type="button" class="in-step" role="tab" aria-selected="false" onclick="jbJump(1)"><span class="in-step-n">2</span><span class="in-step-t">Requirements</span></button><button type="button" class="in-step" role="tab" aria-selected="false" onclick="jbJump(2)"><span class="in-step-n">3</span><span class="in-step-t">Salary</span></button><button type="button" class="in-step" role="tab" aria-selected="false" onclick="jbJump(3)"><span class="in-step-n">4</span><span class="in-step-t">Job location</span></button><button type="button" class="in-step" role="tab" aria-selected="false" onclick="jbJump(4)"><span class="in-step-n">5</span><span class="in-step-t">Description</span></button></div>
@@ -177,6 +178,7 @@
             <h3 id="apJobTitle" style="margin-bottom:2px;"></h3>
             <p class="sub" id="apJobMeta" style="margin-top:0; margin-bottom:0;"></p>
             <p class="sub" id="apJobExtra" style="margin-top:4px; margin-bottom:0;"></p>
+            <div id="apJobActions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px;"></div>
           </div>
         </div>
 
@@ -218,10 +220,10 @@
   <div id="siteChrome"></div>
 
 <script src="../js/api.js"></script>
-<script src="../js/store.js"></script>
-<script src="../js/employer.js"></script>
+<script src="../js/store.js?v=2"></script>
+<script src="../js/employer.js?v=2"></script>
 <script src="../js/logo-crop.js"></script>
-<script src="../js/institution.js?v=13"></script>
+<script src="../js/institution.js?v=14"></script>
 <script>
 /* Post a job: same left-steps + right-card layout as the company profile. UI only; posting still runs through addJob(). */
 (function(){
@@ -246,7 +248,7 @@
     [].forEach.call(F.querySelectorAll('.jb-step'),function(c){ c.classList.toggle('on',+c.getAttribute('data-s')===cur); });
     [].forEach.call(F.querySelectorAll('.in-step'),function(b,i){ b.className='in-step'+(i===cur?' on':i<=max?' done':''); b.setAttribute('aria-selected',i===cur); });
     $('jbStepOf').textContent='Step '+(cur+1)+' of '+N; $('jbBack').style.display=cur>0?'':'none';
-    $('jbNext').textContent=cur===N-1?'+ Post job — free':'Next';
+    $('jbNext').textContent=cur===N-1?(window.__jbEditing?'Save changes':'+ Post job — free'):'Next';
   }
   function go(i){ cur=i; max=Math.max(max,i); paint(); }
   function focusId(id){ var el=$(id); if(el){ try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); } } }
@@ -270,7 +272,7 @@
 <script src="../js/faculty.js"></script>
 <script src="../js/settings.js?v=3"></script>
 <script src="../js/sidebar.js?v=8"></script>
-<script src="../js/layout.js?v=2"></script><script src="../js/backend.js?v=7"></script>
+<script src="../js/layout.js?v=2"></script><script src="../js/backend.js?v=8"></script>
 <script>
 if('scrollRestoration' in history) history.scrollRestoration = 'manual';   /* reload no longer jumps the page */
 mountNav(); mountChrome();
