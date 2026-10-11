@@ -115,6 +115,7 @@
     if(currentRole !== 'seeker'){ api.toast('Only faculty accounts can apply to jobs.'); return; }
     try{
       await api.post('/jobs/' + id + '/apply', {});
+      try{ currentUser.appliedIds = currentUser.appliedIds || []; if(currentUser.appliedIds.indexOf(String(id)) < 0){ currentUser.appliedIds.push(String(id)); saveState(); } }catch(e){}
       api.toast('Application sent' + (title ? ' for ' + title : ''));
       document.querySelectorAll('[data-apply-job="' + id + '"]').forEach(function(b){ b.textContent = 'Applied ✓'; b.disabled = true; });
     }catch(e){ api.toast(e.message); }
