@@ -93,7 +93,8 @@
 .nw-lg{margin:10px 0 0}
 .nw.nw-wide{max-width:none;padding:0}
 </style>
-<link rel="stylesheet" href="../css/sidebar.css?v=9">
+<link rel="stylesheet" href="../css/sidebar.css?v=10">
+<link rel="stylesheet" href="../css/settings.css?v=3">
 <link rel="icon" type="image/x-icon" href="../assets/logo/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/logo/favicon-32.png">
 <link rel="apple-touch-icon" href="../assets/logo/apple-touch-icon.png">
@@ -108,7 +109,8 @@
 <script src="../js/profile-card.js?v=1"></script>
 <script src="../js/auth.js"></script>
 <script src="../js/faculty.js"></script>
-<script src="../js/sidebar.js?v=7"></script>
+<script src="../js/settings.js?v=2"></script>
+<script src="../js/sidebar.js?v=8"></script>
 <script src="../js/layout.js?v=2"></script>
 <script>
 mountNav(''); mountChrome({noFooter:true});
@@ -410,6 +412,7 @@ const lockInfo=k=>({
 const lockBanner=k=>{const[t,m]=lockInfo(k);return `<div class="nw-lock ${k}"><span class="nw-lock-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><div><b>${t}</b><div>${m}</div></div></div>`};
 function vLocked(k){const[t,m,b]=lockInfo(k),nm=((SD.find(x=>x[0]==S.sd)||[])[1])||'This section';return `<div class="c nw-locked"><div class="nw-locked-ic"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h2>${nm} is locked</h2><h3>${t}</h3><p class="mut">${m}</p><button class="btn btn-primary" onclick="set('sd','profile')">${b}</button></div>`}
 function vSub(){const k=S.st,ok=k=='approved';
+ if(S.sd==='settings'&&window.UpSettings)return `<div class="dash-inner-wide" id="dashInnerWide"><div class="dash-panel"><div id="upSettings" class="up-set">${UpSettings.html('branch')}</div></div></div>`;
  const body=ok?(S.sd!='profile'?subPanel():vProfile()):(S.sd!='profile'?vLocked(k):((k=='draft'||P.done||S.pedit)?vProfile():vSub0()));
  return `<div class="dash-inner-wide" id="dashInnerWide"><div class="dash-panel">`+(ok?'':lockBanner(k))+subNav(k)+body+`</div></div>`}
 const mainJobsHtml=(bn)=>JOBS.filter(j=>j.mainCode==S.main.code&&(!bn||j.branchName==bn)).map(jobCard).join('');
@@ -458,6 +461,7 @@ function fin(id,s){reqs.find(x=>x.id==id).s=s;closeMod();if(id==1){S.st=s=='Appr
 (()=>{const t=new URLSearchParams(location.search).get('tab');if(S.role==='sub'&&['profile','post','jobs','cands','reqs'].includes(t))S.sd=t})();
 window.NWP={steps:()=>PSTEPS,cur:()=>(S.sd==='profile'&&!P.done)?P.step:-1,can:i=>P.done||i<=P.max||i<P.step,
  open:i=>{if(S.role!=='sub')return false;S.sd='profile';if(P.done&&!S.pedit)pfEdit();if(i>P.max){render();return true}pfGo(i);scrollTo(0,0);return true}};
+window.NWP.settings=()=>{if(S.role!=='sub')return false;S.sd='settings';render();scrollTo(0,0);return true};
 const nwOpenTab=t=>{if(S.role!=='sub')return false;S.sd=t;render();scrollTo(0,0);return true};
 render();
 </script>
