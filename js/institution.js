@@ -153,7 +153,7 @@ const ALLF=F0.concat(F1,F2,F2A,FB);
 const RX={email:/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,url:/^(https?:\/\/)?([\w-]+\.)+[a-z]{2,}(\/\S*)?$/i,pin:/^\d{6}$/,year:/^\d{4}$/};
 const MSG={email:'Enter a valid email address, e.g. name@example.edu',url:'Enter a valid website, e.g. https://example.edu',pin:'PIN code must be 6 digits',year:'Enter a 4-digit year',phone:'Enter a 10-digit number'};
 
-let I=load(), BR={}, BRi=-1, welcome=!I.sub&&(I.step>0||!!I.d.name);
+let I=load(), BR={}, BRi=-1, BRorig='', BRnew=null, welcome=!I.sub&&(I.step>0||!!I.d.name);
 function load(){
   let r=null; try{ r=JSON.parse(localStorage.getItem(KEY)); }catch(e){}
   r=Object.assign({step:0,max:0,view:'wizard',vs:'pending',d:{country:'India'},branches:[],em:'idle',aem:'idle',web:false,doc:null,docType:'',docs:{},extra:[],regRole:'',auth:'',role:'',c1:false,c2:false,sec:'profile',sub:false},r||{});
@@ -171,7 +171,7 @@ function load(){
   }catch(e){}
   return r;
 }
-function save(){ try{ try{ I.pc=pct(); }catch(e){} localStorage.setItem(KEY,JSON.stringify(I)); try{ window.dispatchEvent(new Event('upProfileChanged')); }catch(e){} }catch(e){ toast('Progress saved, but the image is too large to keep. Try a smaller file.'); } }
+function save(){ try{ try{ I.pc=pct(); }catch(e){} localStorage.setItem(KEY,JSON.stringify(I)); try{ window.dispatchEvent(new Event('upProfileChanged')); }catch(e){} try{ if(window.bkInstChanged) window.bkInstChanged(); }catch(e){} }catch(e){ toast('Progress saved, but the image is too large to keep. Try a smaller file.'); } }
 function toast(m){ const t=document.createElement('div'); t.className='in-toast'; t.setAttribute('role','status'); t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
 function top(){ /* page stays where it is when a step or option is clicked */ }
 
@@ -556,8 +556,10 @@ function bForm(){
   <div class="in-f"><label>Branch logo / campus photo<i>Optional</i></label><input type="file" id="inBimg" accept="image/png,image/jpeg" style="display:none" onchange="IN.bImg(event)">
   <div class="in-logo">${BR.img?`<div class="in-logo-box" style="width:120px"><img src="${BR.img}" alt="Campus"></div>`:''}<button class="btn btn-ghost btn-sm" onclick="document.getElementById('inBimg').click()">${BR.img?'Change photo':'Upload photo'}</button></div></div>
   <div class="in-map" style="margin-top:12px">${BR.city?`<span>${PIN_IC} ${esc(locStr(BR))}</span>`:'<span>Location preview appears once you add a PIN code</span>'}</div>
-  <div class="in-actions" style="margin-top:14px"><span></span><div class="r"><button class="btn btn-ghost btn-sm" onclick="IN.closeM()">Cancel</button><button class="btn btn-primary btn-sm" onclick="IN.bSave()">Save branch</button></div></div>`;
+  <div class="in-actions" style="margin-top:14px"><span></span><div class="r"><button class="btn btn-ghost btn-sm" onclick="IN.bCancel()">Cancel</button><button class="btn btn-primary btn-sm" onclick="IN.bSave()">Save branch</button></div></div>`;
 }
+/* A branch photo uploaded in the open modal but not saved yet: remove it from storage if the modal is cancelled or the photo is changed again. */
+function bDropUnsaved(){ if(BRnew&&window.bkDeleteFile) bkDeleteFile(BRnew).catch(()=>{}); BRnew=null; }
 
 /* ---------- status + dashboard ---------- */
 function statusBody(){
@@ -723,12 +725,15 @@ window.IN={
   vnext(){ if(VS>=VSTEPS.length-1){ I.sec='profile'; VS=0; toast('Verification details saved'); } else VS++; render(); window.scrollTo(0,0); },
   tab(w){ switchEmployerTab(w); },
   closeM,
-  bEdit(i){ BRi=i; BR=i<0?{}:Object.assign({},I.branches[i]); closeM(); modal(bForm()); },
+  bEdit(i){ bDropUnsaved(); BRi=i; BR=i<0?{}:Object.assign({},I.branches[i]); BRorig=i<0?'':(I.branches[i].imgId||''); closeM(); modal(bForm()); },
+  bCancel(){ bDropUnsaved(); closeM(); },
   bImg(e){ const f=e.target.files[0]; e.target.value=''; if(!f) return; if(!/^image\/(png|jpeg)$/.test(f.type)){ toast('Use a PNG or JPG image'); return; } if(f.size>2*1048576){ toast('Image must be under 2 MB'); return; }
     if(!window.bkUploadFile){ toast('Upload is not available. Reload the page.'); return; }
     toast('Uploading image…');
-    bkUploadFile(f,'job_image',f.name,BR.imgId).then(up=>{ if(!up.url) throw new Error('The server has no public file URL configured.'); BR.img=up.url; BR.imgId=up.id; modal(bForm()); toast('Image uploaded'); }).catch(er=>toast('Could not upload image: '+((er&&er.message)||'error'))); },
-  bSave(){ if(!valid(FB,'b')) return; if(BRi<0) I.branches.push(BR); else I.branches[BRi]=BR; save(); closeM(); render(); toast('Branch saved'); },
+    bkUploadFile(f,'job_image',f.name).then(up=>{ if(!up.url){ if(window.bkDeleteFile) bkDeleteFile(up.id).catch(()=>{}); throw new Error('The server has no public file URL configured.'); } bDropUnsaved(); BR.img=up.url; BR.imgId=up.id; BRnew=up.id; modal(bForm()); toast('Image uploaded'); }).catch(er=>toast('Could not upload image: '+((er&&er.message)||'error'))); },
+  bSave(){ if(!valid(FB,'b')) return; if(BRi<0) I.branches.push(BR); else I.branches[BRi]=BR; save();
+    if(BRorig&&BRorig!==BR.imgId&&window.bkDeleteFile) bkDeleteFile(BRorig).catch(()=>{});   /* the photo this one replaced */
+    BRnew=null; BRorig=''; closeM(); render(); toast('Branch saved'); },
   reqView(){ const r=subReq(); if(!r) return;
     const chk=(ok,t)=>`<li>${ok?ck(13):CLKs} ${t}</li>`;
     modal(`<div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">${reqThumb(r)}<div><h4 style="margin:0;font-size:18px">${esc(r.name)}</h4><span style="font-size:13px;color:var(--ink-soft)">${esc(r.type)}${r.city?' · '+esc(r.city):''}</span></div><div style="margin-left:auto">${reqPill(r.st)}</div></div>
@@ -753,7 +758,9 @@ window.IN={
     <div class="in-actions"><button class="btn btn-ghost btn-sm" style="color:#B3261E;border-color:#B3261E" onclick="IN.bDel(${i})">Remove</button><div class="r"><button class="btn btn-ghost btn-sm" onclick="IN.closeM()">Close</button><button class="btn btn-primary btn-sm" onclick="IN.bEdit(${i})">Edit</button></div></div>`); },
   bDel(i){ modal(`<h4 style="margin:0 0 8px;font-size:18px">Remove ${esc(I.branches[i].name)}?</h4><p style="color:var(--ink-soft);font-size:14px">This campus will be removed from your institution profile. Jobs already posted to it stay live.</p>
     <div class="in-actions"><span></span><div class="r"><button class="btn btn-ghost btn-sm" onclick="IN.closeM()">Cancel</button><button class="btn btn-primary btn-sm" style="background:#B3261E" onclick="IN.bDelOk(${i})">Remove campus</button></div></div>`); },
-  bDelOk(i){ const n=I.branches[i].name; I.branches.splice(i,1); save(); closeM(); render(); toast(n+' removed'); },
+  bDelOk(i){ const b=I.branches[i], n=b.name; I.branches.splice(i,1); save();
+    if(b.imgId&&window.bkDeleteFile) bkDeleteFile(b.imgId).catch(()=>{});                     /* its photo goes from storage too */
+    closeM(); render(); toast(n+' removed'); },
   sample(){
     Object.assign(I.d,{name:'Upaadhyay University',type:'University',short:'Upaadhyay Univ.',website:'https://www.upaadhyay.edu.in',email:'placement@upaadhyay.edu.in',phone:'9876543210',year:'1998',reg:'TS/UNI/1998/0142',affil:'UGC recognised',accred:'NAAC A, AICTE approved',about1:'A multidisciplinary university in Hyderabad.',about2:'Upaadhyay University offers undergraduate, postgraduate and doctoral programmes across engineering, sciences and management.',country:'India',pin:'500072',state:'Telangana',district:'Hyderabad',city:'Hyderabad',area:'Kukatpally',address:'Plot 12, University Road, Kukatpally',rname:'K Kittu',rdes:'Placement Officer',rdep:'Placement / Training & Placement',remail:'placement@upaadhyay.edu.in',rphone:'9876543210'});
     I.em='ok'; I.web=true; I.d.eid='UU-2041'; I.regRole='Placement'; Object.assign(I.d,{aname:'Dr R Krishna Rao',adesig:'Principal',aemail:'principal@upaadhyay.edu.in',aphone:'9876500001'}); I.aem='ok'; I.docs={reg:{name:'registration-certificate.pdf',size:'1.2 MB',st:'ok'},rep:{name:'staff-id-card.png',size:'480 KB',st:'ok'},auth:{name:'authorization-letter.pdf',size:'320 KB',st:'ok'},aprf:{name:'principal-appointment.pdf',size:'610 KB',st:'ok'}}; I.auth='self'; I.c1=true; I.max=5; save(); render(); toast('Sample data loaded'); },
@@ -762,6 +769,8 @@ window.IN={
 
 /* ---------- hooks used by the dashboard page and job posting ---------- */
 window.instRender=render;
+/* backend.js: the saved institution form was just brought in from the server (new device / cleared browser) → re-read it and redraw. */
+window.instReload=function(){ I=load(); welcome=!I.sub&&(I.step>0||!!I.d.name); render(); try{ if(I.d.name||I.d.logo) instHeader(); }catch(e){} };
 window.instCampusOptions=function(){
   const d=I.d, loc=locStr(d)||(typeof currentCompany!=='undefined'?currentCompany.city:''), c=[{v:'main',l:'Main Campus'+(d.city?' ('+d.city+')':''),n:'Main Campus',loc:loc}];
   I.branches.forEach((b,i)=>c.push({v:'b'+i,l:b.name,n:b.name,loc:locStr(b)}));
