@@ -146,7 +146,7 @@ function subLogin(){const i=document.getElementById('sl_id').value.trim(),p=docu
 function vFind(){
   const digits=S.code.replace(/\D/g,''),bad=S.code&&!/^\d{5}$/.test(S.code);
   const q=S.q.trim().toLowerCase(),hits=q?MAINS.filter(m=>(m.n+m.c).toLowerCase().includes(q)):[];
-  const shown=S.all?hits:hits.slice(0,6);
+  const shown=S.all?hits:hits.slice(0,1);
   return `<div class="nw-stack"><h1>Find Your Main Institution</h1><p class="sub">Your Sub-Branch must be connected to an existing Main Institution.</p>
 <div class="c nw-big"><h3>Main Institution Code</h3>
 <label class="fld ${bad?'err':''}">Main Institution Code<input id="code" maxlength="5" inputmode="numeric" placeholder="Enter 5-digit code, e.g. 10245" value="${S.code}" oninput="S.code=this.value;const b=document.getElementById('cb');b.disabled=!/^\\d{5}$/.test(this.value);this.parentNode.classList.toggle('err',this.value&&b.disabled)"></label>
@@ -160,9 +160,9 @@ function vFind(){
 function hitsHtml(q,shown,total){
   if(!q)return '<div class="mut">Choose your main institution — start typing to search. Only Main / Normal institutions are listed; Sub-Branches can\'t be selected as a parent.</div>';
   if(!shown.length)return `<h3>No Main Institution Found</h3><div class="mut">We couldn't find a matching Main Institution.</div><p class="btns row wrap"><button class="btn btn-light btn-sm" onclick="S.q='';S.code='';render()">Search Again</button><button class="btn btn-ghost btn-sm" onclick="goTo('register',{role:'company',type:'main'})">Create a Main / Normal Institution</button></p>`;
-  return shown.map(m=>`<div class="res" onclick="S.main=MAINS[${MAINS.indexOf(m)}];go('confirm')">${lg(m.n)}<div class="grow"><b>${m.n}</b> ${B(1)}<div class="mut">${m.t}</div><div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${m.c}</div><div class="mut">Code: <b>${m.code}</b></div></div></div>`).join('')+(total>shown.length?`<button class="btn btn-light btn-sm" onclick="set('all',true)">View all results (${total})</button>`:'');
+  return shown.map(m=>`<div class="res" onclick="S.main=MAINS[${MAINS.indexOf(m)}];go('confirm')">${lg(m.n)}<div class="grow"><b>${m.n}</b> ${B(1)}<div class="mut">${m.t}</div><div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${m.c}</div><div class="mut">Code: <b>${m.code}</b></div></div></div>`).join('')+(total>shown.length?`<button class="btn btn-light btn-sm" onclick="set('all',true)">View more (${total-shown.length} more)</button>`:'');
 }
-let tm;function liveQ(v){S.q=v;S.all=false;const h=document.getElementById('hits');h.innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';clearTimeout(tm);tm=setTimeout(()=>{const q=v.trim().toLowerCase(),hits=q?MAINS.filter(m=>(m.n+m.c).toLowerCase().includes(q)):[];h.innerHTML=hitsHtml(q,hits.slice(0,6),hits.length)},350)}
+let tm;function liveQ(v){S.q=v;S.all=false;const h=document.getElementById('hits');h.innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';clearTimeout(tm);tm=setTimeout(()=>{const q=v.trim().toLowerCase(),hits=q?MAINS.filter(m=>(m.n+m.c).toLowerCase().includes(q)):[];h.innerHTML=hitsHtml(q,hits.slice(0,1),hits.length)},350)}
 /* 3. confirm */
 function vConfirm(){return `<div class="nw-stack nw-mid"><h1>Selected Main Institution</h1><p class="sub">This sub-branch will be connected to the institution below.</p>
 <div class="nw-sm nw-selc">${mainCard(S.main,`<div><b>Institution Code: ${S.main.code}</b></div>`)}</div>
