@@ -107,3 +107,6 @@ body.up-has-side #fpRoot .fp-wrap{grid-template-columns:minmax(0,1fr)}
 .up-fopt{border:1px solid var(--line);border-radius:var(--radius);padding:6px 9px;margin:0 0 4px;background:#fff}
 .up-fopt:hover{border-color:var(--blue-700)}
 .up-fopt:has(input:checked){border-color:var(--blue-700);background:var(--blue-50);color:var(--blue-900);font-weight:600}
+
+.up-subitem.off,.up-subitem:disabled{opacity:.5;cursor:not-allowed}
+.up-subitem.off:hover,.up-subitem:disabled:hover{background:#fff;border-color:var(--line)}
