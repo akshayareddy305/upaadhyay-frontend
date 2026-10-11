@@ -42,6 +42,44 @@
     return JSON.parse(JSON.stringify(obj, function(k, v){ return (typeof v === 'string' && v.indexOf('data:') === 0 && v.length > 500) ? '' : v; }));
   }
 
+  /* ---------------- save status pill (Saving… / Saved / Not saved + Retry) ---------------- */
+  let _stEl = null, _stT = null, _retry = null;
+  function status(state, msg, retry){
+    if(!document.body) return;
+    if(!_stEl){
+      _stEl = document.createElement('div'); _stEl.id = 'bkSaveStatus'; _stEl.setAttribute('role', 'status');
+      _stEl.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:99998;padding:8px 14px;border-radius:999px;font:600 13px/1.3 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:min(92vw,420px);display:none;cursor:default;';
+      _stEl.addEventListener('click', function(){ if(_retry){ const r = _retry; _retry = null; r(); } });
+      document.body.appendChild(_stEl);
+    }
+    clearTimeout(_stT); _retry = retry || null;
+    const C = { saving: ['#0B1F45', '#fff', '⏳ '], saved: ['#0F766E', '#fff', '✓ '], error: ['#B91C1C', '#fff', '⚠ '] }[state];
+    _stEl.style.background = C[0]; _stEl.style.color = C[1]; _stEl.style.cursor = retry ? 'pointer' : 'default';
+    _stEl.textContent = C[2] + msg + (retry ? ' — tap to retry' : ''); _stEl.style.display = 'block';
+    if(state === 'saved') _stT = setTimeout(function(){ _stEl.style.display = 'none'; }, 2200);
+  }
+  window.bkStatus = status;
+
+  /* ---------------- upload limits (same numbers the backend enforces: GET /limits) ---------------- */
+  const LIMIT_FALLBACK = { categories: {
+    profile_photo: { mimes: ['jpg','jpeg','png','webp'], max_kb: 2048 }, company_logo: { mimes: ['jpg','jpeg','png','webp','svg'], max_kb: 2048 },
+    job_image: { mimes: ['jpg','jpeg','png','webp'], max_kb: 4096 }, resume: { mimes: ['pdf','doc','docx'], max_kb: 5120 },
+    certificate: { mimes: ['pdf','jpg','jpeg','png'], max_kb: 5120 }, video: { mimes: ['mp4','webm'], max_kb: 51200 }, other: { mimes: ['pdf','jpg','jpeg','png'], max_kb: 5120 } } };
+  let _limits = null;
+  async function limits(){
+    if(!_limits){ try{ _limits = await api.get('/limits', { noAuthRedirect: true, silent403: true }); }catch(e){ _limits = null; } }
+    return _limits && _limits.categories ? _limits : LIMIT_FALLBACK;
+  }
+  /* Returns '' if OK, otherwise the message to show. The backend re-checks everything; this just fails fast. */
+  window.bkCheckFile = async function(file, category){
+    const cfg = ((await limits()).categories || {})[category] || LIMIT_FALLBACK.categories.other;
+    if(!file || !file.size) return 'This file is empty. Choose another file.';
+    const ext = String((file.name || '').split('.').pop() || (file.type || '').split('/').pop()).toLowerCase();
+    if(file.name && cfg.mimes.indexOf(ext) < 0) return 'Unsupported file type. Allowed: ' + cfg.mimes.join(', ').toUpperCase() + '.';
+    if(file.size > cfg.max_kb * 1024) return 'File is too large. Maximum size is ' + Math.round(cfg.max_kb / 1024) + ' MB.';
+    return '';
+  };
+
   /* ---------------- categories ---------------- */
   let _cats = null;
   async function categories(){ if(!_cats){ try{ _cats = items(await api.get('/categories', { noAuthRedirect: true })); }catch(e){ return []; } } return _cats; } /* failures are not cached */
@@ -247,11 +285,13 @@
     const body = isCo ? companyPayload() : seekerPayload();
     const sig = JSON.stringify(body);
     if(sig === _lastSig) return;
+    status('saving', 'Saving…');
     try{
       await api.put(isCo ? '/company/profile' : '/candidate/profile', body, { silent403: true });
       _lastSig = sig;
+      status('saved', 'All changes saved');
     }catch(e){
-      if(e.status !== 401) api.toast(e.status === 0 ? 'You are offline — profile not saved yet. It retries on your next change.' : 'Could not save your profile: ' + e.message);
+      if(e.status !== 401) status('error', e.status === 0 ? 'Offline — not saved' : 'Not saved: ' + e.message, pushProfile);
     }
   }
   /* Explicit, awaited save for the faculty profile form: resolves only after the server confirms (throws ApiError otherwise). */
@@ -459,17 +499,33 @@
     }catch(e){ if(w) w.close(); api.toast(e.message); }
   };
   /* ---------------- uploads: POST /files/upload (multipart) ---------------- */
-  window.bkUploadFile = async function(fileOrBlob, category, name){
+  /* replacesId = id of the previous file in the same slot: the server saves the new one, then deletes that one. */
+  window.bkUploadFile = async function(fileOrBlob, category, name, replacesId){
     if(!api.hasToken()) throw new Error('Please log in again to upload files.');
-    const fd = new FormData();
-    fd.append('file', fileOrBlob, name || fileOrBlob.name || 'upload');
-    fd.append('category', category); /* company_logo | job_image | other */
-    const d = await api.post('/files/upload', fd);
-    const f = d && d.file ? d.file : d;
-    if(!f || !f.id) throw new Error('The server did not confirm the upload.');
-    return { id: f.id, url: f.url || '', name: f.original_name || name || '' };
+    const bad = await bkCheckFile(fileOrBlob.name ? fileOrBlob : new File([fileOrBlob], name || 'upload.' + String(fileOrBlob.type || '').split('/').pop()), category);
+    if(bad){ status('error', bad); throw new Error(bad); }
+    status('saving', 'Uploading…');
+    try{
+      const fd = new FormData();
+      fd.append('file', fileOrBlob, name || fileOrBlob.name || 'upload');
+      fd.append('category', category); /* company_logo | job_image | other */
+      if(replacesId) fd.append('replaces', replacesId);
+      const d = await api.post('/files/upload', fd);
+      const f = d && d.file ? d.file : d;
+      if(!f || !f.id) throw new Error('The server did not confirm the upload.');
+      status('saved', 'Uploaded');
+      return { id: f.id, url: f.url || '', name: f.original_name || name || '' };
+    }catch(e){ status('error', 'Upload failed: ' + ((e && e.message) || 'error')); throw e; }
   };
-  window.bkDeleteFile = function(id){ return id ? api.del('/files/' + id) : Promise.resolve(); };
+  window.bkDeleteFile = async function(id){
+    if(!id) return;
+    try{ await api.del('/files/' + id); status('saved', 'File deleted'); }
+    catch(e){ if(e.status !== 404) status('error', 'Could not delete file: ' + e.message); throw e; }
+  };
+  window.bkRemoveLogo = async function(){
+    try{ await api.del('/company/logo'); status('saved', 'Logo removed'); }
+    catch(e){ status('error', 'Could not remove logo: ' + e.message); throw e; }
+  };
   window.bkDataUrlToBlob = function(u){
     const m = /^data:([^;,]+)(;base64)?,(.*)$/.exec(u || ''); if(!m) throw new Error('Invalid image.');
     const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]), arr = new Uint8Array(bin.length);
@@ -563,9 +619,10 @@
       sc.apply(this, arguments);
     if(!_syncReady || !api.hasToken()) return; /* never overwrite the server before the profile has loaded */
     clearTimeout(_timer);
+      status('saving', 'Saving…');
       api.put('/company/profile', companyPayload(), { silent403: true })
-        .then(function(){ _lastSig = JSON.stringify(companyPayload()); })
-        .catch(function(e){ api.toast(e.message); });
+        .then(function(){ _lastSig = JSON.stringify(companyPayload()); status('saved', 'All changes saved'); })
+        .catch(function(e){ status('error', 'Not saved: ' + e.message, function(){ saveCompany(); }); });
     };
   }
 })();
