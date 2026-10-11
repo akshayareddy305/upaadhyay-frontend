@@ -387,3 +387,7 @@
 .in-note,#dashInnerWide .in-note,#dashInnerWide #jobPostForm .in-note,#dashInnerWide #instRoot .in-main .in-note{padding-top:14px;padding-bottom:14px;min-height:48px;display:flex;flex-direction:column;justify-content:center}
 .in-note::before,#dashInnerWide .in-note::before{top:50%;transform:translateY(-50%)}
 .in-note b,#dashInnerWide .in-note b{margin-bottom:2px}
+
+/* first-time setup note on the employer dashboard: compact banner, aligned with the profile wizard below */
+#employerSetupNote{max-width:1100px;margin:0 auto 16px;padding:12px 16px;font-size:13.5px;line-height:1.5;color:var(--ink-soft,#475569);background:var(--blue-50,#EEF3FF);border:1px solid var(--blue-100,#D6E2FF);border-left:4px solid var(--blue-700,#1A3FBF);border-radius:8px;box-sizing:border-box}
+@media(max-width:640px){#employerSetupNote{font-size:12.5px;padding:10px 12px}}
