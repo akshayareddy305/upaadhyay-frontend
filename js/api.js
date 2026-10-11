@@ -95,6 +95,7 @@
   const api = {
     BASE: API_BASE, SITE_ROOT: SITE_ROOT, ApiError: ApiError,
     user: null,                    // filled by me()/login()/register()
+    notice: '',                    // set by login() when the other account type was opened
     onUnauthenticated: null,
     getToken: getToken,
     hasToken: function(){ return !!getToken(); },
@@ -110,8 +111,13 @@
       try{ localStorage.setItem(ROLE_HINT_KEY, payload.user.role); }catch(e){}
       return payload.user;
     },
-    login: async function(email, password){
-      const d = await request('POST', '/auth/login', { email: email, password: password }, { noAuthRedirect: true });
+    /* role ('candidate'|'company') = the login type the person picked. If the password matches, the account that
+       was registered with this email opens whatever they picked; api.notice then says so. */
+    login: async function(email, password, role){
+      const body = { email: email, password: password };
+      if(role) body.role = role;
+      const d = await request('POST', '/auth/login', body, { noAuthRedirect: true });
+      api.notice = (d && d.notice) || '';
       return api._accept(d);
     },
     /* role must be 'candidate' | 'company' (frontend 'seeker' is mapped here). */
