@@ -401,3 +401,13 @@
 .dash-subtab.is-locked::before{content:"\1F512";font-size:11px;margin-right:6px}
 .dash-subtab.is-locked:hover{background:transparent}
 .emp-lock-note{margin:0 0 14px;padding:10px 14px;background:#FFF8E6;border:1px solid #F0D58A;border-radius:2px;font-size:13px;color:#6b4a00}
+
+
+/* ===== v16: wizard locked to the viewport. Banner, title and step list stay put; only the form card scrolls ===== */
+@media(min-width:901px) and (min-height:560px){
+  html:has(.in-fixed),body:has(.in-fixed){overflow:hidden}
+  #dashInnerWide #instRoot .in-fixed .in-layout{height:calc(100vh - 200px);min-height:360px;align-items:stretch}
+  #dashInnerWide #instRoot .in-fixed .in-side{position:static;top:auto;align-self:start;max-height:100%;overflow-y:auto}
+  #dashInnerWide #instRoot .in-fixed .in-main{height:100%;max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+  #dashInnerWide #instRoot .in-fixed .in-main .in-actions{position:sticky;bottom:0;z-index:5;background:#fff;box-shadow:0 -6px 12px -8px rgba(11,29,58,.18)}
+}
