@@ -171,7 +171,7 @@ function load(){
   }catch(e){}
   return r;
 }
-function save(){ try{ localStorage.setItem(KEY,JSON.stringify(I)); }catch(e){ toast('Progress saved, but the image is too large to keep. Try a smaller file.'); } }
+function save(){ try{ try{ I.pc=pct(); }catch(e){} localStorage.setItem(KEY,JSON.stringify(I)); try{ window.dispatchEvent(new Event('upProfileChanged')); }catch(e){} }catch(e){ toast('Progress saved, but the image is too large to keep. Try a smaller file.'); } }
 function toast(m){ const t=document.createElement('div'); t.className='in-toast'; t.setAttribute('role','status'); t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2600); }
 function top(){ /* page stays where it is when a step or option is clicked */ }
 
@@ -640,6 +640,7 @@ function setHeader(){
 
 /* ---------- actions (called from inline handlers) ---------- */
 window.IN={
+  completion(){ return pct(); },
   loc(sc,k,v){ const S=sc==='d'?I.d:BR, i=LORD.indexOf(k), oth=v==='Other'&&OTHER_K.includes(k);
     S[k]=oth?'':v; S['o_'+k]=oth;
     LORD.slice(i+1).forEach(x=>{ S[x]=''; S['o_'+x]=false; });
