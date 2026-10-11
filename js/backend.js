@@ -26,7 +26,7 @@
   function inr(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
   function initials(name){ return String(name || '??').trim().split(/\s+/).slice(0,2).map(function(w){ return w[0]; }).join('').toUpperCase() || '??'; }
   function daysSince(d){ return d ? Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 864e5)) : 0; }
-  function daysUntil(d){ return d ? Math.max(0, Math.ceil((new Date(d).getTime() - Date.now()) / 864e5)) : null; }
+  function daysUntil(d){ if(!d) return null; const end = new Date(String(d).slice(0, 10) + 'T23:59:59'); /* date-only deadline = end of that day, local time */ return Math.max(0, Math.ceil((end.getTime() - Date.now()) / 864e5)); }
   function items(res){ return Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []); }
   function qs(o){ const p = new URLSearchParams(); Object.keys(o || {}).forEach(function(k){ if(o[k] !== '' && o[k] != null) p.set(k, o[k]); }); const s = p.toString(); return s ? '?' + s : ''; }
   async function paged(path, params, maxPages){
@@ -34,7 +34,7 @@
     do{
       const r = await api.get(path + qs(Object.assign({ per_page: 50, page: page }, params || {})), { silent403: true, noAuthRedirect: !api.hasToken() });
       out = out.concat(items(r));
-      last = (r && r.last_page) || 1; page++;
+      last = (r && (r.last_page || (r.meta && r.meta.last_page))) || 1; page++;
     }while(page <= last && page <= (maxPages || 5));
     return out;
   }
@@ -44,15 +44,15 @@
 
   /* ---------------- categories ---------------- */
   let _cats = null;
-  async function categories(){ if(!_cats){ try{ _cats = await api.get('/categories', { noAuthRedirect: true }); }catch(e){ _cats = []; } } return _cats; }
+  async function categories(){ if(!_cats){ try{ _cats = items(await api.get('/categories', { noAuthRedirect: true })); }catch(e){ return []; } } return _cats; } /* failures are not cached */
   async function categoryId(name){ const c = (await categories()).find(function(x){ return x.name === name; }); return c ? c.id : null; }
 
   /* ---------------- jobs (public) ---------------- */
   function salaryText(j, m){
     if(m.salary_as_per_norms) return 'As per norms';
     if(j.salary_min || j.salary_max){
-      const per = (m.salary_period === 'year') ? 'Year' : 'Month';
-      return (j.salary_min ? inr(j.salary_min) : '') + (j.salary_max ? ' – ' + inr(j.salary_max) : '') + '/' + per + (m.salary_negotiable ? ' (negotiable)' : '');
+      const per = ({ year: 'Year', month: 'Month', lecture: 'Lecture', hour: 'Hour' })[m.salary_period] || 'Month';
+      return (j.salary_min && j.salary_max ? inr(j.salary_min) + ' – ' + inr(j.salary_max) : (j.salary_min ? inr(j.salary_min) + '+' : 'Up to ' + inr(j.salary_max))) + '/' + per + (m.salary_negotiable ? ' (negotiable)' : '');
     }
     return 'Not disclosed';
   }
@@ -99,7 +99,7 @@
     if(list) list.innerHTML = '<div class="bj-empty" style="grid-column:1/-1;">Loading jobs…</div>';
     try{ bjJobs = await fetchJobs({}); }
     catch(e){ bjJobs = []; if(list) list.innerHTML = '<div class="bj-empty" style="grid-column:1/-1;">Could not load jobs. ' + esc(e.message) + '</div>'; return; }
-    if(!bjJobs.length) bjJobs = demoJobs();
+    if(!bjJobs.length && (window.UPADYAY_DEMO_JOBS === true || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) bjJobs = demoJobs(); /* demo cards never show on the live site */
     const q = getParam('q'), loc = getParam('loc');
     const kw = document.getElementById('bjKeyword'), lc = document.getElementById('bjLocation');
     if(q && kw && !kw.value) kw.value = q;
@@ -110,7 +110,8 @@
   /* Apply (seeker). */
   window.applyToJob = async function(id, title){
     if(String(id).indexOf('demo-')===0){ api.toast('This is a demo job. Live jobs posted by institutions can be applied to.'); return; }
-    if(!isLoggedIn || currentRole === 'company'){ goTo('register', { role: 'seeker' }); return; }
+    if(isLoggedIn && currentRole === 'company'){ api.toast('Institution accounts cannot apply. Log in with a faculty account.'); return; }
+    if(!isLoggedIn){ goTo('register', { role: 'seeker' }); return; }
     if(currentRole !== 'seeker'){ api.toast('Only faculty accounts can apply to jobs.'); return; }
     try{
       await api.post('/jobs/' + id + '/apply', {});
@@ -122,7 +123,7 @@
   /* Static pages (For Faculty / Job view): shared loader. */
   const SP_KEYS = { professor:/professor/i, 'associate-professor':/associate/i, 'assistant-professor':/assistant/i, lecturer:/lecturer/i,
     research:/research professor/i, 'research-associate':/research associate/i, postdoctoral:/post-?doc/i, 'non-teaching':/non[- ]teaching/i,
-    'academic-coordinator':/coordinator/i, 'lab-staff':/lab/i, administration:/admin/i };
+    'academic-coordinator':/coordinator/i, 'lab-staff':/\blab/i, administration:/admin/i };
   function spCatFor(job){
     const t = (job.role || '') + ' ' + job.title;
     const order = ['research-associate','research','postdoctoral','associate-professor','assistant-professor','professor','lecturer','non-teaching','academic-coordinator','lab-staff','administration'];
@@ -138,7 +139,7 @@
                    exp: j.minExp, type: j.type, sal: j.salary, desc: j.description, raw: j };
         });
         return SP_JOBS;
-      }).catch(function(){ SP_JOBS = []; return SP_JOBS; });
+      }).catch(function(){ SP_JOBS = []; _spPromise = null; return SP_JOBS; });
     }
     return _spPromise;
   };
@@ -184,17 +185,17 @@
     _lastSig = JSON.stringify(seekerPayload());
   }
   function seekerPayload(){
-    const U = currentUser, body = { name: U.name || undefined, phone: U.phone || undefined };
+    const U = currentUser, body = { name: String(U.name || '').trim().slice(0, 120) || undefined, phone: U.phone ? String(U.phone).trim().slice(0, 20) : null };
     const dob = /^\d{4}-\d{2}-\d{2}$/.test(U.dob || '') && new Date(U.dob) < new Date() ? U.dob : undefined;
     const g = String(U.gender || '').toLowerCase();
     const exp = parseFloat(U.experience);
-    body.date_of_birth = dob;
-    body.gender = g ? (g === 'male' || g === 'female' ? g : 'other') : undefined;   // 'Non-binary' / 'Prefer not to say' -> other (full label kept in profile_data)
-    body.location = (U.location || U.currentLocation || '').slice(0, 190) || undefined;
-    body.city = (U.city || '').slice(0, 100) || undefined;
-    body.state = (U.state || '').slice(0, 100) || undefined;
-    body.current_job_title = (U.currentDesignation || '').slice(0, 190) || undefined;
-    body.total_experience = isFinite(exp) && exp >= 0 && exp <= 60 ? exp : undefined;
+    body.date_of_birth = dob || (U.dob ? undefined : null);
+    body.gender = g ? (g === 'male' || g === 'female' ? g : 'other') : null;   // 'Non-binary' / 'Prefer not to say' -> other (full label kept in profile_data)
+    body.location = (U.location || U.currentLocation || '').slice(0, 190) || null;
+    body.city = (U.city || '').slice(0, 100) || null;
+    body.state = (U.state || '').slice(0, 100) || null;
+    body.current_job_title = (U.currentDesignation || '').slice(0, 190) || null;
+    body.total_experience = isFinite(exp) && exp >= 0 && exp <= 60 ? exp : (U.experience ? undefined : null);
     body.profile_data = stripHeavy(U);
     Object.keys(body).forEach(function(k){ if(body[k] === undefined) delete body[k]; });
     return body;
@@ -213,20 +214,26 @@
     if(c.description) currentCompany.desc = c.description;
     if(c.email) currentCompany.email = c.email;
     if(c.phone) currentCompany.phone = c.phone;
-    if(c.logo && !currentCompany.logo) currentCompany.logo = fileUrl(c.logo);
+    if(c.logo) currentCompany.logo = fileUrl(c.logo); /* server is the source of truth */
     currentCompany.verification = c.verification_status || '';
-    if(pd.inst && !instState()){            // bring the institution form back on a new device
-      try{ localStorage.setItem('upadyay_inst_v1', JSON.stringify(pd.inst)); }catch(e){}
+    const uid = String((api.user && api.user.id) || c.user_id || '');
+    let owner = null; try{ owner = localStorage.getItem('upadyay_inst_owner'); }catch(e){}
+    if(uid && owner && owner !== uid){ /* another institution used this browser: never carry its form over */
+      try{ localStorage.removeItem('upadyay_inst_v1'); if(pd.inst) localStorage.setItem('upadyay_inst_v1', JSON.stringify(pd.inst)); localStorage.setItem('upadyay_inst_owner', uid); }catch(e){}
+      try{ if(!sessionStorage.getItem('upadyay_inst_reload')){ sessionStorage.setItem('upadyay_inst_reload', '1'); location.reload(); return; } }catch(e){}
+    }else{
+      try{ sessionStorage.removeItem('upadyay_inst_reload'); if(uid && !owner) localStorage.setItem('upadyay_inst_owner', uid); }catch(e){}
+      if(pd.inst && !instState()){ try{ localStorage.setItem('upadyay_inst_v1', JSON.stringify(pd.inst)); }catch(e){} } /* new device */
     }
     _instSig = JSON.stringify(instState());
     _lastSig = JSON.stringify(companyPayload());
   }
   function companyPayload(){
     const C = currentCompany;
-    const body = { company_name: C.name || undefined, industry: C.type || undefined, city: C.city || undefined,
-                   website: normUrl(C.website), description: C.desc || undefined,
-                   phone: C.phone ? String(C.phone).slice(0, 20) : undefined };
-    if(/^\S+@\S+\.\S+$/.test(C.email || '')) body.email = C.email;
+    const body = { company_name: C.name || undefined, industry: C.type || null, city: C.city || null,
+                   website: normUrl(C.website) || (C.website ? undefined : null), description: C.desc ? String(C.desc).slice(0, 5000) : null,
+                   phone: C.phone ? String(C.phone).slice(0, 20) : null };
+    if(/^\S+@\S+\.\S+$/.test(C.email || '')) body.email = C.email; else if(!C.email) body.email = null;
     body.profile_data = stripHeavy({ app: { contactName: C.contactName, designation: C.designation, saved: C.saved, logo: C.logo }, inst: instState() });
     Object.keys(body).forEach(function(k){ if(body[k] === undefined) delete body[k]; });
     return body;
@@ -243,12 +250,13 @@
       await api.put(isCo ? '/company/profile' : '/candidate/profile', body, { silent403: true });
       _lastSig = sig;
     }catch(e){
-      if(e.status && e.status !== 401) api.toast('Could not save your profile: ' + e.message);
+      if(e.status !== 401) api.toast(e.status === 0 ? 'You are offline — profile not saved yet. It retries on your next change.' : 'Could not save your profile: ' + e.message);
     }
   }
   /* Explicit, awaited save for the faculty profile form: resolves only after the server confirms (throws ApiError otherwise). */
   window.bkSaveSeekerProfile = async function(){
     if(currentRole !== 'seeker') throw new Error('Only faculty accounts have a faculty profile.');
+    if(window.bkProfileLoaded === false) throw new Error('Your profile did not load. Reload the page before saving so nothing is overwritten.');
     const body = seekerPayload();
     const u = await api.put('/candidate/profile', body, { silent403: true });
     _lastSig = JSON.stringify(body);
@@ -260,6 +268,9 @@
   /* Re-read the saved profile from the server (used on tab focus so other tabs/devices' edits show up). */
   window.bkRefreshSeeker = async function(){ await hydrateSeeker(); window.bkProfileLoaded = true; window.bkProfileError = ''; _syncReady = true; _origSaveState(); };
   function schedulePush(){ clearTimeout(_timer); _timer = setTimeout(pushProfile, 900); }
+  function flushPush(){ if(_timer){ clearTimeout(_timer); _timer = null; pushProfile(); } }
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') flushPush(); });
+  window.addEventListener('pagehide', flushPush);
 
   /* Every existing saveState() call now also syncs to the backend (debounced, only if something changed). */
   saveState = function(){ _origSaveState(); schedulePush(); };
@@ -299,6 +310,19 @@
   /* Pages that don't call requireLogin (home, jobs…) still load notifications + profile in the background. */
   if(typeof authReady !== 'undefined'){ authReady.then(function(u){ if(u) bkHydrate(); }); }
 
+  /* Logout: flush pending edits, then remove this account's institution form so the next login starts clean. */
+  if(typeof logoutUser === 'function'){
+    const _lo = logoutUser;
+    logoutUser = async function(){
+      try{ await pushProfile(); }catch(e){}
+      try{
+        const clean = currentRole !== 'company' || JSON.stringify(companyPayload()) === _lastSig;
+        if(clean){ localStorage.removeItem('upadyay_inst_v1'); localStorage.removeItem('upadyay_inst_owner'); sessionStorage.removeItem('upadyay_inst_reload'); }
+      }catch(e){}
+      return _lo.apply(this, arguments);
+    };
+  }
+
   /* ---------------- notifications ---------------- */
   async function loadNotifs(){
     if(!api.hasToken()) return;
@@ -313,7 +337,13 @@
       ['navBellDot','dashBellDot','bjBellDot'].forEach(function(id){ const el = document.getElementById(id); if(el) el.style.display = hasUnreadNotif ? 'block' : 'none'; });
     }catch(e){ /* keep whatever we had */ }
   }
-  function markRead(){ if(api.hasToken()) api.put('/notifications/read-all', {}, { silent403: true, noAuthRedirect: true }).catch(function(){}); }
+  function markRead(){
+    if(!api.hasToken()) return;
+    api.put('/notifications/read-all', {}, { silent403: true, noAuthRedirect: true }).then(function(){
+      hasUnreadNotif = false; (dashNotifs || []).forEach(function(n){ n.read = true; }); _origSaveState();
+      ['navBellDot','dashBellDot','bjBellDot'].forEach(function(id){ const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+    }).catch(function(){});
+  }
   if(typeof openNotifPanel === 'function'){ const o = openNotifPanel; openNotifPanel = function(){ o.apply(this, arguments); markRead(); }; }
   if(typeof toggleDashNotifs === 'function'){ const o2 = toggleDashNotifs; toggleDashNotifs = function(){ o2.apply(this, arguments); markRead(); }; }
   setInterval(loadNotifs, 60000);
@@ -352,28 +382,50 @@
     (u.resumes || []).forEach(function(r){ if(r.file) links.push([r.file.original_name || 'Resume', 'doc', r.file.id]); });
     (u.certificates || []).forEach(function(c){ if(c.file) links.push([c.file.original_name || 'Certificate', 'doc', c.file.id]); });
     (pd.otherDocuments || []).forEach(function(d){ if(d && d.label) links.push([d.label, 'link']); });
+    const fp = pd.fp || null;
+    if(fp){ /* the faculty profile editor saves its data under profile_data.fp */
+      const EN = { phd: 'Ph.D.', pg: "Master's", mphil: 'M.Phil', ug: "Bachelor's", dip: 'Diploma' }, e2 = [], x2 = [];
+      ['phd','pg','mphil','ug','dip'].forEach(function(k){
+        const e = fp.edu && fp.edu[k]; if(!e || !(e.type || e.major || e.area || e.uni)) return;
+        e2.push([[e.type || EN[k], e.major || e.area].filter(Boolean).join(', '), [e.college || e.uni, e.end].filter(Boolean).join(' · ')]);
+      });
+      (fp.jobs || []).forEach(function(j){
+        if(!j || !j.org) return;
+        const yrs = (j.start ? String(j.start).slice(0, 4) : '') + ' – ' + (j.cur ? 'Present' : (j.end ? String(j.end).slice(0, 4) : ''));
+        x2.push([[j.desig, j.dept].filter(Boolean).join(', '), [j.org, yrs].filter(Boolean).join(' · ')]);
+      });
+      if(e2.length){ edu.length = 0; e2.forEach(function(r){ edu.push(r); }); }
+      if(x2.length){ expRows.length = 0; x2.forEach(function(r){ expRows.push(r); }); }
+      (fp.links || []).forEach(function(l){ if(l && l.u) links.push([l.t || l.u, 'link', l.u]); });
+    }
     return {
       id: u.id, avatar: fileUrl(cp.profile_photo) || (pd.avatar && pd.avatar.indexOf('data:') !== 0 ? pd.avatar : DEFAULT_AVATAR),
-      name: u.name || 'Candidate', role: cp.current_job_title || pd.currentDesignation || pd.subject || 'Faculty',
-      tags: [pd.qualification, exp ? exp + ' yrs experience' : '', cp.city || pd.city || pd.location].filter(Boolean),
-      college: pd.college || pd.currentOrg || '', about: cp.bio || pd.about || '',
-      skills: skillNames.length ? skillNames : [].concat(pd.academicSkills || [], splitList(pd.programmingLanguages), splitList(pd.softwareTools)).slice(0, 14),
+      name: u.name || 'Candidate', role: cp.current_job_title || pd.currentDesignation || (pd.fp && pd.fp.desig) || pd.subject || 'Faculty',
+      tags: [pd.qualification || (pd.fp && pd.fp.high), exp ? exp + ' yrs experience' : '', cp.city || pd.city || pd.location].filter(Boolean),
+      college: pd.college || pd.currentOrg || ((((pd.fp && pd.fp.jobs) || []).filter(function(j){ return j && j.cur; })[0]) || {}).org || '', about: cp.bio || pd.about || (pd.fp && pd.fp.headline) || '',
+      skills: skillNames.length ? skillNames : [].concat(pd.academicSkills || [], (pd.fp && pd.fp.subjects) || [], splitList(pd.programmingLanguages), splitList(pd.softwareTools)).slice(0, 14),
       education: edu, experience: expRows,
       stats: [[String(pd.journalPublications || 0), 'Publications'], [String(pd.totalPatents || 0), 'Patents'], [String(pd.numProjects || 0), 'Projects']],
       links: links,
-      interests: { departments: splitList(pd.preferredDepartments), designations: splitList(pd.preferredDesignations), subjects: splitList(pd.preferredTeachingSubjects),
-                   orgType: pd.preferredOrgType || '', location: pd.preferredLocation || pd.preferredWorkLocation || '', employmentType: pd.preferredEmploymentType || '' },
-      salary: { presentCtc: pd.presentCtc, expectedCtc: pd.expectedCtc, minAcceptable: pd.minAcceptableSalary }
+      interests: { departments: splitList(pd.preferredDepartments).concat((pd.fp && pd.fp.prefLevels) || []), designations: splitList(pd.preferredDesignations).concat((pd.fp && pd.fp.prefJob) || []), subjects: splitList(pd.preferredTeachingSubjects).concat((pd.fp && pd.fp.prefSubs) || []),
+                   orgType: pd.preferredOrgType || '', location: pd.preferredLocation || pd.preferredWorkLocation || ((pd.fp && pd.fp.prefLoc) || []).join(', '), employmentType: pd.preferredEmploymentType || '' },
+      salary: { presentCtc: pd.presentCtc, expectedCtc: pd.expectedCtc, minAcceptable: '' } /* employers never receive the minimum acceptable salary */
     };
   }
   function setProfile(u){ const p = mapCandidate(u); facultyProfiles[String(u.id)] = p; return p; }
 
   async function loadEmployer(){
+    const fetched = await Promise.all([
+      paged('/company/jobs', {}, 10),
+      paged('/company/applicants', {}, 10),
+      api.get('/company/candidates?per_page=50', { silent403: true }).catch(function(e){ console.warn('[backend] candidates', e); return []; })
+    ]);
     Object.keys(facultyProfiles).forEach(function(k){ delete facultyProfiles[k]; });
+    Object.keys(candidateStatus).forEach(function(k){ if(candidateStatus[k] !== 'invited') delete candidateStatus[k]; });
     Object.keys(postedJobs).forEach(function(k){ delete postedJobs[k]; });
-    const jobs = await paged('/company/jobs', {}, 10);
+    const jobs = fetched[0];
     jobs.forEach(function(j){ postedJobs['j' + j.id] = mapPostedJob(j); });
-    const apps = await paged('/company/applicants', {}, 10);
+    const apps = fetched[1];
     apps.forEach(function(a){
       const cand = a.candidate; if(!cand) return;
       const cid = String(cand.id), key = 'j' + a.job_id;
@@ -383,7 +435,7 @@
       if(!appByCandidate[cid] || a.id > appByCandidate[cid]) appByCandidate[cid] = a.id;
       if(['shortlisted','interview','selected'].indexOf(a.status) > -1) candidateStatus[cid] = 'shortlisted';
     });
-    const cands = await api.get('/company/candidates?per_page=50', { silent403: true });
+    const cands = fetched[2];
     items(cands).forEach(function(u){ if(!facultyProfiles[String(u.id)]) setProfile(u); });
     _origSaveState();
     if(typeof renderPostedJobs === 'function') renderPostedJobs();
@@ -397,12 +449,33 @@
     try{ return setProfile(await api.get('/company/candidates/' + encodeURIComponent(id))); }catch(e){ return null; }
   };
   window.bkOpenFile = async function(fileId){
+    const w = window.open('', '_blank'); /* opened inside the click, so popup blockers allow it */
     try{
       const r = await api.get('/files/' + fileId + '/link');
       const url = r && (r.url || r.link);
-      if(url) window.open(url, '_blank', 'noopener'); else api.toast('File link unavailable.');
-    }catch(e){ api.toast(e.message); }
+      if(url){ if(w){ w.opener = null; w.location.href = url; } else { window.location.href = url; } }
+      else { if(w) w.close(); api.toast('File link unavailable.'); }
+    }catch(e){ if(w) w.close(); api.toast(e.message); }
   };
+  /* ---------------- uploads: POST /files/upload (multipart) ---------------- */
+  window.bkUploadFile = async function(fileOrBlob, category, name){
+    if(!api.hasToken()) throw new Error('Please log in again to upload files.');
+    const fd = new FormData();
+    fd.append('file', fileOrBlob, name || fileOrBlob.name || 'upload');
+    fd.append('category', category); /* company_logo | job_image | other */
+    const d = await api.post('/files/upload', fd);
+    const f = d && d.file ? d.file : d;
+    if(!f || !f.id) throw new Error('The server did not confirm the upload.');
+    return { id: f.id, url: f.url || '', name: f.original_name || name || '' };
+  };
+  window.bkDeleteFile = function(id){ return id ? api.del('/files/' + id) : Promise.resolve(); };
+  window.bkDataUrlToBlob = function(u){
+    const m = /^data:([^;,]+)(;base64)?,(.*)$/.exec(u || ''); if(!m) throw new Error('Invalid image.');
+    const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]), arr = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: m[1] });
+  };
+
   window.bkStatusBadge = function(job){
     const s = job && job.status;
     if(s === 'published') return '<span class="badge-live">Live</span>';
@@ -415,6 +488,9 @@
     const typeMap = { 'Full-time': 'full-time', 'Part-time': 'part-time', 'Contract': 'contract', 'Visiting faculty': 'part-time' };
     const loc = f.location || f.campusLoc || 'India';
     const num = function(x){ return x === '' || x == null || isNaN(Number(x)) ? null : Number(x); };
+    if(num(f.expMin) != null && num(f.expMax) != null && num(f.expMin) > num(f.expMax)) throw new Error('Minimum experience cannot be more than maximum.');
+    if(!f.salNorms && num(f.salMin) != null && num(f.salMax) != null && num(f.salMin) > num(f.salMax)) throw new Error('Minimum salary cannot be more than maximum.');
+    if(f.deadline && new Date(f.deadline + 'T23:59:59') < new Date()) throw new Error('Application deadline is in the past.');
     const body = {
       title: f.title,
       description: f.desc || [f.role, f.dept, f.qualification && ('Qualification: ' + f.qualification)].filter(Boolean).join(' · ') || f.title,
@@ -462,8 +538,8 @@
   window.shortlistCandidate = async function(id, ev){
     if(ev) ev.stopPropagation();
     const key = (typeof activeJobId !== 'undefined' && activeJobId) ? activeJobId : null;
-    const appId = (key && appByJobCand[key + ':' + id]) || appByCandidate[id];
-    if(!appId){ api.toast('This candidate has not applied to any of your jobs yet — invite them first.'); return; }
+    const appId = key ? appByJobCand[key + ':' + id] : appByCandidate[id]; /* with a job open, only that job's application counts */
+    if(!appId){ api.toast(key ? 'This candidate has not applied to this job. Invite them first.' : 'This candidate has not applied to any of your jobs yet — invite them first.'); return; }
     try{
       await api.put('/company/applications/' + appId + '/status', { status: 'shortlisted' });
       candidateStatus[id] = 'shortlisted'; _origSaveState();
@@ -475,8 +551,8 @@
     if(ev) ev.stopPropagation();
     const p = facultyProfiles[id];
     const msg = prompt('Send a message to ' + (p ? p.name : 'this candidate') + ':', "Hi, we'd like to talk to you about an opening at " + (currentCompany.name || 'our institution') + '.');
-    if(!msg) return;
-    try{ await api.post('/company/messages', { candidate_id: Number(id), message: msg }); api.toast('Message sent.'); }
+    if(!msg || !msg.trim()) return;
+    try{ await api.post('/company/messages', { candidate_id: Number(id), message: msg.trim().slice(0, 2000) }); api.toast('Message sent.'); }
     catch(e){ api.toast(e.message); }
   };
   /* Company profile form → PUT /company/profile (saveState hook) + validation errors surfaced. */
@@ -484,7 +560,8 @@
     const sc = saveCompany;
     saveCompany = function(){
       sc.apply(this, arguments);
-      clearTimeout(_timer);
+    if(!_syncReady || !api.hasToken()) return; /* never overwrite the server before the profile has loaded */
+    clearTimeout(_timer);
       api.put('/company/profile', companyPayload(), { silent403: true })
         .then(function(){ _lastSig = JSON.stringify(companyPayload()); })
         .catch(function(e){ api.toast(e.message); });
