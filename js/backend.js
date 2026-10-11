@@ -74,12 +74,32 @@
   }
   async function fetchJobs(params){ return (await paged('/jobs', params, 4)).map(mapJob); }
 
+  /* Demo jobs: shown on Browse Jobs only while the API has no live jobs, so every category has sample cards. */
+  function demoJobs(){
+    var D=[
+      ['Mathematics Teacher (PGT)','Sunrise Public School','Hyderabad','Schools','M.Sc + B.Ed','Full-time',['Mathematics','CBSE','Class 9-12'],'₹35,000 – ₹50,000 / month',2,4,18,3],
+      ['Primary Class Teacher','Little Scholars School','Warangal','Schools','B.Ed','Full-time',['Primary','Classroom management'],'₹22,000 – ₹30,000 / month',1,6,9,0],
+      ['Computer Science Teacher','Vignan Model School','Vijayawada','Schools','B.Tech + B.Ed','Part-time',['Python','Computer Science'],'₹25,000 – ₹38,000 / month',3,10,12,1],
+      ['Physics Lecturer (Junior College)','Narayana Junior College','Hyderabad','Intermediate','M.Sc Physics','Full-time',['Physics','MPC','EAMCET'],'₹40,000 – ₹60,000 / month',1,5,27,4],
+      ['Chemistry Lecturer','Sri Chaitanya Junior College','Guntur','Intermediate','M.Sc Chemistry','Full-time',['Chemistry','BiPC'],'₹38,000 – ₹55,000 / month',4,3,15,2],
+      ['Commerce Lecturer','Gayatri Junior College','Karimnagar','Intermediate','M.Com','Full-time',['Accountancy','Economics'],'₹30,000 – ₹42,000 / month',2,7,8,0],
+      ['Assistant Professor – Computer Science','Upaadhyay University','Hyderabad','Higher Education','M.Tech + NET/SET','Full-time',['AI/ML','Data Structures','Research'],'₹57,700 – ₹1,82,400 / month',2,14,41,5],
+      ['Associate Professor – Management','Deccan Institute of Management','Bengaluru','Higher Education','PhD','Full-time',['Marketing','MBA','Publications'],'₹1,01,500 – ₹1,67,400 / month',5,20,22,8],
+      ['Visiting Faculty – Civil Engineering','JNTU College of Engineering','Warangal','Higher Education','M.Tech','Contract',['Structural','AutoCAD'],'₹1,500 / lecture',6,12,6,3]
+    ];
+    return D.map(function(d,i){
+      return { id:'demo-'+(i+1), title:d[0], org:d[1], logo:'', city:d[2], location:d[2], cat:d[3], tags:[d[4],'Demo'], skills:d[6],
+        salary:d[7], type:d[5], mode:'In Office', posted:d[8], daysLeft:d[9], applicants:d[10], minExp:d[11],
+        color:COLORS[i%COLORS.length], initials:initials(d[1]), demo:true };
+    });
+  }
   /* Browse-jobs page: load from the API, then reuse the existing filters/cards. */
   window.bkLoadBrowseJobs = async function(){
     const list = document.getElementById('bjJobList');
     if(list) list.innerHTML = '<div class="bj-empty" style="grid-column:1/-1;">Loading jobs…</div>';
     try{ bjJobs = await fetchJobs({}); }
     catch(e){ bjJobs = []; if(list) list.innerHTML = '<div class="bj-empty" style="grid-column:1/-1;">Could not load jobs. ' + esc(e.message) + '</div>'; return; }
+    if(!bjJobs.length) bjJobs = demoJobs();
     const q = getParam('q'), loc = getParam('loc');
     const kw = document.getElementById('bjKeyword'), lc = document.getElementById('bjLocation');
     if(q && kw && !kw.value) kw.value = q;
@@ -89,6 +109,7 @@
 
   /* Apply (seeker). */
   window.applyToJob = async function(id, title){
+    if(String(id).indexOf('demo-')===0){ api.toast('This is a demo job. Live jobs posted by institutions can be applied to.'); return; }
     if(!isLoggedIn || currentRole === 'company'){ goTo('register', { role: 'seeker' }); return; }
     if(currentRole !== 'seeker'){ api.toast('Only faculty accounts can apply to jobs.'); return; }
     try{
