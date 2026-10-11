@@ -371,7 +371,7 @@
         if(isCompanyRole) payload.company_name = companyName;
         user = await api.register(payload);
       } else {
-        user = await api.login(emailVal, pass);
+        user = await api.login(emailVal, pass, isCompanyRole ? 'company' : 'candidate');
       }
       applyBackendUser(user);                       // role + identity come from the backend response
       currentUser.loginMethod = 'email';
@@ -382,6 +382,11 @@
       if(isFirstEverLogin) localStorage.setItem(seenKey, '1');
       saveState();
 
+      if(!wasRegister && api.notice){   // e.g. picked Faculty login but this email is an Institution account
+        errEl.style.cssText = 'display:block;background:#E6F6EE;color:#0F766E;border-color:#B7E4CC;';
+        errEl.textContent = api.notice;
+        await new Promise(function(r){ setTimeout(r, 2200); });
+      }
       // Backend role decides the dashboard (candidate -> faculty, company -> employer, admin -> admin).
       goTo(dashboardPageForRole(), isFirstEverLogin ? { welcome: '1' } : null);
     }catch(err){
