@@ -109,9 +109,9 @@
         <span class="bj-salary">${BJ_ICONS.rupee}${pfEsc(j.salary)}</span>
         <div class="bj-card-foot">
           <div class="bj-card-dates">
-            <span>${BJ_ICONS.calendar}Posted ${j.posted} day${j.posted===1?'':'s'} ago</span>
-            <span>${BJ_ICONS.hourglass}${j.daysLeft===null ? 'Open until filled' : j.daysLeft + ' days left'}</span>
-            <span>${BJ_ICONS.users}${j.applicants} applicants</span>
+            <span>${BJ_ICONS.calendar}${j.posted}d ago</span>
+            <span>${BJ_ICONS.hourglass}${j.daysLeft===null ? 'Open till filled' : j.daysLeft + 'd left'}</span>
+            <span>${BJ_ICONS.users}${j.applicants} applied</span>
           </div>
           <button class="btn btn-primary btn-sm" data-apply-job="${j.id}" data-title="${pfEsc(j.title)}" onclick="applyToJob(${j.id}, this.dataset.title)">Apply</button>
         </div>
