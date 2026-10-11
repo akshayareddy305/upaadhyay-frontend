@@ -898,7 +898,7 @@
     }
     if(panel==='post'){
       document.getElementById('employerTabsBar').style.display = currentCompany.saved ? 'flex' : 'none';
-      document.getElementById('employerSetupNote').style.display = currentCompany.saved ? 'none' : 'block';
+      
       switchEmployerTab(currentCompany.saved ? 'post' : 'company');
       document.getElementById('coName').value = currentCompany.name || '';
       document.getElementById('coType').value = currentCompany.type || '';
