@@ -86,14 +86,26 @@
   }
 
   /* ---------- faculty ---------- */
+  function hideEmbed(){
+    var e = $('upEmbed'), h = $('dashProfileTab'); state.emb = false;
+    if(e) e.style.display = 'none'; if(h) h.style.display = 'block';
+  }
+  function showEmbed(src){
+    var h = $('dashProfileTab'); if(!h) return false;
+    var e = $('upEmbed');
+    if(!e){ e = document.createElement('div'); e.id = 'upEmbed'; e.className = 'up-embed'; h.parentNode.insertBefore(e, h.nextSibling); }
+    if(e.getAttribute('data-src') !== src){ e.setAttribute('data-src', src); e.innerHTML = '<iframe src="' + src + '" title="Browse jobs" loading="eager"></iframe>'; }
+    h.style.display = 'none'; e.style.display = 'block'; state.emb = true; window.scrollTo(0, 0); return true;
+  }
   function facultyItems(){
     var onPage = !!$('dashProfileTab');
-    function mine(){ if(onPage && typeof switchDashTab === 'function'){ switchDashTab('profile'); window.scrollTo(0, 0); } else goTo('faculty'); }
-    return { active:onPage ? 'profile' : '', edit:mine,
+    function mine(){ if(onPage){ hideEmbed(); if(typeof switchDashTab === 'function') switchDashTab('profile'); window.scrollTo(0, 0); } else goTo('faculty'); }
+    function jobs(){ if(onPage && showEmbed((window.PAGES && PAGES.jobs ? PAGES.jobs : '../pages/jobs.html') + '?embed=1')) return; goTo('jobs'); }
+    return { active:onPage ? (state.emb ? 'jobs' : 'profile') : '', edit:mine,
       list:[ { k:'profile', t:'My profile', i:'user', go:mine },
-        { k:'jobs', t:'Browse jobs', i:'search', go:function(){ goTo('jobs'); } },
+        { k:'jobs', t:'Browse jobs', i:'search', go:jobs },
         { k:'notif', t:'Notifications', i:'bell', go:function(){ var b = document.querySelector('.nav-bell'); if(b) b.click(); } },
-        { k:'set', t:'Settings', i:'cog', go:function(){ if(typeof openFullProfile === 'function') openFullProfile(); else mine(); } },
+        { k:'set', t:'Settings', i:'cog', go:mine },
         { k:'out', t:'Log out', i:'out', go:function(){ logoutUser(); }, out:1 } ] };
   }
 
@@ -127,7 +139,7 @@
     ensure(); side.style.display = fab.style.display = on ? '' : 'none'; if(!on) return;
     var cfg = r === 'company' ? companyItems() : r === 'branch' ? branchItems() : facultyItems(); side._cfg = cfg; items = cfg.list;
     var c = UpCard.data(r), scrollY = side.scrollTop;
-    var plain = r === 'company';   /* main institution: menu only, no profile card / edit button */
+    var plain = true;   /* menu only for every role: no profile card / edit button */
     side.innerHTML = (plain ? '' : UpCard.html(c, { noRows:r === 'seeker' })
       + '<button type="button" class="btn btn-ghost btn-sm up-edit" data-k="_edit">' + esc(c.editLabel) + '</button>')
       + '<nav class="up-nav">' + items.map(function(it){
@@ -145,6 +157,7 @@
     window.switchEmployerTab = function(){ hideOv(); var r = _sw.apply(this, arguments); schedule(); return r; };
     window.switchEmployerTab.__up = 1;
   }
+  var app = $('app'); if(app && window.MutationObserver && !$('instRoot')) new MutationObserver(schedule).observe(app, { childList:true });
   var root = $('instRoot'); if(root && window.MutationObserver) new MutationObserver(schedule).observe(root, { childList:true, subtree:true });
   UpCard.onChange(render);
   var go = function(){ render(); setTimeout(render, 400); setTimeout(render, 1500); };   /* pages build their state async after login */
