@@ -4,13 +4,21 @@ const ADMIN_ICONS = {
   overview: '<path d="M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6V11h-6v9Zm0-16v5h6V4h-6Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
   institutions: '<path d="M3 21h18M4 21V9l8-5 8 5v12M9 21v-6h6v6" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
   applications: '<rect x="3" y="7" width="18" height="13" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M8 7V5.5A1.5 1.5 0 0 1 9.5 4h5A1.5 1.5 0 0 1 16 5.5V7" stroke="currentColor" stroke-width="1.6"/>',
+  jobs: '<rect x="3" y="4" width="18" height="16" rx="1.5" stroke="currentColor" stroke-width="1.6"/><path d="M7 9h10M7 13h10M7 17h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  files: '<path d="M6 3h8l4 4v14H6V3Z M14 3v4h4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+  notifications: '<path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Zm4 4h4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>',
+  catalog: '<path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
   faculty: '<circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 20c1-3.6 4.2-6 7.5-6s6.5 2.4 7.5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
 };
 const ADMIN_NAV = [
   ['overview', 'Overview', 'Dashboard'],
   ['institutions', 'Institutions', 'Verification'],
   ['applications', 'Job Applications', 'Activity'],
-  ['faculty', 'Faculty', 'Directory']
+  ['faculty', 'Faculty', 'Directory'],
+  ['jobs', 'Jobs', 'Manage'],
+  ['files', 'Files', 'Manage'],
+  ['notifications', 'Announcements', 'Manage'],
+  ['catalog', 'Skills & Categories', 'Manage']
 ];
 
 function esc(v){
@@ -131,4 +139,45 @@ function pagerHtml(state, noun){
   return '<div class="admin-pager"><span>Page ' + state.page + ' of ' + state.last + ' · ' + state.total + ' ' + noun + '</span><span class="btns">'
     + '<button type="button" class="btn btn-ghost btn-sm" data-page="prev"' + (state.page <= 1 ? ' disabled' : '') + '>Previous</button>'
     + '<button type="button" class="btn btn-ghost btn-sm" data-page="next"' + (state.page >= state.last ? ' disabled' : '') + '>Next</button></span></div>';
+}
+
+// Form dialog. fields: [{ name, label, type:'text'|'email'|'textarea'|'select', value, options:[[v,label]], required, max }]
+// Resolves { ok:false } on cancel, or { ok:true, values } on save. onSave(values) may throw an Error to show its message inline.
+function formDialog(opts){
+  return new Promise(function(resolve){
+    const ov = document.createElement('div'); ov.className = 'admin-modal open'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true');
+    const f = opts.fields.map(function(x){
+      const id = 'fd_' + x.name, v = x.value == null ? '' : x.value;
+      let el;
+      if(x.type === 'textarea') el = '<textarea id="' + id + '" maxlength="' + (x.max || 2000) + '">' + esc(v) + '</textarea>';
+      else if(x.type === 'select') el = '<select id="' + id + '">' + x.options.map(function(o){ return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(v) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+      else el = '<input id="' + id + '" type="' + (x.type || 'text') + '" value="' + esc(v) + '" maxlength="' + (x.max || 190) + '">';
+      return '<label class="fd-row"><span>' + esc(x.label) + (x.required ? ' *' : '') + '</span>' + el + '</label>';
+    }).join('');
+    ov.innerHTML = '<div class="admin-modal-card"><h4>' + esc(opts.title) + '</h4><div class="body">' + (opts.body || '') + f + '<div class="field-err" id="fdErr"></div></div>'
+      + '<div class="foot"><button type="button" class="btn btn-ghost" id="fdCancel">Cancel</button><button type="button" class="btn btn-primary" id="fdOk">' + esc(opts.confirmLabel || 'Save') + '</button></div></div>';
+    document.body.appendChild(ov);
+    const err = ov.querySelector('#fdErr');
+    function close(r){ document.removeEventListener('keydown', onKey); ov.remove(); resolve(r); }
+    function onKey(e){ if(e.key === 'Escape') close({ ok:false }); }
+    document.addEventListener('keydown', onKey);
+    ov.querySelector('#fdCancel').addEventListener('click', function(){ close({ ok:false }); });
+    ov.querySelector('#fdOk').addEventListener('click', async function(){
+      const values = {};
+      for(const x of opts.fields){
+        const v = ov.querySelector('#fd_' + x.name).value.trim();
+        if(x.required && !v){ err.textContent = x.label + ' is required.'; err.style.display = 'block'; return; }
+        values[x.name] = v;
+      }
+      const btn = this; btn.disabled = true;
+      try{ if(opts.onSave) await opts.onSave(values); close({ ok:true, values:values }); }
+      catch(e){ err.textContent = e.message || 'Could not save.'; err.style.display = 'block'; btn.disabled = false; }
+    });
+    const first = ov.querySelector('input,textarea,select'); if(first) first.focus();
+  });
+}
+
+// Delete confirmation that must be typed-confirmed by a click on a red button.
+function confirmDelete(what, extra){
+  return askDialog({ title:'Delete ' + what + '?', body:(extra || 'This cannot be undone.'), confirmLabel:'Delete', danger:true });
 }
