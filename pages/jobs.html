@@ -175,6 +175,29 @@
 
   <div id="siteChrome"></div>
 
+<style>
+/* ===== v3: reference-style job card (pill + salary, centered title, institute logo, chips, divider, action) ===== */
+.bj-job-list{ gap:18px !important; }
+.bjn-card{ background:#fff; border:2px solid var(--line); border-radius:12px; padding:20px 18px 16px; text-align:center; display:flex; flex-direction:column; min-width:0; box-shadow:0 6px 20px rgba(15,35,80,.06); transition:.15s; }
+.bjn-card:hover{ border-color:var(--blue-500); transform:translateY(-3px); box-shadow:0 10px 26px rgba(15,35,80,.12); }
+.bjn-top{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:16px; }
+.bjn-pill{ font-size:12px; font-weight:600; color:#fff; padding:4px 14px; border-radius:20px; background:#2FCB73; white-space:nowrap; text-transform:capitalize; }
+.bjn-pill.part{ background:#FDB22E; } .bjn-pill.con{ background:#3D8BFF; }
+.bjn-sal{ font-size:14px; font-weight:700; color:var(--ink); text-align:right; line-height:1.3; }
+.bjn-title{ font-size:17px; font-weight:600; color:var(--ink); margin:0 0 8px; line-height:1.3; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.bjn-inst{ display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:14px; min-width:0; }
+.bjn-logo{ width:26px; height:26px; border-radius:50%; overflow:hidden; border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; background:#fff; flex-shrink:0; }
+.bjn-logo img, .bjn-logo span{ width:100% !important; height:100% !important; border-radius:50% !important; object-fit:cover !important; font-size:9px !important; }
+.bjn-name{ color:var(--blue-500); font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bjn-chips{ display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:14px; }
+.bjn-chip{ font-size:12px; padding:5px 14px; border:2px solid #DCE6F5; border-radius:20px; color:var(--ink-soft); background:#fff; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bjn-chip.more{ background:#3D8BFF; border-color:#3D8BFF; color:#fff; font-weight:600; }
+.bjn-desc{ font-size:13px; color:var(--ink-faint); line-height:1.6; margin:0 0 12px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.bjn-meta{ font-size:11.5px; color:var(--ink-faint); margin-bottom:10px; }
+.bjn-line{ width:48px; height:1px; background:#C9D2E0; margin:auto auto 12px; }
+.bjn-btn{ background:none; border:0; font:700 12.5px inherit; font-family:inherit; letter-spacing:.05em; color:var(--ink); cursor:pointer; text-transform:uppercase; padding:4px; }
+.bjn-btn:hover{ color:var(--blue-700); }
+</style>
 <script src="../js/api.js"></script>
 <script src="../js/store.js"></script>
 <script src="../js/employer.js"></script>
