@@ -126,7 +126,7 @@
       ['Visiting Faculty – Civil Engineering','JNTU College of Engineering','Warangal','Higher Education','M.Tech','Contract',['Structural','AutoCAD'],'₹1,500 / lecture',6,12,6,3]
     ];
     return D.map(function(d,i){
-      return { id:'demo-'+(i+1), title:d[0], org:d[1], logo:'', city:d[2], location:d[2], cat:d[3], tags:[d[4],'Demo'], skills:d[6],
+      return { id:'demo-'+(i+1), title:d[0], org:d[1], logo:({'Schools':'../assets/logo/school.jpg','Intermediate':'../assets/logo/junior-college.jpg','Higher Education':'../assets/logo/university.jpg'})[d[3]]||'', description:'Join '+d[1]+' as '+d[0]+'. Required qualification: '+d[4]+'. Apply now to be considered for this opening.', city:d[2], location:d[2], cat:d[3], tags:[d[4],'Demo'], skills:d[6],
         salary:d[7], type:d[5], mode:'In Office', posted:d[8], daysLeft:d[9], applicants:d[10], minExp:d[11],
         color:COLORS[i%COLORS.length], initials:initials(d[1]), demo:true };
     });
