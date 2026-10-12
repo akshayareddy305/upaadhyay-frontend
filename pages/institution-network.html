@@ -92,6 +92,30 @@
 .nw-small .grow{min-width:200px}
 .nw-lg{margin:10px 0 0}
 .nw.nw-wide{max-width:none;padding:0}
+
+/* Posted job cards */
+.pj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px}
+.pj-card{background:#fff;border:2px solid var(--line);border-radius:12px;padding:22px 20px 18px;text-align:center;box-shadow:0 6px 20px rgba(15,35,80,.06);transition:.15s;display:flex;flex-direction:column}
+.pj-card:hover{border-color:var(--blue-500);transform:translateY(-3px);box-shadow:0 10px 26px rgba(15,35,80,.12)}
+.pj-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:18px}
+.pj-pill{font-size:12px;font-weight:600;color:#fff;padding:4px 14px;border-radius:20px;background:#2FCB73;text-transform:capitalize}
+.pj-pill.part{background:#FDB22E}.pj-pill.con{background:#3D8BFF}.pj-pill.vis{background:#8B5CF6}
+.pj-sal{font-size:16px;font-weight:700;color:var(--ink)}.pj-sal small{font-weight:500;color:var(--ink-faint);font-size:12px}
+.pj-title{font-size:18px;font-weight:600;color:var(--ink);margin:0 0 8px}
+.pj-inst{display:inline-flex;align-items:center;gap:7px;color:var(--blue-500);font-size:13px;font-weight:500;margin-bottom:14px;max-width:100%}
+.pj-inst span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lg.pj-lg{width:28px;height:28px;border-radius:50%;font-size:11px}
+.pj-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:14px}
+.pj-chip{font-size:12px;padding:5px 14px;border:2px solid #DCE6F5;border-radius:20px;color:var(--ink-soft);background:#fff}
+.pj-chip.more{background:#3D8BFF;border-color:#3D8BFF;color:#fff;font-weight:600}
+.pj-desc{font-size:13px;color:var(--ink-faint);line-height:1.6;margin:0 0 14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pj-meta{font-size:12px;color:var(--ink-faint);margin-bottom:6px}
+.pj-more{display:none;font-size:12.5px;color:var(--ink-soft);text-align:left;background:var(--blue-50);border-radius:8px;padding:10px 12px;margin:8px 0;line-height:1.7}
+.pj-card.open .pj-more{display:block}.pj-card.open .pj-desc{-webkit-line-clamp:unset}
+.pj-line{width:48px;height:1px;background:#C9D2E0;margin:auto auto 14px}
+.pj-btn{background:none;border:0;font:700 12.5px inherit;font-family:inherit;letter-spacing:.04em;color:var(--ink);cursor:pointer;text-transform:uppercase}
+.pj-btn:hover{color:var(--blue-700)}
+.pj-demo{font-size:10px;font-weight:700;letter-spacing:.06em;color:#8A6100;background:#FFF4D6;border-radius:10px;padding:1px 8px;margin-left:6px}
 </style>
 <link rel="stylesheet" href="../css/sidebar.css?v=10">
 <link rel="stylesheet" href="../css/settings.css?v=4">
@@ -271,7 +295,16 @@ const myJobs=()=>JOBS.filter(j=>j.mainCode==S.main.code&&j.branchName==SUB.n);
 const myReqs=()=>CREQ.filter(r=>r.mainCode==S.main.code&&r.branchName==SUB.n);
 const subNav=k=>{const ok=k=='approved';return `<div class="dash-tabs">${SD.map(([t,l])=>t=='profile'||ok?`<button class="dash-subtab ${S.sd==t?'active':''}" onclick="set('sd','${t}')">${l}${t=='jobs'&&myJobs().length?' ('+myJobs().length+')':''}${t=='reqs'&&myReqs().length?' ('+myReqs().length+')':''}</button>`:`<button class="dash-subtab ${S.sd==t?'active':''}" style="opacity:.7" onclick="set('sd','${t}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${l}</button>`).join('')}</div>`};
 const opt=a=>a.map(x=>`<option>${x}</option>`).join('');
-const jobCard=j=>`<div class="c"><div class="row wrap sp"><b>${esc(j.title)}</b><span class="st g">Active</span></div><div class="mut">${esc(j.role)} · ${esc(j.dept)} · ${esc(j.type)} · ${esc(j.vac)} vacancy</div><div class="mut">₹${esc(j.salMin)} – ₹${esc(j.salMax)} per ${esc(j.period)} · Exp ${esc(j.expMin)}+ yrs · ${esc(j.qual)}</div><div style="margin-top:6px"><b>${esc(j.branchName)}</b> ${B(0)}<div class="mut">Part of ${esc(j.mainName)} (Code ${esc(j.mainCode)}) · <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${j.campus?esc(j.campus)+' · ':''}${esc(j.loc)} · Posted ${esc(j.date)}</div></div></div>`;
+const inr=n=>Number(n||0).toLocaleString('en-IN');
+const pjCls=t=>{t=String(t||'').toLowerCase();return t.includes('part')?'part':t.includes('contract')?'con':t.includes('visit')?'vis':''};
+const DEMO_JOBS=[
+{id:'d1',demo:1,title:'Assistant Professor – Computer Science',type:'Full-time',salMin:60000,salMax:80000,period:'month',branchName:'KL University',img:'../assets/logo/university.jpg',skills:'Python, DSA, AI/ML, Research, Teaching, NBA',desc:'We are looking for an experienced Assistant Professor to teach UG/PG Computer Science and guide research projects in our new AI lab.',loc:'Vijayawada',expMin:3,qual:'Ph.D / M.Tech',vac:2,dept:'CSE'},
+{id:'d2',demo:1,title:'PGT Mathematics',type:'Full-time',salMin:35000,salMax:50000,period:'month',branchName:'Narayana Junior College',img:'../assets/logo/junior-college.jpg',skills:'Calculus, Algebra, JEE, Board Prep',desc:'Experienced Mathematics faculty needed for Intermediate (MPC) with JEE foundation coaching and board exam preparation.',loc:'Hyderabad',expMin:4,qual:'M.Sc + B.Ed',vac:1,dept:'Mathematics'},
+{id:'d3',demo:1,title:'Visiting Faculty – Management',type:'Part-time',salMin:1200,salMax:1800,period:'hour',branchName:'Sri Chaitanya School',img:'../assets/logo/school.jpg',skills:'Marketing, HR, Finance, Case Study, MBA',desc:'Visiting faculty to take weekend sessions for MBA students. Industry experience preferred, flexible timings.',loc:'Warangal',expMin:5,qual:'MBA / Ph.D',vac:1,dept:'Management'},
+{id:'d4',demo:1,title:'Lab Instructor – Physics',type:'Contract',salMin:25000,salMax:32000,period:'month',branchName:'KL University',img:'../assets/logo/university.jpg',skills:'Optics, Mechanics, Lab Safety, Electronics',desc:'11-month contract for a Physics lab instructor to handle first-year engineering practical sessions.',loc:'Guntur',expMin:1,qual:'M.Sc Physics',vac:3,dept:'Physics'}];
+const pjLogo=j=>j.img?`<div class="lg pj-lg" style="background:#fff;border:1px solid var(--line);overflow:hidden;padding:0"><img src="${esc(j.img)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`:lg(j.branchName,'pj-lg');
+const jobCard=j=>{const sk=String(j.skills||'').split(',').map(x=>x.trim()).filter(Boolean),per=({month:'mo',year:'yr',hour:'hr'})[j.period]||j.period,sal=j.salMin||j.salMax?(j.salMin&&j.salMax&&j.salMin!=j.salMax?`₹${inr(j.salMin)} – ${inr(j.salMax)}`:`₹${inr(j.salMin||j.salMax)}`):'Negotiable';
+return `<div class="pj-card" id="pj${j.id}"><div class="pj-top"><span class="pj-pill ${pjCls(j.type)}">${esc(j.type||'Full-time')}</span><span class="pj-sal">${sal} <small>/ ${esc(per)}</small></span></div><h3 class="pj-title">${esc(j.title)}</h3><div style="display:flex;justify-content:center"><div class="pj-inst">${pjLogo(j)}<span>${esc(j.branchName)}</span>${j.demo?'<em class="pj-demo" style="font-style:normal">DEMO</em>':''}</div></div>${sk.length?`<div class="pj-chips">${sk.slice(0,3).map(x=>`<span class="pj-chip">${esc(x)}</span>`).join('')}${sk.length>3?`<span class="pj-chip more">+${sk.length-3}</span>`:''}</div>`:''}<p class="pj-desc">${esc(j.desc||'')}</p><div class="pj-meta">${esc(j.loc||'')}${j.expMin?' · Exp '+esc(j.expMin)+'+ yrs':''}</div><div class="pj-more">${[j.role&&'Role: '+esc(j.role),j.dept&&'Dept: '+esc(j.dept),j.qual&&'Qualification: '+esc(j.qual),j.vac&&'Vacancies: '+esc(j.vac),sk.length&&'Skills: '+sk.map(esc).join(', ')].filter(Boolean).join('<br>')}</div><div class="pj-line"></div><button class="pj-btn" onclick="document.getElementById('pj${j.id}').classList.toggle('open')">View Job</button></div>`};
 /* ---------- Post a Job: stepped form, same layout as the main employer dashboard ---------- */
 const JSTEPS=['Job details','Requirements','Salary','Job location','Description'];
 const JSUB=['What is the role and where does it sit in your institution?','Qualification, experience and how soon the candidate can join.','Clear pay details get more applications.','This job is posted for your campus. Main institution and branch are added automatically.','Tell candidates what the role involves.'];
@@ -313,7 +346,7 @@ function postJob(){const v=jbV;
  for(let s=0;s<JSTEPS.length;s++){if(jbCheck(s).length){JB.step=s;JB.max=Math.max(JB.max,s);render();scrollTo(0,0);return}}
  JOBS.push({id:Date.now(),title:v('title'),role:v('role'),cat:v('cat'),dept:v('dept'),type:v('type'),vac:v('vac')||'1',qual:v('qual'),notice:v('notice'),expMin:v('expMin'),expMax:v('expMax'),salMin:v('salMin'),salMax:v('salMax'),period:v('period')||'month',salNeg:!!v('salNeg'),salNorms:!!v('salNorms'),skills:v('skills'),deadline:v('deadline'),desc:v('desc'),mainName:S.main.n,mainCode:S.main.code,branchName:SUB.n,branchLoc:SUB.c,loc:v('city')||SUB.c,date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})});
  LSS('nwJobs',JOBS);JB={step:0,max:0,d:{period:'month'},err:{},o:{}};S.sd='jobs';render();scrollTo(0,0)}
-function vPosted(){const a=myJobs();return `<h2>Posted Jobs</h2>${a.length?`<div class="g g2">${a.map(jobCard).join('')}</div>`:empty('No jobs posted yet','Use Post a Job to create your first job.')}`}
+function vPosted(){const a=myJobs().concat(DEMO_JOBS);return `<h2>Posted Jobs</h2><div class="pj-grid">${a.map(jobCard).join('')}</div>`}
 /* ---------- Browse Candidates: same cards as the main employer dashboard ---------- */
 S.cq='';S.cc='';S.cn=8;
 const candInvited=id=>myReqs().filter(r=>String(r.candId)===String(id));
