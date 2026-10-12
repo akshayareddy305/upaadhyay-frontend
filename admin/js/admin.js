@@ -1,342 +1,232 @@
-  // ---------- Admin dashboard (demo) ----------
-  function institutionTypeLabel(t){
-    return t==='school' ? 'School' : t==='college' ? 'Junior College' : 'University';
-  }
-  function institutionInitials(name){
-    return (name||'IN').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
-  }
-  function allInstitutionJobs(){
-    // flattened list: [{...job, instId, instName}]
-    const out = [];
-    Object.keys(institutionsData).forEach(id=>{
-      const inst = institutionsData[id];
-      (inst.jobs||[]).forEach(j=> out.push(Object.assign({}, j, { instId:id, instName:inst.name })));
-    });
-    return out;
-  }
-  // Old behaviour opened an overlay. Now admin is its own page.
-    function closeAdmin(){ adminLogout(); }
+// admin/js/admin.js — admin dashboard (overview, institution verification queue, job applications, faculty).
+// Every number and row comes from the Laravel API (/api/admin/*); nothing here is demo data.
 
-  // Called once by admin.html on load. Optional ?tab=faculty|institutions|jobs
-  function initAdminPage(){
-    if(!requireAdmin()) return;
-    document.getElementById('adminFooterYear').textContent = new Date().getFullYear();
-    const tab = new URLSearchParams(location.search).get('tab');
-    switchAdminTab(['overview','faculty','institutions','jobs'].includes(tab) ? tab : 'overview');
+const TABS = ['overview', 'institutions', 'applications', 'faculty'];
+const TITLES = { overview:'Overview', institutions:'Institutions', applications:'Job Applications', faculty:'Faculty' };
+const INST_STATUSES = [['pending', 'Pending review'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['blocked', 'Blocked'], ['', 'All']];
+const PER_PAGE = 15;
+
+const S = {
+  tab: 'overview', dash: null,
+  inst: { status:'pending', search:'', page:1, last:1, total:0 },
+  apps: { status:'', search:'', page:1, last:1, total:0 },
+  fac:  { status:'', search:'', page:1, last:1, total:0 }
+};
+
+const $ = function(id){ return document.getElementById(id); };
+function errorRow(cols, msg, retry){
+  return '<tr><td colspan="' + cols + '"><div class="admin-error"><span>' + esc(msg) + '</span><button type="button" class="btn btn-ghost btn-sm" onclick="' + retry + '()">Retry</button></div></td></tr>';
+}
+function emptyRow(cols, msg){ return '<tr><td colspan="' + cols + '" class="admin-empty">' + esc(msg) + '</td></tr>'; }
+function applyPage(st, res){
+  st.page = (res && res.current_page) || 1; st.last = (res && res.last_page) || 1; st.total = (res && res.total) || 0;
+}
+function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t = setTimeout(fn, ms); }; }
+
+/* ------------------------------------------------------------------ navigation */
+function adminGo(tab, status){
+  if(TABS.indexOf(tab) === -1) tab = 'overview';
+  S.tab = tab;
+  if(tab === 'institutions' && status !== undefined && S.inst.status !== status){ S.inst.status = status; S.inst.page = 1; }
+  TABS.forEach(function(t){ $('panel' + t.charAt(0).toUpperCase() + t.slice(1)).hidden = (t !== tab); });
+  document.querySelectorAll('.admin-nav-item').forEach(function(b){
+    b.classList.toggle('active', b.dataset.tab === tab);
+    if(b.dataset.tab === tab) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  setTopTitle(TITLES[tab]);
+  try{
+    const u = new URL(location.href); u.searchParams.set('tab', tab);
+    if(tab === 'institutions') u.searchParams.set('status', S.inst.status || 'all'); else u.searchParams.delete('status');
+    history.replaceState(null, '', u);
+  }catch(e){}
+  if(tab === 'overview') loadOverview();
+  if(tab === 'institutions') loadInstitutions();
+  if(tab === 'applications') loadApplications();
+  if(tab === 'faculty') loadFaculty();
+}
+window.adminGo = adminGo;
+
+/* ------------------------------------------------------------------ dashboard numbers */
+async function loadDashboard(){
+  try{
+    S.dash = await api.get('/admin/dashboard');
+    setPendingBadge((S.dash.companies_by_status || {}).pending || S.dash.pending_companies || 0);
+  }catch(e){ S.dash = null; }
+  return S.dash;
+}
+
+/* ------------------------------------------------------------------ overview */
+async function loadOverview(){
+  const d = await loadDashboard();
+  const by = (d && d.companies_by_status) || {};
+  const card = function(cls, n, label, foot, go){
+    return '<div class="admin-stat ' + cls + '"><div class="admin-stat-top"><div class="n">' + n + '</div><div class="l">' + label + '</div></div>'
+      + '<div class="admin-stat-bot" onclick="' + go + '">' + foot + ' →</div></div>';
+  };
+  $('ovStats').innerHTML = d
+    ? card('c1', by.pending != null ? by.pending : d.pending_companies, 'Institutions to review', 'Open review queue', "adminGo('institutions','pending')")
+      + card('c2', by.approved || 0, 'Approved institutions', 'of ' + d.total_companies + ' registered', "adminGo('institutions','approved')")
+      + card('c3', d.active_jobs, 'Live jobs', d.total_jobs + ' jobs in total', "adminGo('applications')")
+      + card('c4', d.total_applications, 'Job applications', d.total_candidates + ' faculty registered', "adminGo('applications')")
+    : '<div class="admin-error" style="grid-column:1/-1"><span>Could not load the dashboard numbers.</span><button type="button" class="btn btn-ghost btn-sm" onclick="loadOverview()">Retry</button></div>';
+
+  // Pending institutions + latest applications load independently so one failure does not blank the page.
+  api.get('/admin/companies' + qs({ status:'pending', per_page:6 })).then(function(res){
+    const rows = (res && res.data) || [];
+    $('ovPending').innerHTML = rows.map(function(c){
+      return '<tr class="clickable" onclick="openInstitution(' + c.id + ')"><td><div class="admin-row-name">' + avatarHtml(c.company_name, c.logo)
+        + '<div>' + esc(c.company_name) + '<small>' + esc([c.city, c.state].filter(Boolean).join(', ') || '—') + ' · ' + esc(fmtDate(c.created_at)) + '</small></div></div></td>'
+        + '<td class="act"><button type="button" class="admin-viewbtn" onclick="event.stopPropagation(); openInstitution(' + c.id + ')">Review</button></td></tr>';
+    }).join('') || emptyRow(2, 'Nothing waiting. All institutions have been reviewed.');
+  }).catch(function(e){ $('ovPending').innerHTML = errorRow(2, e.message, 'loadOverview'); });
+
+  api.get('/admin/applications' + qs({ per_page:6 })).then(function(res){
+    const rows = (res && res.data) || [];
+    $('ovApps').innerHTML = rows.map(function(a){
+      const cand = a.candidate || {}, job = a.job || {}, co = job.company || {};
+      return '<tr><td><div class="admin-row-name">' + avatarHtml(cand.name) + '<div>' + esc(cand.name || '—') + '<small>' + esc(job.title || '—') + ' · ' + esc(co.company_name || '—') + '</small></div></div></td><td class="act">' + pill(a.status) + '</td></tr>';
+    }).join('') || emptyRow(2, 'No applications yet.');
+  }).catch(function(e){ $('ovApps').innerHTML = errorRow(2, e.message, 'loadOverview'); });
+}
+window.loadOverview = loadOverview;
+
+/* ------------------------------------------------------------------ institutions */
+function openInstitution(id){ window.location.href = 'company.html?id=' + encodeURIComponent(id); }
+window.openInstitution = openInstitution;
+
+function renderInstTabs(){
+  const by = (S.dash && S.dash.companies_by_status) || {};
+  const total = Object.keys(by).reduce(function(s, k){ return s + (by[k] || 0); }, 0);
+  $('instTabs').innerHTML = INST_STATUSES.map(function(t){
+    const n = t[0] ? by[t[0]] : total;
+    return '<button type="button" role="tab" class="admin-tab' + (S.inst.status === t[0] ? ' active' : '') + '" data-status="' + t[0] + '" aria-selected="' + (S.inst.status === t[0]) + '">'
+      + t[1] + (S.dash ? ' <span class="n">' + (n || 0) + '</span>' : '') + '</button>';
+  }).join('');
+}
+
+async function loadInstitutions(){
+  renderInstTabs();
+  $('instBody').innerHTML = '<tr><td colspan="9" class="admin-loading">Loading…</td></tr>';
+  loadDashboard().then(renderInstTabs);   // counts refresh in the background
+  try{
+    const res = await api.get('/admin/companies' + qs({ status:S.inst.status, search:S.inst.search, page:S.inst.page, per_page:PER_PAGE }));
+    applyPage(S.inst, res);
+    const rows = (res && res.data) || [];
+    $('instCount').textContent = S.inst.total + (S.inst.total === 1 ? ' institution' : ' institutions');
+    $('instBody').innerHTML = rows.map(function(c){
+      const u = c.user || {}, inst = (c.profile_data && c.profile_data.inst) || {};
+      const submitted = inst.sub === true;
+      return '<tr class="clickable" onclick="openInstitution(' + c.id + ')">'
+        + '<td><div class="admin-row-name">' + avatarHtml(c.company_name, c.logo) + '<div>' + esc(c.company_name) + '<small>Code ' + esc(c.institution_code || '—') + (c.parent ? ' · branch of ' + esc(c.parent.company_name) : '') + '</small></div></div></td>'
+        + '<td>' + esc(c.industry || '—') + '</td>'
+        + '<td>' + esc(u.name || '—') + '<small class="muted" style="display:block">' + esc(u.email || c.email || '') + '</small></td>'
+        + '<td>' + esc([c.city, c.state].filter(Boolean).join(', ') || '—') + '</td>'
+        + '<td>' + esc(fmtDate(c.created_at)) + '</td>'
+        + '<td>' + (submitted ? '<span class="admin-pill info">Submitted</span>' : '<span class="muted">Not submitted</span>') + '</td>'
+        + '<td class="num">' + (c.jobs_count || 0) + '</td>'
+        + '<td>' + pill(c.verification_status) + '</td>'
+        + '<td class="act"><button type="button" class="admin-viewbtn" onclick="event.stopPropagation(); openInstitution(' + c.id + ')">' + (c.verification_status === 'pending' ? 'Review' : 'View') + '</button></td></tr>';
+    }).join('') || emptyRow(9, S.inst.search ? 'No institutions match your search.' : 'No institutions in this list.');
+    $('instPager').innerHTML = pagerHtml(S.inst, 'institutions');
+  }catch(e){
+    $('instBody').innerHTML = errorRow(9, e.message, 'loadInstitutions'); $('instPager').innerHTML = '';
   }
+}
+window.loadInstitutions = loadInstitutions;
 
-  function switchAdminTab(tab){
-    const panels = ['overview','faculty','institutions','institutionProfile','jobs'];
-    panels.forEach(t=>{
-      const el = document.getElementById('adminPanel'+t.charAt(0).toUpperCase()+t.slice(1));
-      if(el) el.style.display = t===tab ? (t==='overview'?'block':'block') : 'none';
-    });
-    ['overview','faculty','institutions','jobs'].forEach(t=>{
-      const nav = document.getElementById('adminNav'+t.charAt(0).toUpperCase()+t.slice(1));
-      if(nav) nav.classList.toggle('active', t===tab);
-    });
-    const titles = { overview:'Overview', faculty:'Faculty', institutions:'Institutions', institutionProfile:'Institution profile', jobs:'Job Applications' };
-    document.getElementById('adminTopTitle').textContent = titles[tab] || 'Overview';
-    document.getElementById('adminBackBtn').style.display = tab==='institutionProfile' ? 'flex' : 'none';
-    if(tab==='overview') renderAdminOverview();
-    if(tab==='faculty') renderAdminFaculty();
-    if(tab==='institutions') renderAdminInstitutions();
-    if(tab==='jobs') renderAdminJobs();
+/* ------------------------------------------------------------------ job applications */
+async function loadApplications(){
+  $('appBody').innerHTML = '<tr><td colspan="6" class="admin-loading">Loading…</td></tr>';
+  try{
+    const res = await api.get('/admin/applications' + qs({ status:S.apps.status, search:S.apps.search, page:S.apps.page, per_page:PER_PAGE }));
+    applyPage(S.apps, res);
+    const rows = (res && res.data) || [];
+    $('appCount').textContent = S.apps.total + (S.apps.total === 1 ? ' application' : ' applications');
+    $('appBody').innerHTML = rows.map(function(a){
+      const cand = a.candidate || {}, job = a.job || {}, co = job.company || {};
+      const fid = a.resume && a.resume.file && a.resume.file.id;
+      return '<tr><td><div class="admin-row-name">' + avatarHtml(cand.name) + '<div>' + esc(cand.name || '—') + '<small>' + esc(cand.email || '') + '</small></div></div></td>'
+        + '<td>' + esc(job.title || '—') + '<small class="muted" style="display:block">' + esc([job.city, job.state].filter(Boolean).join(', ')) + '</small></td>'
+        + '<td>' + (co.id ? '<a href="company.html?id=' + co.id + '" style="color:var(--blue-700);font-weight:600">' + esc(co.company_name) + '</a>' : '—') + '</td>'
+        + '<td>' + esc(fmtDate(a.applied_at || a.created_at)) + '</td>'
+        + '<td>' + pill(a.status) + '</td>'
+        + '<td class="act">' + (fid ? '<button type="button" class="btn btn-ghost btn-sm" onclick="openFile(' + fid + ')">View</button>' : '<span class="muted">—</span>') + '</td></tr>';
+    }).join('') || emptyRow(6, 'No applications found.');
+    $('appPager').innerHTML = pagerHtml(S.apps, 'applications');
+  }catch(e){
+    $('appBody').innerHTML = errorRow(6, e.message, 'loadApplications'); $('appPager').innerHTML = '';
   }
+}
+window.loadApplications = loadApplications;
 
-  function totalDemoApplicants(){
-    return allInstitutionJobs().reduce((sum,j)=> sum + (j.applicants||0), 0) + totalApplicantsCount();
+/* ------------------------------------------------------------------ faculty (candidate accounts) */
+async function loadFaculty(){
+  $('facBody').innerHTML = '<tr><td colspan="7" class="admin-loading">Loading…</td></tr>';
+  try{
+    const res = await api.get('/admin/users' + qs({ role:'candidate', status:S.fac.status, search:S.fac.search, page:S.fac.page, per_page:PER_PAGE }));
+    applyPage(S.fac, res);
+    const rows = (res && res.data) || [];
+    $('facCount').textContent = S.fac.total + (S.fac.total === 1 ? ' faculty member' : ' faculty members');
+    $('facBody').innerHTML = rows.map(function(u){
+      const p = u.candidate_profile || u.candidateProfile || {};
+      const exp = p.total_experience != null && p.total_experience !== '' ? Number(p.total_experience) + ' yrs' : '—';
+      const blocked = u.status === 'blocked';
+      return '<tr><td><div class="admin-row-name">' + avatarHtml(u.name, p.profile_photo) + '<div>' + esc(u.name) + '</div></div></td>'
+        + '<td>' + esc(u.email) + '<small class="muted" style="display:block">' + esc(u.phone || '') + '</small></td>'
+        + '<td>' + esc(p.current_job_title || '—') + '</td>'
+        + '<td>' + esc([p.city, p.state].filter(Boolean).join(', ') || '—') + '</td>'
+        + '<td class="num">' + esc(exp) + '</td>'
+        + '<td>' + pill(blocked ? 'blocked' : 'active') + '</td>'
+        + '<td class="act"><button type="button" class="btn btn-ghost btn-sm' + (blocked ? '' : ' danger') + '" onclick="toggleUser(' + u.id + ',' + (blocked ? 'false' : 'true') + ',\'' + esc(String(u.name).replace(/'/g, '')) + '\')">' + (blocked ? 'Unblock' : 'Block') + '</button></td></tr>';
+    }).join('') || emptyRow(7, S.fac.search ? 'No faculty match your search.' : 'No faculty accounts yet.');
+    $('facPager').innerHTML = pagerHtml(S.fac, 'faculty');
+  }catch(e){
+    $('facBody').innerHTML = errorRow(7, e.message, 'loadFaculty'); $('facPager').innerHTML = '';
   }
-  function totalApplicantsCount(){
-    return Object.values(readPostedJobs()).reduce((sum,j)=> sum + (j.applicantIds ? j.applicantIds.length : 0), 0);
-  }
+}
+window.loadFaculty = loadFaculty;
 
-  function renderAdminOverview(){
-    const facultyIds = Object.keys(facultyProfiles);
-    const instIds = Object.keys(institutionsData);
-    const demoJobs = allInstitutionJobs();
-    const liveDemoJobs = demoJobs.filter(j=>j.status==='live');
-    const totalJobsCount = demoJobs.length + Object.keys(readPostedJobs()).length;
+async function toggleUser(id, block, name){
+  const r = await askDialog({
+    title: (block ? 'Block ' : 'Unblock ') + name + '?',
+    body: block ? 'They will be signed out immediately and will not be able to log in until unblocked.' : 'They will be able to log in again.',
+    confirmLabel: block ? 'Block' : 'Unblock', danger: block
+  });
+  if(!r.ok) return;
+  try{ await api.put('/admin/users/' + id + (block ? '/block' : '/unblock')); toast(block ? 'Faculty account blocked.' : 'Faculty account unblocked.'); loadFaculty(); }
+  catch(e){ toast(e.message, true); }
+}
+window.toggleUser = toggleUser;
 
-    document.getElementById('adminStatJobs').textContent = totalJobsCount;
-    document.getElementById('adminStatFaculty').textContent = facultyIds.length;
-    document.getElementById('adminStatInstitutions').textContent = instIds.length;
-    document.getElementById('adminStatApplications').textContent = totalDemoApplicants();
+/* ------------------------------------------------------------------ events + start */
+function bindList(pagerId, st, loader){
+  $(pagerId).addEventListener('click', function(e){
+    const b = e.target.closest('[data-page]'); if(!b || b.disabled) return;
+    st.page += b.dataset.page === 'next' ? 1 : -1; loader();
+    window.scrollTo({ top:0, behavior:'smooth' });
+  });
+}
+function bindFilter(el, st, key, loader, wait){
+  const run = function(){ st[key] = el.value.trim(); st.page = 1; loader(); };
+  el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', wait ? debounce(run, wait) : run);
+}
 
-    document.getElementById('adminMiniLive').textContent = liveDemoJobs.length;
-    const cityCounts = {};
-    facultyIds.forEach(id=>{ const c = facultyProfiles[id].tags[2]; cityCounts[c] = (cityCounts[c]||0)+1; });
-    const topCity = Object.keys(cityCounts).sort((a,b)=>cityCounts[b]-cityCounts[a])[0];
-    document.getElementById('adminMiniLocation').textContent = topCity || '—';
-    const avgApplicants = demoJobs.length ? Math.round(demoJobs.reduce((s,j)=>s+j.applicants,0)/demoJobs.length) : 0;
-    document.getElementById('adminMiniAvg').textContent = avgApplicants;
-    const phdCount = facultyIds.filter(id=>facultyProfiles[id].tags[0]==='PhD').length;
-    document.getElementById('adminMiniPhd').innerHTML = phdCount + ' <small>/ '+facultyIds.length+'</small>';
+(async function init(){
+  const user = await requireAdmin(); if(!user) return;
+  const qp = new URLSearchParams(location.search);
+  const tab = TABS.indexOf(qp.get('tab')) !== -1 ? qp.get('tab') : 'overview';
+  const st = qp.get('status');
+  if(st !== null) S.inst.status = st === 'all' ? '' : (INST_STATUSES.some(function(x){ return x[0] === st; }) ? st : 'pending');
+  mountChrome({ active: tab, title: TITLES[tab], user: user });
 
-    document.getElementById('adminOverviewInstitutionsBody').innerHTML = instIds.slice(0,5).map(id=>{
-      const inst = institutionsData[id];
-      return `<tr class="clickable" onclick="openInstitutionProfile('${id}')">
-        <td class="admin-row-name">${inst.name}</td>
-        <td><span class="admin-pill ${inst.type}">${institutionTypeLabel(inst.type)}</span></td>
-        <td>${inst.city.split(',')[0]}</td>
-        <td>${(inst.jobs||[]).length}</td>
-        <td><button class="admin-viewbtn" onclick="event.stopPropagation(); openInstitutionProfile('${id}')">View</button></td>
-      </tr>`;
-    }).join('');
+  $('instTabs').addEventListener('click', function(e){
+    const b = e.target.closest('.admin-tab'); if(!b) return;
+    S.inst.status = b.dataset.status; S.inst.page = 1; adminGo('institutions');
+  });
+  bindList('instPager', S.inst, loadInstitutions); bindList('appPager', S.apps, loadApplications); bindList('facPager', S.fac, loadFaculty);
+  bindFilter($('instSearch'), S.inst, 'search', loadInstitutions, 350);
+  bindFilter($('appSearch'), S.apps, 'search', loadApplications, 350); bindFilter($('appStatus'), S.apps, 'status', loadApplications);
+  bindFilter($('facSearch'), S.fac, 'search', loadFaculty, 350);       bindFilter($('facStatus'), S.fac, 'status', loadFaculty);
 
-    document.getElementById('adminOverviewFacultyBody').innerHTML = facultyIds.slice(0,5).map(id=>{
-      const p = facultyProfiles[id];
-      return `<tr class="clickable" onclick="openFacultyDetail('${id}')">
-        <td class="admin-row-name"><img class="admin-row-avatar" src="${p.avatar}">${p.name}</td>
-        <td>${p.role}</td>
-        <td>${p.tags[0]}</td>
-        <td>${p.tags[2]}</td>
-        <td><span class="admin-pill open">Open to opportunities</span></td>
-      </tr>`;
-    }).join('');
-
-    const activity = [];
-    instIds.slice(0,3).forEach(id=>{
-      const inst = institutionsData[id];
-      (inst.jobs||[]).slice(0,1).forEach(j=> activity.push({ text:`${inst.name} posted "${j.title}"`, time:j.posted }));
-    });
-    facultyIds.slice(0,2).forEach(id=>{
-      activity.push({ text:`${facultyProfiles[id].name} joined as new faculty`, time:'this week' });
-    });
-    document.getElementById('adminActivityFeed').innerHTML = activity.map(a=>`
-      <div style="padding:10px 0; border-bottom:1px solid var(--line); font-size:13px;">
-        <div style="color:var(--ink);">${a.text}</div>
-        <div style="color:var(--ink-faint); font-size:11.5px; margin-top:2px;">${a.time}</div>
-      </div>`).join('') || '<p class="sub" style="margin:0;">No recent activity.</p>';
-  }
-
-  function populateAdminFacultyLocationFilter(){
-    const sel = document.getElementById('adminFacultyLocationFilter');
-    if(!sel || sel.options.length > 1) return;
-    const cities = [...new Set(Object.values(facultyProfiles).map(p=>p.tags[2]))].sort();
-    cities.forEach(city=>{
-      const opt = document.createElement('option');
-      opt.value = city; opt.textContent = city;
-      sel.appendChild(opt);
-    });
-  }
-
-  function renderAdminFaculty(){
-    populateAdminFacultyLocationFilter();
-    const q = (document.getElementById('adminFacultySearch').value || '').toLowerCase();
-    const qualFilter = document.getElementById('adminFacultyQualFilter').value;
-    const locationFilter = document.getElementById('adminFacultyLocationFilter').value;
-    const expFilter = document.getElementById('adminFacultyExpFilter').value;
-    const ids = Object.keys(facultyProfiles).filter(id=>{
-      const p = facultyProfiles[id];
-      const collegeText = (p.experience||[]).map(e=>e[1]).join(' ').toLowerCase();
-      const expYrs = parseInt(p.tags[1], 10) || 0;
-      const matchesQ = !q || p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q) || collegeText.includes(q);
-      const matchesQual = !qualFilter || p.tags[0]===qualFilter;
-      const matchesLocation = !locationFilter || p.tags[2]===locationFilter;
-      let matchesExp = true;
-      if(expFilter){
-        const [lo,hi] = expFilter.split('-').map(Number);
-        matchesExp = expYrs >= lo && expYrs <= hi;
-      }
-      return matchesQ && matchesQual && matchesLocation && matchesExp;
-    });
-    document.getElementById('adminFacultyCount').textContent = ids.length + (ids.length===1 ? ' faculty' : ' faculty members');
-    document.getElementById('adminFacultyBody').innerHTML = ids.map(id=>{
-      const p = facultyProfiles[id];
-      return `<tr class="clickable" onclick="openFacultyDetail('${id}')">
-        <td class="admin-row-name"><img class="admin-row-avatar" src="${p.avatar}">${p.name}</td>
-        <td>${p.role}</td>
-        <td>${p.tags[0]}</td>
-        <td>${p.tags[2]}</td>
-        <td><span class="admin-pill open">Open to opportunities</span></td>
-      </tr>`;
-    }).join('') || `<tr><td colspan="5" style="text-align:center; color:var(--ink-faint); padding:22px;">No faculty match your filters.</td></tr>`;
-  }
-
-  function normalizeCity(raw){
-    return (raw || '').split(',')[0].trim();
-  }
-  function populateAdminInstitutionsLocationFilter(){
-    const sel = document.getElementById('adminInstitutionsLocationFilter');
-    if(!sel || sel.options.length > 1) return;
-    const cities = [...new Set(Object.values(institutionsData).map(inst=>normalizeCity(inst.city)).filter(Boolean))].sort();
-    cities.forEach(city=>{
-      const opt = document.createElement('option');
-      opt.value = city; opt.textContent = city;
-      sel.appendChild(opt);
-    });
-  }
-
-  function renderAdminInstitutions(){
-    populateAdminInstitutionsLocationFilter();
-    const q = (document.getElementById('adminInstitutionsSearch').value || '').toLowerCase();
-    const typeFilter = document.getElementById('adminInstitutionsTypeFilter').value;
-    const locationFilter = document.getElementById('adminInstitutionsLocationFilter').value;
-    const ids = Object.keys(institutionsData).filter(id=>{
-      const inst = institutionsData[id];
-      const matchesQ = !q || inst.name.toLowerCase().includes(q) || inst.city.toLowerCase().includes(q);
-      const matchesType = !typeFilter || inst.type===typeFilter;
-      const matchesLocation = !locationFilter || normalizeCity(inst.city)===locationFilter;
-      return matchesQ && matchesType && matchesLocation;
-    });
-    document.getElementById('adminInstitutionsCount').textContent = ids.length + (ids.length===1 ? ' institution' : ' institutions');
-    document.getElementById('adminInstitutionsBody').innerHTML = ids.map(id=>{
-      const inst = institutionsData[id];
-      return `<tr class="clickable" onclick="openInstitutionProfile('${id}')">
-        <td class="admin-row-name">${inst.name}</td>
-        <td><span class="admin-pill ${inst.type}">${institutionTypeLabel(inst.type)}</span></td>
-        <td>${inst.contact}</td>
-        <td>${inst.city}</td>
-        <td>${inst.phone}</td>
-        <td>${inst.website}</td>
-        <td>${(inst.jobs||[]).length}</td>
-        <td><button class="admin-viewbtn" onclick="event.stopPropagation(); openInstitutionProfile('${id}')">View</button></td>
-      </tr>`;
-    }).join('') || `<tr><td colspan="8" style="text-align:center; color:var(--ink-faint); padding:22px;">No institutions match your filters.</td></tr>`;
-  }
-
-  function renderAdminJobs(){
-    const categoryFilter = document.getElementById('adminJobsCategoryFilter').value;
-    const statusFilter = document.getElementById('adminJobsStatusFilter').value;
-    const demoJobs = allInstitutionJobs().filter(j=>{
-      const matchesCat = !categoryFilter || j.category===categoryFilter;
-      const matchesStatus = !statusFilter || j.status===statusFilter;
-      return matchesCat && matchesStatus;
-    });
-    document.getElementById('adminJobsCount').textContent = demoJobs.length + (demoJobs.length===1 ? ' job' : ' jobs');
-    document.getElementById('adminJobsBody').innerHTML = demoJobs.map(j=>`
-      <tr class="clickable" onclick="openInstitutionProfile('${j.instId}')">
-        <td class="admin-row-name">${j.title}</td>
-        <td>${j.instName}</td>
-        <td>${j.category}</td>
-        <td>${j.location}</td>
-        <td><span class="admin-pill ${j.status}">${j.status==='live' ? 'Live' : 'Closed'}</span></td>
-        <td>${j.applicants}</td>
-      </tr>`).join('') || `<tr><td colspan="6" style="text-align:center; color:var(--ink-faint); padding:22px;">No jobs match this filter.</td></tr>`;
-  }
-
-  function openFacultyDetail(id){
-    const p = facultyProfiles[id];
-    if(!p) return;
-    document.getElementById('adminDetailAvatarWrap').innerHTML = `<img src="${p.avatar}" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;">`;
-    document.getElementById('adminDetailName').textContent = p.name;
-    document.getElementById('adminDetailSub').textContent = p.role;
-    const statsRows = (p.stats||[]).map(([v,l])=>`<div class="admin-detail-row"><span class="k">${l}</span><span class="v">${v}</span></div>`).join('');
-    const expRows = (p.experience||[]).map(([title,meta])=>`<div class="admin-detail-row"><span class="k">${title}</span><span class="v">${meta}</span></div>`).join('');
-    const tagsRow = `<div class="admin-detail-row"><span class="k">Qualification / Location</span><span class="v">${(p.tags||[]).join(' · ')}</span></div>`;
-    document.getElementById('adminDetailBody').innerHTML = `
-      ${tagsRow}
-      ${statsRows}
-      ${expRows ? `<h4 style="margin:16px 0 6px; font-size:13px; color:var(--ink-faint);">Experience</h4>${expRows}` : ''}
-    `;
-    document.getElementById('adminDetailOverlay').classList.add('open');
-  }
-  function closeAdminDetail(){
-    document.getElementById('adminDetailOverlay').classList.remove('open');
-  }
-
-  let currentAdminInstitutionId = null;
-
-  function openInstitutionProfile(id){
-    const inst = institutionsData[id];
-    if(!inst) return;
-    currentAdminInstitutionId = id;
-    switchAdminTab('institutionProfile');
-    document.getElementById('adminProfileAvatar').textContent = institutionInitials(inst.name);
-    document.getElementById('adminProfileName').textContent = inst.name;
-    document.getElementById('adminProfileMeta').textContent = institutionTypeLabel(inst.type) + ' · ' + inst.city;
-    const jobs = inst.jobs || [];
-    const liveCount = jobs.filter(j=>j.status==='live').length;
-    const totalApplicants = jobs.reduce((s,j)=>s+j.applicants,0);
-    document.getElementById('adminProfileJobsCount').textContent = jobs.length;
-    document.getElementById('adminProfileLiveCount').textContent = liveCount;
-    document.getElementById('adminProfileApplicantsCount').textContent = totalApplicants;
-    document.getElementById('adminProfileJoined').textContent = inst.joined;
-    document.getElementById('adminProfileContact').textContent = `${inst.contact} (${inst.designation})`;
-    document.getElementById('adminProfileEmail').textContent = inst.email;
-    document.getElementById('adminProfilePhone').textContent = inst.phone;
-    document.getElementById('adminProfileWebsite').textContent = inst.website;
-
-    document.getElementById('adminProfileJobsGrid').innerHTML = jobs.map(j=>`
-      <div class="admin-jobcard">
-        <div class="admin-jobcard-top">
-          <div>
-            <div class="admin-jobcard-title">${j.title}</div>
-            <div class="admin-jobcard-meta">${j.category} · ${j.qualification} · ${j.location}</div>
-          </div>
-          <span class="admin-pill ${j.status}">${j.status==='live' ? 'Live' : 'Closed'}</span>
-        </div>
-        <div class="admin-jobcard-foot">
-          <div class="admin-jobcard-applicants">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 20c1-3.6 4.2-6 7.5-6s6.5 2.4 7.5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-            ${j.applicants} applicants
-          </div>
-          <span style="font-size:11.5px; color:var(--ink-faint);">${j.posted}</span>
-        </div>
-      </div>`).join('') || `<p class="sub" style="grid-column:1/-1;">No jobs posted yet.</p>`;
-  }
-
-  // ---------- CSV export helpers ----------
-  function csvEscape(val){
-    const s = String(val==null ? '' : val);
-    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
-  }
-  function downloadCSV(filename, rows){
-    const csv = rows.map(row=> row.map(csvEscape).join(',')).join('\r\n');
-    const blob = new Blob(['\ufeff' + csv], { type:'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  function downloadInstitutionsCSV(){
-    const rows = [['Institution','Type','Contact Person','Designation','Email','Phone','Website','Location','Jobs Posted','Joined']];
-    Object.values(institutionsData).forEach(inst=>{
-      rows.push([inst.name, institutionTypeLabel(inst.type), inst.contact, inst.designation, inst.email, inst.phone, inst.website, inst.city, (inst.jobs||[]).length, inst.joined]);
-    });
-    downloadCSV('upadyay-institutions.csv', rows);
-  }
-
-  function downloadFacultyCSV(){
-    const rows = [['Name','Subject / Role','Qualification','Experience','Location','Status']];
-    Object.values(facultyProfiles).forEach(p=>{
-      rows.push([p.name, p.role, p.tags[0], p.tags[1]||'', p.tags[2], 'Open to opportunities']);
-    });
-    downloadCSV('upadyay-faculty.csv', rows);
-  }
-
-  function downloadJobsCSV(){
-    const rows = [['Job Title','Institution','Category','Qualification','Location','Status','Applicants','Posted']];
-    allInstitutionJobs().forEach(j=>{
-      rows.push([j.title, j.instName, j.category, j.qualification, j.location, j.status==='live'?'Live':'Closed', j.applicants, j.posted]);
-    });
-    downloadCSV('upadyay-job-applications.csv', rows);
-  }
-
-  // Deterministic pseudo-random applicant list per job, drawn from the faculty pool
-  function applicantsForJob(j, instId, jobIndex){
-    const pool = Object.values(facultyProfiles);
-    const out = [];
-    const seedBase = (instId.length + jobIndex*7);
-    for(let i=0;i<j.applicants;i++){
-      const p = pool[(seedBase + i*3) % pool.length];
-      out.push(p);
-    }
-    return out;
-  }
-
-  function downloadInstitutionApplicantsCSV(){
-    const inst = institutionsData[currentAdminInstitutionId];
-    if(!inst) return;
-    const rows = [['Job Title','Category','Qualification Required','Job Status','Applicant Name','Applicant Subject / Role','Applicant Qualification','Applicant Location']];
-    (inst.jobs||[]).forEach((j,idx)=>{
-      const applicants = applicantsForJob(j, currentAdminInstitutionId, idx);
-      applicants.forEach(p=>{
-        rows.push([j.title, j.category, j.qualification, j.status==='live'?'Live':'Closed', p.name, p.role, p.tags[0], p.tags[2]]);
-      });
-    });
-    downloadCSV(`upadyay-${inst.name.replace(/\s+/g,'-').toLowerCase()}-applicants.csv`, rows);
-  }
+  adminGo(tab);
+})();
