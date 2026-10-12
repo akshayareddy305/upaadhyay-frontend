@@ -87,34 +87,20 @@
     }
     // >>> MODIFIED START: square job cards (title, company, exp/type/location, skills, salary, dates) <<<
     list.innerHTML = filtered.map(j=>{
-      const exp = j.minExp === 0 ? 'No prior experience required' : `${j.minExp}+ years`;
-      const safeTitle = j.title.replace(/'/g,"\\'");
+      const tl = String(j.type||'').toLowerCase(), pc = tl.includes('part')||tl.includes('visit') ? 'part' : tl.includes('contract') ? 'con' : '';
+      const sk = (j.skills && j.skills.length ? j.skills : j.tags || []);
+      const exp = j.minExp === 0 ? 'Freshers welcome' : `${j.minExp}+ yrs exp`;
+      const desc = String(j.description || '').trim();
       return `
-      <div class="bj-card">
-        <div class="bj-card-top">
-          <div class="bj-card-main">
-            <p class="bj-card-title">${pfEsc(j.title)}</p>
-            <p class="bj-card-org">${pfEsc(j.org)}</p>
-          </div>
-          <div class="bj-card-logo">${bjLogoHtml({logo:j.logo, name:j.org, color:j.color, initials:j.initials}, 56)}</div>
-        </div>
-        <div class="bj-card-meta">
-          <span>${BJ_ICONS.briefcase}${exp}</span><i></i><span>${BJ_ICONS.clock}${pfEsc(j.type)}</span><i></i><span>${BJ_ICONS.pin}${pfEsc(j.mode)} | ${pfEsc(j.city)}</span>
-        </div>
-        <div class="bj-card-skills">${j.skills.map(s=>`<span>${pfEsc(s)}</span>`).join('<b>•</b>')}</div>
-        <div class="bj-card-chips">
-          <span class="bj-chip">${j.cat === 'Higher Education' ? 'Higher Ed' : pfEsc(j.cat)}</span>
-          ${j.tags.map(t=>`<span class="bj-chip">${pfEsc(t)}</span>`).join('')}
-        </div>
-        <span class="bj-salary">${BJ_ICONS.rupee}${pfEsc(j.salary)}</span>
-        <div class="bj-card-foot">
-          <div class="bj-card-dates">
-            <span>${BJ_ICONS.calendar}${j.posted}d ago</span>
-            <span>${BJ_ICONS.hourglass}${j.daysLeft===null ? 'Open till filled' : j.daysLeft + 'd left'}</span>
-            <span>${BJ_ICONS.users}${j.applicants} applied</span>
-          </div>
-          <button class="btn btn-primary btn-sm" data-apply-job="${j.id}" data-title="${pfEsc(j.title)}" onclick="applyToJob(${j.id}, this.dataset.title)">Apply</button>
-        </div>
+      <div class="bjn-card">
+        <div class="bjn-top"><span class="bjn-pill ${pc}">${pfEsc(j.type)}</span><span class="bjn-sal">${pfEsc(j.salary)}</span></div>
+        <h3 class="bjn-title">${pfEsc(j.title)}</h3>
+        <div class="bjn-inst"><span class="bjn-logo">${bjLogoHtml({logo:j.logo, name:j.org, color:j.color, initials:j.initials}, 26)}</span><span class="bjn-name">${pfEsc(j.org)}</span></div>
+        ${sk.length ? `<div class="bjn-chips">${sk.slice(0,3).map(t=>`<span class="bjn-chip">${pfEsc(t)}</span>`).join('')}${sk.length>3 ? `<span class="bjn-chip more">+${sk.length-3}</span>` : ''}</div>` : ''}
+        ${desc ? `<p class="bjn-desc">${pfEsc(desc)}</p>` : ''}
+        <div class="bjn-meta">${pfEsc(j.city)} · ${exp} · ${j.posted}d ago · ${j.daysLeft===null ? 'Open till filled' : j.daysLeft + 'd left'}</div>
+        <div class="bjn-line"></div>
+        <button class="bjn-btn" data-apply-job="${j.id}" data-title="${pfEsc(j.title)}" onclick="applyToJob(${j.id}, this.dataset.title)">Apply now</button>
       </div>`;
     }).join('');
     // >>> MODIFIED END <<<
