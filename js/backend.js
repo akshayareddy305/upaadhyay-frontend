@@ -339,6 +339,29 @@
     if(s !== _instSig){ _instSig = s; schedulePush(); }
   }, 3000);
 
+  /* Admin approval / rejection should lock or unlock the institution's dashboard without a re-login:
+     re-read the verification status when the tab regains focus and once a minute while it is visible. */
+  const VERIFY_MSG = {
+    approved: 'Your institution was approved. Post a job, Posted jobs and Browse candidates are now unlocked.',
+    rejected: 'Your institution was not approved. Open your notifications to see the reason.',
+    blocked: 'Your institution has been blocked. Contact support.',
+    pending: 'Your institution is waiting for admin review.'
+  };
+  async function refreshVerification(){
+    if(currentRole !== 'company' || !_syncReady || !api.hasToken() || document.visibilityState === 'hidden') return;
+    try{
+      const c = await api.get('/company/profile', { silent403: true });
+      const v = String((c && c.verification_status) || '').toLowerCase();
+      if(!v || v === String(currentCompany.verification || '').toLowerCase()) return;
+      currentCompany.verification = v;
+      if(typeof applyEmployerLock === 'function') applyEmployerLock();
+      if(typeof loadNotifs === 'function') loadNotifs();
+      if(typeof showGenericToast === 'function' && VERIFY_MSG[v]) showGenericToast(VERIFY_MSG[v]);
+    }catch(e){ /* offline or session ended: the next tick retries; 401 is handled by api.js */ }
+  }
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') refreshVerification(); });
+  setInterval(refreshVerification, 60000);
+
   let _hydration = null;
   window.bkHydrate = function(){
     if(!_hydration){
