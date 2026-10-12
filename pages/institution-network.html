@@ -95,7 +95,7 @@
 
 /* Posted job cards */
 .pj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:18px}
-.pj-card{background:#fff;border:2px solid var(--line);border-radius:12px;padding:22px 20px 18px;text-align:center;box-shadow:0 6px 20px rgba(15,35,80,.06);transition:.15s;display:flex;flex-direction:column}
+.pj-card{background:#fff;border:2px solid var(--line);border-radius:2px;padding:22px 20px 18px;text-align:center;box-shadow:0 6px 20px rgba(15,35,80,.06);transition:.15s;display:flex;flex-direction:column}
 .pj-card:hover{border-color:var(--blue-500);transform:translateY(-3px);box-shadow:0 10px 26px rgba(15,35,80,.12)}
 .pj-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:18px}
 .pj-pill{font-size:12px;font-weight:600;color:#fff;padding:4px 14px;border-radius:20px;background:#2FCB73;text-transform:capitalize}
@@ -291,7 +291,18 @@ const CANDS=[{id:1,n:'Dr. Ravi Teja',r:'Professor',s:'Physics',e:'12 yrs',c:'Hyd
 S.sd='profile';S.jf='all';
 const SD=[['profile','Institution Profile'],['post','Post a Job'],['jobs','Posted Jobs'],['cands','Browse Candidates'],['reqs','Requests']];
 const lockedTab=()=>alert('Locked until the Main Institution approves your connection.');
-const myJobs=()=>JOBS.filter(j=>j.mainCode==S.main.code&&j.branchName==SUB.n);
+let SJOBS=null,NWCATS=null;
+const myJobs=()=>SJOBS||JOBS.filter(j=>j.mainCode==S.main.code&&j.branchName==SUB.n);
+const nwOn=()=>typeof api!=='undefined'&&api.hasToken();
+const nwItems=r=>Array.isArray(r)?r:(r&&Array.isArray(r.data)?r.data:[]);
+const nwMap=j=>{const m=j.meta||{};return{id:j.id,title:j.title,role:m.role||'',dept:m.dept||'',type:m.type_label||j.employment_type,vac:j.vacancy_count,qual:m.qualification||'',expMin:j.experience_min!=null?Number(j.experience_min):'',salMin:j.salary_min||'',salMax:j.salary_max||'',period:m.salary_period||'month',skills:(j.skills||[]).map(x=>x.name).join(', '),desc:j.description,loc:j.location||j.city||'',branchName:SUB.n,mainName:S.main.n,mainCode:S.main.code,status:j.status}};
+async function nwSync(){if(!nwOn())return;try{let out=[],pg=1,last=1;do{const r=await api.get('/company/jobs?per_page=50&page='+pg,{silent403:true});out=out.concat(nwItems(r));last=(r&&(r.last_page||(r.meta&&r.meta.last_page)))||1;pg++}while(pg<=last&&pg<=10);SJOBS=out.map(nwMap);render()}catch(e){console.warn('[jobs] could not load from server',e)}}
+async function nwSave(v){const t=String(v('type')||'').toLowerCase(),et=t.includes('part')||t.includes('visit')?'part-time':t.includes('contract')?'contract':'full-time',num=x=>x===''||x==null||isNaN(Number(x))?null:Number(x),loc=v('city')||SUB.c||'India';
+ if(!NWCATS){try{NWCATS=nwItems(await api.get('/categories',{noAuthRedirect:true}))}catch(e){NWCATS=[]}}
+ const cat=NWCATS.find(c=>c.name===v('cat'));
+ const body={title:v('title'),description:v('desc')||[v('role'),v('dept')].filter(Boolean).join(' · ')||v('title'),requirements:v('qual')?'Qualification: '+v('qual')+(v('notice')?' · Notice period: '+v('notice'):''):null,location:loc,city:String(loc).split(',')[0].trim().slice(0,100)||null,employment_type:et,category_id:cat?cat.id:null,experience_min:num(v('expMin')),experience_max:num(v('expMax')),salary_min:v('salNorms')?null:num(v('salMin')),salary_max:v('salNorms')?null:num(v('salMax')),vacancy_count:Math.max(1,parseInt(v('vac'),10)||1),application_deadline:v('deadline')||null,skills:String(v('skills')||'').split(/[,;\n]/).map(x=>x.trim()).filter(Boolean).slice(0,30),meta:{role:v('role'),dept:v('dept'),qualification:v('qual'),notice:v('notice'),type_label:v('type'),category_label:v('cat'),salary_period:v('period')||'month',salary_negotiable:!!v('salNeg'),salary_as_per_norms:!!v('salNorms'),campus:SUB.n,campus_loc:SUB.c}};
+ body.status='published';
+ try{return await api.post('/company/jobs',body,{silent403:true})}catch(e){if(e.status===403){body.status='draft';const j=await api.post('/company/jobs',body);api.toast&&api.toast('Saved as a draft — it goes live once your institution is approved.');return j}throw e}}
 const myReqs=()=>CREQ.filter(r=>r.mainCode==S.main.code&&r.branchName==SUB.n);
 const subNav=k=>{const ok=k=='approved';return `<div class="dash-tabs">${SD.map(([t,l])=>t=='profile'||ok?`<button class="dash-subtab ${S.sd==t?'active':''}" onclick="set('sd','${t}')">${l}${t=='jobs'&&myJobs().length?' ('+myJobs().length+')':''}${t=='reqs'&&myReqs().length?' ('+myReqs().length+')':''}</button>`:`<button class="dash-subtab ${S.sd==t?'active':''}" style="opacity:.7" onclick="set('sd','${t}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>${l}</button>`).join('')}</div>`};
 const opt=a=>a.map(x=>`<option>${x}</option>`).join('');
@@ -304,7 +315,7 @@ const DEMO_JOBS=[
 {id:'d4',demo:1,title:'Lab Instructor – Physics',type:'Contract',salMin:25000,salMax:32000,period:'month',branchName:'KL University',img:'../assets/logo/university.jpg',skills:'Optics, Mechanics, Lab Safety, Electronics',desc:'11-month contract for a Physics lab instructor to handle first-year engineering practical sessions.',loc:'Guntur',expMin:1,qual:'M.Sc Physics',vac:3,dept:'Physics'}];
 const pjLogo=j=>j.img?`<div class="lg pj-lg" style="background:#fff;border:1px solid var(--line);overflow:hidden;padding:0"><img src="${esc(j.img)}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`:lg(j.branchName,'pj-lg');
 const jobCard=j=>{const sk=String(j.skills||'').split(',').map(x=>x.trim()).filter(Boolean),per=({month:'mo',year:'yr',hour:'hr'})[j.period]||j.period,sal=j.salMin||j.salMax?(j.salMin&&j.salMax&&j.salMin!=j.salMax?`₹${inr(j.salMin)} – ${inr(j.salMax)}`:`₹${inr(j.salMin||j.salMax)}`):'Negotiable';
-return `<div class="pj-card" id="pj${j.id}"><div class="pj-top"><span class="pj-pill ${pjCls(j.type)}">${esc(j.type||'Full-time')}</span><span class="pj-sal">${sal} <small>/ ${esc(per)}</small></span></div><h3 class="pj-title">${esc(j.title)}</h3><div style="display:flex;justify-content:center"><div class="pj-inst">${pjLogo(j)}<span>${esc(j.branchName)}</span>${j.demo?'<em class="pj-demo" style="font-style:normal">DEMO</em>':''}</div></div>${sk.length?`<div class="pj-chips">${sk.slice(0,3).map(x=>`<span class="pj-chip">${esc(x)}</span>`).join('')}${sk.length>3?`<span class="pj-chip more">+${sk.length-3}</span>`:''}</div>`:''}<p class="pj-desc">${esc(j.desc||'')}</p><div class="pj-meta">${esc(j.loc||'')}${j.expMin?' · Exp '+esc(j.expMin)+'+ yrs':''}</div><div class="pj-more">${[j.role&&'Role: '+esc(j.role),j.dept&&'Dept: '+esc(j.dept),j.qual&&'Qualification: '+esc(j.qual),j.vac&&'Vacancies: '+esc(j.vac),sk.length&&'Skills: '+sk.map(esc).join(', ')].filter(Boolean).join('<br>')}</div><div class="pj-line"></div><button class="pj-btn" onclick="document.getElementById('pj${j.id}').classList.toggle('open')">View Job</button></div>`};
+return `<div class="pj-card" id="pj${j.id}"><div class="pj-top"><span class="pj-pill ${pjCls(j.type)}">${esc(j.type||'Full-time')}</span><span class="pj-sal">${sal} <small>/ ${esc(per)}</small></span></div><h3 class="pj-title">${esc(j.title)}</h3><div style="display:flex;justify-content:center"><div class="pj-inst">${pjLogo(j)}<span>${esc(j.branchName)}</span>${j.demo?'<em class="pj-demo" style="font-style:normal">DEMO</em>':''}${j.status&&j.status!='published'?'<em class="pj-demo" style="font-style:normal">'+esc(String(j.status).toUpperCase())+'</em>':''}</div></div>${sk.length?`<div class="pj-chips">${sk.slice(0,3).map(x=>`<span class="pj-chip">${esc(x)}</span>`).join('')}${sk.length>3?`<span class="pj-chip more">+${sk.length-3}</span>`:''}</div>`:''}<p class="pj-desc">${esc(j.desc||'')}</p><div class="pj-meta">${esc(j.loc||'')}${j.expMin?' · Exp '+esc(j.expMin)+'+ yrs':''}</div><div class="pj-more">${[j.role&&'Role: '+esc(j.role),j.dept&&'Dept: '+esc(j.dept),j.qual&&'Qualification: '+esc(j.qual),j.vac&&'Vacancies: '+esc(j.vac),sk.length&&'Skills: '+sk.map(esc).join(', ')].filter(Boolean).join('<br>')}</div><div class="pj-line"></div><button class="pj-btn" onclick="document.getElementById('pj${j.id}').classList.toggle('open')">View Job</button></div>`};
 /* ---------- Post a Job: stepped form, same layout as the main employer dashboard ---------- */
 const JSTEPS=['Job details','Requirements','Salary','Job location','Description'];
 const JSUB=['What is the role and where does it sit in your institution?','Qualification, experience and how soon the candidate can join.','Clear pay details get more applications.','This job is posted for your campus. Main institution and branch are added automatically.','Tell candidates what the role involves.'];
@@ -342,8 +353,9 @@ function vPost(){const s=JB.step,last=s==JSTEPS.length-1;
  <div class="in-layout">${inSide(JSTEPS,s,JB.max,jbPct(),'jbGo')}
  <div class="in-main"><div class="in-card"><h4>${JSTEPS[s]}</h4><p class="sub2">${JSUB[s]}</p>${jbBody()}</div>
  <div class="in-actions"><span class="in-stepof">Step ${s+1} of ${JSTEPS.length}</span><div class="r">${s>0?'<button class="btn btn-ghost btn-sm" onclick="jbBack()">Back</button>':''}<button class="btn btn-primary btn-sm" onclick="jbNext()">${last?'Post job — free':'Next'}</button></div></div></div></div></div>`}
-function postJob(){const v=jbV;
+async function postJob(){const v=jbV;
  for(let s=0;s<JSTEPS.length;s++){if(jbCheck(s).length){JB.step=s;JB.max=Math.max(JB.max,s);render();scrollTo(0,0);return}}
+ if(nwOn()){try{await nwSave(v);await nwSync();JB={step:0,max:0,d:{period:'month'},err:{},o:{}};S.sd='jobs';render();scrollTo(0,0);return}catch(e){alert((e&&e.message)||'Could not save the job. Please try again.');return}}
  JOBS.push({id:Date.now(),title:v('title'),role:v('role'),cat:v('cat'),dept:v('dept'),type:v('type'),vac:v('vac')||'1',qual:v('qual'),notice:v('notice'),expMin:v('expMin'),expMax:v('expMax'),salMin:v('salMin'),salMax:v('salMax'),period:v('period')||'month',salNeg:!!v('salNeg'),salNorms:!!v('salNorms'),skills:v('skills'),deadline:v('deadline'),desc:v('desc'),mainName:S.main.n,mainCode:S.main.code,branchName:SUB.n,branchLoc:SUB.c,loc:v('city')||SUB.c,date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})});
  LSS('nwJobs',JOBS);JB={step:0,max:0,d:{period:'month'},err:{},o:{}};S.sd='jobs';render();scrollTo(0,0)}
 function vPosted(){const a=myJobs().concat(DEMO_JOBS);return `<h2>Posted Jobs</h2><div class="pj-grid">${a.map(jobCard).join('')}</div>`}
@@ -496,7 +508,7 @@ window.NWP={steps:()=>PSTEPS,cur:()=>(S.sd==='profile'&&!P.done)?P.step:-1,can:i
  open:i=>{if(S.role!=='sub')return false;S.sd='profile';if(P.done&&!S.pedit)pfEdit();if(i>P.max){render();return true}pfGo(i);scrollTo(0,0);return true}};
 window.NWP.settings=()=>{if(S.role!=='sub')return false;S.sd='settings';render();scrollTo(0,0);return true};
 const nwOpenTab=t=>{if(S.role!=='sub')return false;S.sd=t;render();scrollTo(0,0);return true};
-render();
+render();nwSync();
 </script>
 </body>
 </html>
