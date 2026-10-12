@@ -59,7 +59,7 @@
               <span class="muted" id="appCount"></span>
             </div>
             <div class="admin-scroll"><table class="admin-table">
-              <thead><tr><th>Applicant</th><th>Job</th><th>Institution</th><th>Applied</th><th>Status</th><th class="act">Resume</th></tr></thead>
+              <thead><tr><th>Applicant</th><th>Job</th><th>Institution</th><th>Applied</th><th>Status</th><th class="act"></th></tr></thead>
               <tbody id="appBody"></tbody>
             </table></div>
             <div id="appPager"></div>
@@ -84,6 +84,65 @@
           </div>
         </section>
 
+        <!-- Jobs -->
+        <section id="panelJobs" hidden>
+          <div class="admin-panel">
+            <div class="admin-search-row">
+              <input type="search" id="jobSearch" placeholder="Search by job title" aria-label="Search jobs">
+              <select id="jobStatus" aria-label="Filter by status"><option value="">All statuses</option><option value="published">Published</option><option value="draft">Draft</option><option value="closed">Closed</option></select>
+              <span class="muted" id="jobCount"></span>
+            </div>
+            <div class="admin-scroll"><table class="admin-table">
+              <thead><tr><th>Job</th><th>Institution</th><th>Location</th><th class="num">Applicants</th><th>Status</th><th class="act"></th></tr></thead>
+              <tbody id="jobBody"></tbody>
+            </table></div>
+            <div id="jobPager"></div>
+          </div>
+        </section>
+
+        <!-- Files -->
+        <section id="panelFiles" hidden>
+          <div class="admin-panel">
+            <div class="admin-search-row">
+              <select id="fileCat" aria-label="Filter by category"><option value="">All categories</option><option value="resume">Resume</option><option value="profile_photo">Profile photo</option><option value="company_logo">Logo</option><option value="other">Documents</option></select>
+              <span class="muted" id="fileCount"></span>
+            </div>
+            <div class="admin-scroll"><table class="admin-table">
+              <thead><tr><th>File</th><th>Owner</th><th>Category</th><th class="num">Size</th><th>Uploaded</th><th class="act"></th></tr></thead>
+              <tbody id="fileBody"></tbody>
+            </table></div>
+            <div id="filePager"></div>
+          </div>
+        </section>
+
+        <!-- Announcements -->
+        <section id="panelNotifications" hidden>
+          <div class="admin-panel">
+            <div class="admin-panel-head"><span>Sent notifications</span><button type="button" class="btn btn-primary btn-sm" onclick="sendAnnouncement()">New announcement</button></div>
+            <div class="admin-scroll"><table class="admin-table">
+              <thead><tr><th>To</th><th>Title</th><th>Message</th><th>Sent</th><th class="act"></th></tr></thead>
+              <tbody id="noteBody"></tbody>
+            </table></div>
+            <div id="notePager"></div>
+          </div>
+        </section>
+
+        <!-- Skills & categories -->
+        <section id="panelCatalog" hidden>
+          <div class="admin-two-col cat">
+            <div class="admin-panel">
+              <div class="admin-panel-head"><span>Skills</span></div>
+              <div class="admin-add-row"><input type="text" id="skillNew" placeholder="Add a skill" maxlength="120"><button type="button" class="btn btn-primary btn-sm" onclick="addCatalog('skills')">Add</button></div>
+              <div class="admin-scroll"><table class="admin-table"><tbody id="skillBody"></tbody></table></div>
+            </div>
+            <div class="admin-panel">
+              <div class="admin-panel-head"><span>Job categories</span></div>
+              <div class="admin-add-row"><input type="text" id="catNew" placeholder="Add a category" maxlength="120"><button type="button" class="btn btn-primary btn-sm" onclick="addCatalog('categories')">Add</button></div>
+              <div class="admin-scroll"><table class="admin-table"><tbody id="catBody"></tbody></table></div>
+            </div>
+          </div>
+        </section>
+
       </main>
       <footer class="admin-footer">© <span id="adminFooterYear"></span> Upaadhyay — Admin console</footer>
     </div>
@@ -93,5 +152,6 @@
 <script src="js/auth.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/admin.js"></script>
+<script src="js/manage.js"></script>
 </body>
 </html>
