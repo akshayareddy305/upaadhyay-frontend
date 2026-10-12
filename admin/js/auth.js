@@ -11,19 +11,15 @@ async function adminCurrent(){
   return u && u.role === 'admin' ? u : null;
 }
 
-// Sign in. Resolves { ok:true, user } or { ok:false, message }.
+// Sign in through POST /api/admin/login (administrators only; a faculty/institution account gets the same
+// "Invalid email or password" and no token). Resolves { ok:true, user } or { ok:false, message }.
 async function adminLogin(adminId, password){
   try{
-    const u = await api.login(String(adminId || '').trim(), password);
-    if(!u || u.role !== 'admin'){
-      await api.logout();   // revoke the token we just got: this is not an admin account
-      return { ok:false, message:'This account is not an administrator.' };
-    }
-    return { ok:true, user:u };
+    const d = await api.post('/admin/login', { email: String(adminId || '').trim(), password: password }, { noAuthRedirect: true });
+    return { ok:true, user: api._accept(d) };
   }catch(e){
     if(e && e.status === 429) return { ok:false, message:'Too many attempts. Wait a minute and try again.' };
     if(e && e.status === 0)   return { ok:false, message:e.message };
-    // Wrong ID/password and blocked accounts both come back as a validation message from the API.
     return { ok:false, message:(e && e.message) || 'Could not sign in. Try again.' };
   }
 }
