@@ -1,8 +1,8 @@
 // admin/js/admin.js — admin dashboard (overview, institution verification queue, job applications, faculty).
 // Every number and row comes from the Laravel API (/api/admin/*); nothing here is demo data.
 
-const TABS = ['overview', 'institutions', 'applications', 'faculty'];
-const TITLES = { overview:'Overview', institutions:'Institutions', applications:'Job Applications', faculty:'Faculty' };
+const TABS = ['overview', 'institutions', 'applications', 'faculty', 'jobs', 'files', 'notifications', 'catalog'];
+const TITLES = { overview:'Overview', institutions:'Institutions', applications:'Job Applications', faculty:'Faculty', jobs:'Jobs', files:'Files', notifications:'Announcements', catalog:'Skills & Categories' };
 const INST_STATUSES = [['pending', 'Pending review'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['blocked', 'Blocked'], ['', 'All']];
 const PER_PAGE = 15;
 
@@ -10,7 +10,10 @@ const S = {
   tab: 'overview', dash: null,
   inst: { status:'pending', search:'', page:1, last:1, total:0 },
   apps: { status:'', search:'', page:1, last:1, total:0 },
-  fac:  { status:'', search:'', page:1, last:1, total:0 }
+  fac:  { status:'', search:'', page:1, last:1, total:0 },
+  jobs: { status:'', search:'', page:1, last:1, total:0 },
+  files:{ category:'', page:1, last:1, total:0 },
+  notes:{ page:1, last:1, total:0 }
 };
 
 const $ = function(id){ return document.getElementById(id); };
@@ -43,6 +46,7 @@ function adminGo(tab, status){
   if(tab === 'institutions') loadInstitutions();
   if(tab === 'applications') loadApplications();
   if(tab === 'faculty') loadFaculty();
+  ['jobs', 'files', 'notifications', 'catalog'].forEach(function(t){ if(tab === t && typeof window['load_' + t] === 'function') window['load_' + t](); });
 }
 window.adminGo = adminGo;
 
@@ -125,7 +129,9 @@ async function loadInstitutions(){
         + '<td>' + (submitted ? '<span class="admin-pill info">Submitted</span>' : '<span class="muted">Not submitted</span>') + '</td>'
         + '<td class="num">' + (c.jobs_count || 0) + '</td>'
         + '<td>' + pill(c.verification_status) + '</td>'
-        + '<td class="act"><button type="button" class="admin-viewbtn" onclick="event.stopPropagation(); openInstitution(' + c.id + ')">' + (c.verification_status === 'pending' ? 'Review' : 'View') + '</button></td></tr>';
+        + '<td class="act"><div class="admin-rowbtns"><button type="button" class="admin-viewbtn" onclick="event.stopPropagation(); openInstitution(' + c.id + ')">' + (c.verification_status === 'pending' ? 'Review' : 'View') + '</button>'
+        + '<button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); editInstitution(' + c.id + ')">Edit</button>'
+        + '<button type="button" class="btn btn-ghost btn-sm danger" onclick="event.stopPropagation(); deleteInstitution(' + c.id + ',\'' + esc(String(c.company_name).replace(/'/g, '')) + '\')">Delete</button></div></td></tr>';
     }).join('') || emptyRow(9, S.inst.search ? 'No institutions match your search.' : 'No institutions in this list.');
     $('instPager').innerHTML = pagerHtml(S.inst, 'institutions');
   }catch(e){
@@ -150,7 +156,9 @@ async function loadApplications(){
         + '<td>' + (co.id ? '<a href="company.html?id=' + co.id + '" style="color:var(--blue-700);font-weight:600">' + esc(co.company_name) + '</a>' : '—') + '</td>'
         + '<td>' + esc(fmtDate(a.applied_at || a.created_at)) + '</td>'
         + '<td>' + pill(a.status) + '</td>'
-        + '<td class="act">' + (fid ? '<button type="button" class="btn btn-ghost btn-sm" onclick="openFile(' + fid + ')">View</button>' : '<span class="muted">—</span>') + '</td></tr>';
+        + '<td class="act"><div class="admin-rowbtns">' + (fid ? '<button type="button" class="btn btn-ghost btn-sm" onclick="openFile(' + fid + ')">Resume</button>' : '')
+        + '<button type="button" class="btn btn-ghost btn-sm" onclick="changeAppStatus(' + a.id + ',\'' + esc(a.status) + '\')">Status</button>'
+        + '<button type="button" class="btn btn-ghost btn-sm danger" onclick="deleteApplication(' + a.id + ')">Delete</button></div></td></tr>';
     }).join('') || emptyRow(6, 'No applications found.');
     $('appPager').innerHTML = pagerHtml(S.apps, 'applications');
   }catch(e){
@@ -177,7 +185,9 @@ async function loadFaculty(){
         + '<td>' + esc([p.city, p.state].filter(Boolean).join(', ') || '—') + '</td>'
         + '<td class="num">' + esc(exp) + '</td>'
         + '<td>' + pill(blocked ? 'blocked' : 'active') + '</td>'
-        + '<td class="act"><button type="button" class="btn btn-ghost btn-sm' + (blocked ? '' : ' danger') + '" onclick="toggleUser(' + u.id + ',' + (blocked ? 'false' : 'true') + ',\'' + esc(String(u.name).replace(/'/g, '')) + '\')">' + (blocked ? 'Unblock' : 'Block') + '</button></td></tr>';
+        + '<td class="act"><div class="admin-rowbtns"><button type="button" class="btn btn-ghost btn-sm" onclick="editUser(' + u.id + ')">Edit</button>'
+        + '<button type="button" class="btn btn-ghost btn-sm' + (blocked ? '' : ' danger') + '" onclick="toggleUser(' + u.id + ',' + (blocked ? 'false' : 'true') + ',\'' + esc(String(u.name).replace(/'/g, '')) + '\')">' + (blocked ? 'Unblock' : 'Block') + '</button>'
+        + '<button type="button" class="btn btn-ghost btn-sm danger" onclick="deleteUser(' + u.id + ',\'' + esc(String(u.name).replace(/'/g, '')) + '\')">Delete</button></div></td></tr>';
     }).join('') || emptyRow(7, S.fac.search ? 'No faculty match your search.' : 'No faculty accounts yet.');
     $('facPager').innerHTML = pagerHtml(S.fac, 'faculty');
   }catch(e){
