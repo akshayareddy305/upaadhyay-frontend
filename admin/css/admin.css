@@ -261,3 +261,16 @@ img{max-width:100%;}
   .rv-actions{width:100%;}
   .rv-actions .btn{flex:1;}
 }
+
+/* ---------- manage screens ---------- */
+.admin-modal-card .fd-row{display:block; margin-top:12px;}
+.admin-modal-card .fd-row span{display:block; font-size:12.5px; font-weight:700; color:var(--ink-soft); margin-bottom:4px;}
+.admin-modal-card .fd-row input,.admin-modal-card .fd-row select{width:100%; padding:9px 11px; border:1px solid #CBD3E3; border-radius:var(--radius-sm); font:inherit;}
+.admin-modal-card .fd-row textarea{margin-top:0;}
+.admin-modal-card .fd-row input:focus,.admin-modal-card .fd-row select:focus{outline:none; border-color:var(--blue-600); box-shadow:0 0 0 3px rgba(37,99,235,.15);}
+.admin-rowbtns{display:flex; gap:6px; justify-content:flex-end; flex-wrap:nowrap;}
+.btn.danger{color:var(--red); border-color:#F0C4BF;}
+.btn.danger:hover:not(:disabled){background:var(--red-bg);}
+.admin-two-col.cat{align-items:start;}
+.admin-add-row{display:flex; gap:8px; padding:12px 14px; border-bottom:1px solid var(--line);}
+.admin-add-row input{flex:1; padding:8px 11px; border:1px solid #CBD3E3; border-radius:var(--radius-sm); font:inherit;}
