@@ -25,7 +25,7 @@
       logo:d.logo || C.logo || '', badge:badge, pct:pct, hint:hint, approved:approved, editLabel:'Edit institution details',
       stats:[[1 + (I.branches || []).length, 'Campuses'], [sv.st === 'approved' ? 1 : 0, 'Sub-branches'], [jobs.length, 'Open jobs'],
              [sum(jobs, function(j){ return (j.applicantIds || []).length; }), 'Applicants']],
-      pending:sv.st === 'pending' ? 1 : 0, rows:[['Representative', rep]] };
+      pending:(window.__sbPending != null ? window.__sbPending : (sv.st === 'pending' ? 1 : 0)), rows:[['Representative', rep]] };
   }
   function branch(){
     var sv = ls('nwSub') || {}, pr = ls('nwProfile') || {}, lg = ls('nwLogos') || {}, sb = sv.sub || {}, d = pr.d || {};
