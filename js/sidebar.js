@@ -65,9 +65,10 @@
     if(state.set) return 'set';
     if(state.ov) return 'ov';
     var t = 'company'; try{ t = sessionStorage.getItem('upadyay_emp_tab') || 'company'; }catch(e){}
+    if(window.__empApps) return 'apps';
     if(t === 'post') return 'post'; if(t === 'myjobs') return 'myjobs'; if(t === 'candidates') return 'cands';
     var el = document.querySelector('#instRoot .in-dash .in-step.on:not(.sub) .in-step-t'), x = el ? el.textContent.toLowerCase() : '';
-    return /^verif/.test(x) ? 'verify' : /^branch/.test(x) ? 'branches' : /^repres/.test(x) ? 'rep' : /^posted/.test(x) ? 'myjobs' : 'profile';
+    return /^verif/.test(x) ? 'verify' : /^(sub-)?branch/.test(x) ? 'reqs' : /^repres/.test(x) ? 'rep' : /^posted/.test(x) ? 'myjobs' : 'profile';
   }
   function companyItems(){
     var c = UpCard.data('company'), ok = c.approved;
@@ -75,13 +76,11 @@
       list:[ { k:'ov', t:'Overview', i:'grid', go:overview },
         { k:'profile', t:'Institution profile', i:'building', go:function(){ sec('profile'); }, sub:true },
         { k:'verify', t:'Verification', i:'shield', go:function(){ sec('verify'); }, flag:!ok },
-        { k:'branches', t:'Branches / campuses', i:'tree', go:function(){ sec('branches'); }, lock:!ok },
-        { k:'reqs', t:'Sub-branch requests', i:'inbox', go:function(){ sec('branches'); }, lock:!ok, n:c.pending },
+        { k:'reqs', t:'Sub-branches', i:'tree', go:function(){ sec('branches'); }, lock:!ok, n:c.pending },
         { k:'post', t:'Post a job', i:'plus', go:function(){ tab('post'); }, lock:!ok },
         { k:'myjobs', t:'Posted jobs', i:'list', go:function(){ tab('myjobs'); }, lock:!ok, n:c.stats[2][0] },
-        { k:'apps', t:'Applicants', i:'people', go:function(){ tab('myjobs'); }, lock:!ok, n:c.stats[3][0] },
+        { k:'apps', t:'Applicants', i:'people', go:function(){ if(typeof openAllApplicants === 'function') openAllApplicants(); else tab('myjobs'); }, lock:!ok, n:c.stats[3][0] },
         { k:'cands', t:'Browse faculty', i:'search', go:function(){ tab('candidates'); }, lock:!ok },
-        { k:'rep', t:'Representative & authority', i:'user', go:function(){ sec('rep'); } },
         { k:'set', t:'Settings', i:'cog', go:function(){ openSet(); }, sub:true },
         { k:'out', t:'Log out', i:'out', go:function(){ logoutUser(); }, out:1 } ] };
   }
