@@ -8,11 +8,13 @@ const ADMIN_ICONS = {
   files: '<path d="M6 3h8l4 4v14H6V3Z M14 3v4h4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
   notifications: '<path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Zm4 4h4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>',
   catalog: '<path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  branches: '<circle cx="12" cy="5.5" r="2.3" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="18" r="2.3" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="18" r="2.3" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.8v4.2M12 12H6v3.7M12 12h6v3.7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
   faculty: '<circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M4.5 20c1-3.6 4.2-6 7.5-6s6.5 2.4 7.5 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>'
 };
 const ADMIN_NAV = [
   ['overview', 'Overview', 'Dashboard'],
   ['institutions', 'Institutions', 'Verification'],
+  ['branches', 'Sub-branch requests', 'Verification'],
   ['applications', 'Job Applications', 'Activity'],
   ['faculty', 'Faculty', 'Directory'],
   ['jobs', 'Jobs', 'Manage'],
