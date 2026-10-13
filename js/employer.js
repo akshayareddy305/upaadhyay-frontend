@@ -1,3 +1,12 @@
+// Fallback status badge so the dashboard never breaks if backend.js fails to load (backend.js overrides this when it loads)
+if(typeof window.bkStatusBadge !== 'function'){
+  window.bkStatusBadge = function(job){
+    const st = job && job.status;
+    if(st === 'published') return '<span class="badge-live">Live</span>';
+    if(st === 'closed' || st === 'expired') return '<span class="badge badge-pending">Closed</span>';
+    return '<span class="badge badge-pending">Draft</span>';
+  };
+}
 // ---------- Faculty profile data + slide-in panel ----------
   const facultyProfiles = {
     priya: {
@@ -573,8 +582,7 @@
 
   /* Applicant card: one per row — name, role, job applied for, highest degree */
   function applicantCardHTML(id){
-    const p = facultyProfiles[id];
-    if(!p) return '';
+    const p = facultyProfiles[id] || { name:'Applicant', role:'Profile loading\u2026', avatar:'', education:[], tags:[] };
     const jobs = Object.keys(jobsData).filter(k=>(jobsData[k].applicantIds||[]).indexOf(id)>-1).map(k=>jobsData[k].title);
     const deg = highestDegree(p);
     return `
