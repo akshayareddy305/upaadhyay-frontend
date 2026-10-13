@@ -66,6 +66,21 @@
           </div>
         </section>
 
+        <!-- Sub-branch requests -->
+        <section id="panelBranches" hidden>
+          <div class="admin-panel">
+            <div class="admin-toolbar">
+              <select id="brStatus" aria-label="Filter by admin decision"><option value="pending">Waiting for admin</option><option value="approved">Approved by admin</option><option value="rejected">Rejected by admin</option><option value="">All</option></select>
+              <span class="muted" id="brCount"></span>
+            </div>
+            <div class="admin-scroll"><table class="admin-table">
+              <thead><tr><th>Sub-branch</th><th>Wants to join</th><th>Main institution</th><th>Admin</th><th>Submitted</th><th></th></tr></thead>
+              <tbody id="brBody"></tbody>
+            </table></div>
+            <div id="brPager"></div>
+          </div>
+        </section>
+
         <!-- Faculty (candidate accounts) -->
         <section id="panelFaculty" hidden>
           <div class="admin-panel">
