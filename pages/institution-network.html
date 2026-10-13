@@ -202,15 +202,26 @@ function subLogin(){const i=document.getElementById('sl_id').value.trim(),p=docu
  setBranchSession(i,SUB.n);if(typeof updateNavForLogin==='function')updateNavForLogin();
  S.slerr='';S.role='sub';S.sd='profile';render();scrollTo(0,0)}
 /* 2. find main institution */
+/* ---- real lookup: GET /institutions (code or name). Falls back to the local list only when the API is unreachable. ---- */
+const mapMain=x=>({id:x.id,n:x.name,c:[x.city,x.state].filter(Boolean).join(', '),t:x.type||'Institution',code:x.code,d:x.description||'',web:x.website||'',addr:x.address||'',year:x.year||'',logo:x.logo||'',live:true});
+let HITS=[],LKERR='';
+async function findCode(){
+  const code=S.code.trim(); LKERR='';
+  try{const r=await api.branches.lookup(code),a=(Array.isArray(r)?r:(r&&r.items)||[]).map(mapMain);
+    if(a.length){S.main=a[0];if(a[0].logo)LOGOS[a[0].n]=a[0].logo;go('confirm');return}
+    LKERR='No institution found for that code. Check the code with your main institution.';
+  }catch(e){const m=MAINS.find(x=>x.code==code);if(m){S.main=m;go('confirm');return}LKERR=e.message||'Could not reach the server.'}
+  S.code='';render();
+}
 function vFind(){
   const digits=S.code.replace(/\D/g,''),bad=S.code&&!/^\d{5}$/.test(S.code);
-  const q=S.q.trim().toLowerCase(),hits=q?MAINS.filter(m=>(m.n+m.c).toLowerCase().includes(q)):[];
+  const q=S.q.trim().toLowerCase(),hits=q?HITS:[];
   const shown=S.all?hits:hits.slice(0,1);
   return `<div class="nw-stack"><h1>Find Your Main Institution</h1><p class="sub">Your Sub-Branch must be connected to an existing Main Institution.</p>
 <div class="c nw-big"><h3>Main Institution Code</h3>
 <label class="fld ${bad?'err':''}">Main Institution Code<input id="code" maxlength="5" inputmode="numeric" placeholder="Enter 5-digit code, e.g. 10245" value="${S.code}" oninput="S.code=this.value;const b=document.getElementById('cb');b.disabled=!/^\\d{5}$/.test(this.value);this.parentNode.classList.toggle('err',this.value&&b.disabled)"></label>
-<p class="mut" id="ce">${bad?'Code must be exactly 5 digits.':'Demo codes: 10245, 20871, 31502'}</p>
-<button id="cb" class="btn btn-primary" ${/^\d{5}$/.test(S.code)?'':'disabled'} onclick="const m=MAINS.find(x=>x.code==S.code);m?(S.main=m,go('confirm')):(S.code='',S.q='zzz',render())">Find Institution</button></div>
+<p class="mut" id="ce">${bad?'Code must be exactly 5 digits.':(LKERR||'Ask your main institution for its 5-digit code.')}</p>
+<button id="cb" class="btn btn-primary" ${/^\d{5}$/.test(S.code)?'':'disabled'} onclick="findCode()">Find Institution</button></div>
 <div class="nw-or">or</div>
 <div class="nw-split"><div class="c nw-sm"><h3>Search by Institution Name</h3>
 <label class="fld">Institution name<input id="q" placeholder="Search institution name..." value="${S.q}" oninput="liveQ(this.value)" autofocus></label>
@@ -219,9 +230,11 @@ function vFind(){
 function hitsHtml(q,shown,total){
   if(!q)return '<div class="mut">Choose your main institution — start typing to search. Only Main / Normal institutions are listed; Sub-Branches can\'t be selected as a parent.</div>';
   if(!shown.length)return `<h3>No Main Institution Found</h3><div class="mut">We couldn't find a matching Main Institution.</div><p class="btns row wrap"><button class="btn btn-light btn-sm" onclick="S.q='';S.code='';render()">Search Again</button><button class="btn btn-ghost btn-sm" onclick="goTo('register',{role:'company',type:'main'})">Create a Main / Normal Institution</button></p>`;
-  return shown.map(m=>`<div class="res" onclick="S.main=MAINS[${MAINS.indexOf(m)}];go('confirm')">${lg(m.n)}<div class="grow"><b>${m.n}</b> ${B(1)}<div class="mut">${m.t}</div><div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${m.c}</div><div class="mut">Code: <b>${m.code}</b></div></div></div>`).join('')+(total>shown.length?`<button class="btn btn-light btn-sm" onclick="set('all',true)">View more (${total-shown.length} more)</button>`:'');
+  return shown.map(m=>`<div class="res" onclick="S.main=HITS[${HITS.indexOf(m)}]||MAINS[${MAINS.indexOf(m)}];go('confirm')">${lg(m.n)}<div class="grow"><b>${m.n}</b> ${B(1)}<div class="mut">${m.t}</div><div class="mut"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0;" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg> ${m.c}</div><div class="mut">Code: <b>${m.code}</b></div></div></div>`).join('')+(total>shown.length?`<button class="btn btn-light btn-sm" onclick="set('all',true)">View more (${total-shown.length} more)</button>`:'');
 }
-let tm;function liveQ(v){S.q=v;S.all=false;const h=document.getElementById('hits');h.innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';clearTimeout(tm);tm=setTimeout(()=>{const q=v.trim().toLowerCase(),hits=q?MAINS.filter(m=>(m.n+m.c).toLowerCase().includes(q)):[];h.innerHTML=hitsHtml(q,hits.slice(0,1),hits.length)},350)}
+let tm;function liveQ(v){S.q=v;S.all=false;const h=document.getElementById('hits');h.innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';clearTimeout(tm);tm=setTimeout(async()=>{const q=v.trim().toLowerCase();let hits=[];
+ if(q){try{const r=await api.branches.search(v.trim());hits=(Array.isArray(r)?r:(r&&r.items)||[]).map(mapMain)}catch(e){hits=MAINS.filter(m=>(m.n+m.c).toLowerCase().includes(q))}}
+ HITS=hits;h.innerHTML=hitsHtml(q,hits.slice(0,1),hits.length)},350)}
 /* 3. confirm */
 function vConfirm(){const m=S.main;return `<div class="nw-stack nw-mid"><h1>Selected Main Institution</h1><p class="sub">This sub-branch will be connected to the institution below.</p>
 <div class="c nw-conf">
@@ -230,7 +243,8 @@ function vConfirm(){const m=S.main;return `<div class="nw-stack nw-mid"><h1>Sele
 <div><span class="mut">Institution Code</span><b class="nw-conf-code">${m.code}</b></div>
 <div><span class="mut">Location</span><b>${m.c}</b></div>
 <div><span class="mut">Type</span><b>${m.t}</b></div>
-</div>
+${m.year?`<div><span class="mut">Established</span><b>${m.year}</b></div>`:''}${m.web?`<div><span class="mut">Website</span><b>${m.web}</b></div>`:''}${m.addr?`<div><span class="mut">Address</span><b>${m.addr}</b></div>`:''}
+</div>${m.d?`<p class="mut" style="margin:8px 0 0">${m.d}</p>`:''}
 <div class="nw-conf-btns"><button class="btn btn-primary" onclick="S.fs=0;go('form')">Continue</button><button class="btn btn-light" onclick="go('code')">Change Institution</button></div>
 </div></div>`}
 /* connection card */
@@ -246,7 +260,12 @@ const FV={},FVO={};
 function fvSel(k,val){if(val=='__other'){FVO[k]=true;FV[k]=''}else{FVO[k]=false;FV[k]=val}render();if(val=='__other'){const e=[...document.querySelectorAll('input[data-o]')].find(x=>x.dataset.k==k);if(e)e.focus()}}
 function readLogo(inp){const f=inp.files&&inp.files[0];if(!f)return;if(f.size>500000){alert('Please choose a logo under 500 KB.');inp.value='';return}const r=new FileReader();r.onload=()=>{S.logo=r.result;const pv=document.getElementById('logoPv');if(pv)pv.innerHTML='<img src="'+r.result+'" style="width:100%;height:100%;object-fit:cover">'};r.readAsDataURL(f)}
 function applyForm(){const n=(FV['Sub-branch / College name']||'').trim(),c=(FV['City']||'').trim(),st=(FV['State']||'').trim();if(n)SUB.n=n;if(c||st)SUB.c=[c,st].filter(Boolean).join(', ');if(FV['Official email'])SUB.em=FV['Official email'];if(FV['Phone'])SUB.ph=FV['Phone'];if(FV['Contact person'])SUB.by=FV['Contact person'];if(FV['About the branch'])SUB.d=FV['About the branch'];if(FV['Institution type'])SUB.t=FV['Institution type']}
-function submitReg(){applyForm();SUB.date=nwToday();if(S.logo){LOGOS[SUB.n]=S.logo;try{localStorage.setItem('nwLogos',JSON.stringify(LOGOS))}catch(e){}}
+async function sendToMain(){
+  if(!(typeof api!=='undefined'&&api.hasToken())||!S.main||!S.main.live) return true;   /* offline demo: keep local flow */
+  try{await api.branches.connect(S.main.code);await api.branches.submit();return true}
+  catch(e){alert(e.message||'Could not send your request.');return false}
+}
+async function submitReg(){applyForm();if(!(await sendToMain()))return;SUB.date=nwToday();if(S.logo){LOGOS[SUB.n]=S.logo;try{localStorage.setItem('nwLogos',JSON.stringify(LOGOS))}catch(e){}}
  reqs[0]={...reqs[0],...SUB,id:1,s:'Pending',mainInstitutionId:S.main.code,mainInstitutionCode:S.main.code,subBranchName:SUB.n,requestStatus:'Pending',requestDate:new Date().toISOString()};
  S.st='pending';S.pedit=false;try{setBranchSession((ls0('nwSubAccount')||{}).id,SUB.n);if(typeof updateNavForLogin==='function')updateNavForLogin()}catch(e){}try{localStorage.setItem('nwSub',JSON.stringify({sub:SUB,mainCode:S.main.code,mainName:S.main.n,st:'pending',date:SUB.date}))}catch(e){}go('done')}
 function fldH(f){const[l,o]=f.split('|'),v=FV[l]||'',ev=String(v).replace(/"/g,'&quot;');return `<label class="fld">${l}${o=='area'?`<textarea rows="3" data-k="${l}" oninput="FV[this.dataset.k]=this.value">${v}</textarea>`:o=='file'?(l.startsWith('Logo')?`<span class="row"><span id="logoPv" class="lg big" style="background:#fff;border:1px dashed var(--line);overflow:hidden;padding:0">${S.logo?`<img src="${S.logo}" style="width:100%;height:100%;object-fit:cover">`:crest(SUB.n)}</span><input type="file" accept="image/*" onchange="readLogo(this)"></span><span class="mut" style="font-weight:400">Upload your own logo (under 500 KB). A free default crest is used if you skip this.</span>`:'<input type="file" accept="image/*">'):o?(()=>{const lst=o.split(','),oth=!!(FVO[l]||(v&&!lst.includes(v)));return `<select data-k="${l}" onchange="fvSel(this.dataset.k,this.value)"><option value="">Select</option>${lst.map(x=>`<option ${!oth&&v==x?'selected':''}>${x}</option>`).join('')}<option value="__other" ${oth?'selected':''}>Other</option></select>${oth?`<input data-k="${l}" data-o="1" placeholder="Enter ${l.toLowerCase()}" value="${ev}" style="margin-top:8px" oninput="FV[this.dataset.k]=this.value">`:''}`})():`<input data-k="${l}" value="${ev}" oninput="FV[this.dataset.k]=this.value">`}</label>`}
@@ -274,8 +293,8 @@ function vDone(){return `<div class="c" style="text-align:center;max-width:560px
 /* sub dashboard */
 function vSub0(){const k=S.st;return `<div class="c row wrap"><div class="grow row wrap">${lg(SUB.n,'big')}<div><h1 style="margin:0">${SUB.n}</h1>${B(0)} ${k=='approved'?'<div style="margin-top:4px"><b>Part of '+S.main.n+'</b> · <a href="#" onclick="S.role=\'main\';render();return false">Main Institution Profile</a></div>':''}<div class="mut">${SUB.c}</div></div></div>${stB(k)}</div>
 <h2 style="margin-top:18px">Connected Main Institution</h2>${mainCard(S.main,stB(k))}
-${k=='pending'?'<p class="mut">Your institution is waiting for approval from the Main Institution. <button class="btn btn-light btn-sm" onclick="setSt(\'withdrawn\')">Withdraw request</button></p>':''}
-${k=='rejected'?'<div class="c" style="margin-top:14px;border-color:#B3261E"><b>Rejection reason:</b> Affiliation documents are incomplete. Please re-apply with valid proof.<p><button class="btn btn-primary btn-sm" onclick="S.role=\'reg\';S.v=\'code\';render()">Choose Another Main Institution</button></p></div>':''}
+${k=='pending'?`<div class="c" style="margin-top:12px"><b>Verification in progress</b><div class="mut" style="margin-top:6px">Main institution (${S.main.n}): <b>${S.apiState&&S.apiState.status==='approved'?'Approved':'Waiting'}</b> &nbsp;·&nbsp; Admin: <b>${S.apiState&&S.apiState.admin_status==='approved'?'Approved':'Waiting'}</b></div><p class="mut">Your dashboard unlocks when both approve. <button class="btn btn-light btn-sm" onclick="nwWithdraw()">Withdraw request</button></p></div>`:''}
+${k=='rejected'?'<div class="c" style="margin-top:14px;border-color:#B3261E"><b>Rejection reason:</b> '+((S.apiState&&S.apiState.note)||'The request was not approved. Please re-apply with valid proof.')+'<p><button class="btn btn-primary btn-sm" onclick="S.role=\'reg\';S.v=\'code\';render()">Choose Another Main Institution</button></p></div>':''}
 ${k=='withdrawn'?'<div class="c" style="margin-top:14px"><b>Request withdrawn.</b> You can send a new request any time.<p><button class="btn btn-primary btn-sm" onclick="S.role=\'reg\';S.v=\'code\';render()">Choose Main Institution</button></p></div>':''}
 ${k=='approved'?'<h2 style="margin-top:18px">Institution Hierarchy</h2>'+tree():''}
 `}
@@ -508,6 +527,18 @@ window.NWP={steps:()=>PSTEPS,cur:()=>(S.sd==='profile'&&!P.done)?P.step:-1,can:i
  open:i=>{if(S.role!=='sub')return false;S.sd='profile';if(P.done&&!S.pedit)pfEdit();if(i>P.max){render();return true}pfGo(i);scrollTo(0,0);return true}};
 window.NWP.settings=()=>{if(S.role!=='sub')return false;S.sd='settings';render();scrollTo(0,0);return true};
 const nwOpenTab=t=>{if(S.role!=='sub')return false;S.sd=t;render();scrollTo(0,0);return true};
+(()=>{const c=new URLSearchParams(location.search).get('branch_code')||new URLSearchParams(location.search).get('code');
+  if(c&&/^\d{5}$/.test(c)&&S.role==='reg'){S.type='sub';S.v='code';S.code=c;setTimeout(()=>{if(typeof findCode==='function')findCode()},0)}})();
+/* keep the status in step with BOTH decisions (main institution + admin) */
+async function nwWithdraw(){try{if(typeof api!=='undefined'&&api.hasToken()&&S.main&&S.main.live)await api.branches.withdraw()}catch(e){}setSt('withdrawn')}
+async function nwPoll(){
+  if(!(typeof api!=='undefined'&&api.hasToken()))return;
+  try{const m=await api.branches.mine();if(!m||!m.connected||m.status==='draft')return;
+    const st=m.approved?'approved':(m.status==='rejected'||m.admin_status==='rejected')?'rejected':'pending';
+    S.apiState=m;if(st!==S.st){S.st=st;if(reqs[0])reqs[0].s=RS[st]||'Pending';if(ls0('nwSub'))nwSave(st);render()}
+  }catch(e){}
+}
+nwPoll();setInterval(nwPoll,30000);
 render();nwSync();
 </script>
 </body>
