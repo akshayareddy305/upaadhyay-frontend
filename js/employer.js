@@ -8,7 +8,7 @@ if(typeof window.bkStatusBadge !== 'function'){
   };
 }
 // ---------- Faculty profile data + slide-in panel ----------
-  const facultyProfiles = {
+  var facultyProfiles = {
     priya: {
       avatar:'https://i.pravatar.cc/160?img=47', name:'Dr. Priya Menon', role:'Physics · Quantum Optics',
       tags:['PhD','8 yrs experience','Hyderabad'], college:'IIT Bombay',
@@ -580,27 +580,31 @@ if(typeof window.bkStatusBadge !== 'function'){
     return list[0] || (p.tags && p.tags[0]) || '';
   }
 
-  /* Applicant card: one per row — name, role, job applied for, highest degree */
+  /* Applicant card: one per row — banner + avatar, name, role, job applied for, highest degree */
   function applicantCardHTML(id){
-    const p = facultyProfiles[id] || { name:'Applicant', role:'Profile loading\u2026', avatar:'', education:[], tags:[] };
+    const p = facultyProfiles[id] || { name:'Applicant', role:'Faculty', avatar:'', education:[], tags:[] };
     const jobs = Object.keys(jobsData).filter(k=>(jobsData[k].applicantIds||[]).indexOf(id)>-1).map(k=>jobsData[k].title);
     const deg = highestDegree(p);
+    const ini = String(p.name||'?').replace(/^(dr|mr|mrs|ms|prof)\.?\s+/i,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+    const av = p.avatar ? `<div class="ap-avatar" style="background-image:url('${jbEsc(p.avatar)}');"></div>` : `<div class="ap-avatar ap-avatar-ini">${jbEsc(ini)}</div>`;
     return `
       <div class="job-card ap-card" onclick="openProfile('${id}')">
-        <div class="job-logo ap-avatar" style="background-image:url('${jbEsc(p.avatar)}'); background-size:cover; background-position:center;"></div>
-        <div class="ap-info">
-          <p class="ap-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
-          <p class="ap-role">${jbEsc(p.role)}</p>
-          <div class="ap-tags">
-            ${jobs.length ? `<span class="ap-tag ap-tag-job">Applied for: ${jbEsc(jobs[0])}${jobs.length>1 ? ' +'+(jobs.length-1) : ''}</span>` : ''}
-            ${deg ? `<span class="ap-tag ap-tag-deg">${jbEsc(deg)}</span>` : ''}
+        <div class="ap-banner" style="background:${bannerGradient(p.name)};">${av}</div>
+        <div class="ap-body">
+          <div class="ap-info">
+            <p class="ap-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
+            <p class="ap-role">${jbEsc(p.role || 'Faculty')}</p>
+            <div class="ap-tags">
+              ${jobs.length ? `<span class="ap-tag ap-tag-job">Applied for: ${jbEsc(jobs[0])}${jobs.length>1 ? ' +'+(jobs.length-1) : ''}</span>` : ''}
+              ${deg ? `<span class="ap-tag ap-tag-deg">${jbEsc(deg)}</span>` : ''}
+            </div>
           </div>
-        </div>
-        <div class="ap-actions">
-          <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
-          ${candidateStatus[id]==='shortlisted'
-            ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
-            : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
+          <div class="ap-actions">
+            <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
+            ${candidateStatus[id]==='shortlisted'
+              ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
+              : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
+          </div>
         </div>
       </div>`;
   }
