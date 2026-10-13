@@ -859,9 +859,10 @@ if(typeof window.bkStatusBadge !== 'function'){
     document.getElementById('apListWrap').style.display = 'block';
     const job = jobsData[jobId];
     document.getElementById('apJobTitle').textContent = job.title;
-    document.getElementById('apJobMeta').textContent = [job.category, job.qualification, job.location].filter(Boolean).join(' · ');
+    document.getElementById('apJobMeta').textContent = [job.category, job.qualification, job.location].filter(Boolean).join(' \u00b7 ');
     const apExtra = document.getElementById('apJobExtra');
     if(apExtra) apExtra.textContent = jobExtra(job);
+    const apLogo = document.getElementById('apJobLogo'); if(apLogo) apLogo.style.cssText = companyLogoStyle() + ' background-position:center; background-repeat:no-repeat;';
     const apInst = document.getElementById('apJobInst');
     if(apInst && typeof instJobHeader==='function') apInst.innerHTML = instJobHeader(job);
     const apAct = document.getElementById('apJobActions');
