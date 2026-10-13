@@ -355,6 +355,7 @@
   window.applyEmployerLock = applyEmployerLock;
 
   function switchEmployerTab(which){
+    if(!window.__empLoad) window.__empApps = false;
     const $ = id => document.getElementById(id);
     if(!$('dashCompanyTab')) return;               // not on the employer page
     if(LOCKED_EMP_TABS.indexOf(which) !== -1 && !employerApproved()){
@@ -507,6 +508,24 @@
     if(msg){ alert('Message sent to ' + (p ? p.name : 'candidate') + '.'); pushNotif(`Message sent to ${p ? p.name : 'a candidate'}.`); }
   }
 
+  /* Faculty details shown on every candidate card */
+  function facInfoHTML(p){
+    const rows = [];
+    const qual = (p.education && p.education[0] && (p.education[0].degree || p.education[0].title)) || (p.tags && p.tags[0]) || '';
+    const expTag = (p.tags || []).filter(t=>/experience/i.test(t))[0] || '';
+    const locTag = (p.tags || []).filter(t=>!/experience/i.test(t) && t !== qual)[0] || '';
+    if(qual) rows.push(['Qualification', qual]);
+    if(expTag) rows.push(['Experience', expTag.replace(/\s*experience/i,'')]);
+    if(p.college) rows.push(['Institution', p.college]);
+    if(locTag) rows.push(['Location', locTag]);
+    const st = p.stats || [];
+    const pubs = st.map(x=>x[0]+' '+x[1]).filter(x=>!/^0 /.test(x)).join(' · ');
+    if(pubs) rows.push(['Research', pubs]);
+    const skills = (p.skills || []).slice(0,4);
+    return `<div class="pc-info">${rows.map(r=>`<div class="pc-row"><span>${jbEsc(r[0])}</span><b title="${jbEsc(r[1])}">${jbEsc(r[1])}</b></div>`).join('')}</div>`
+      + (skills.length ? `<div class="jc-tags">${skills.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('')}</div>` : '');
+  }
+
   function candidateCardHTML(id){
     const p = facultyProfiles[id];
     if(!p) return '';
@@ -524,7 +543,7 @@
             <p class="jc-title">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
             <p class="jc-org">${jbEsc(p.role)}</p>
           </div>
-          <div class="jc-tags">${p.tags.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('')}</div>
+          ${facInfoHTML(p)}
           <div class="jc-foot">
             <span class="jc-posted">Open to opportunities</span>
             <div class="pc-actions">
@@ -764,6 +783,19 @@
       list.prepend(item);
     });
   }
+
+  /* Sidebar > Applicants: every applicant across all jobs, in one list */
+  function openAllApplicants(){
+    window.__empLoad = true; switchEmployerTab('myjobs'); window.__empLoad = false; window.__empApps = true;
+    const mj = document.getElementById('dashMyJobsTab'); if(mj) mj.style.display = 'none';
+    const ids = []; Object.keys(jobsData).forEach(k=>(jobsData[k].applicantIds||[]).forEach(c=>{ if(ids.indexOf(c)<0) ids.push(c); }));
+    const wrap = document.getElementById('apListWrap'); wrap.style.display = 'block';
+    document.getElementById('apList').innerHTML = ids.map(candidateCardHTML).join('') || `
+      <div class="empty-state"><h4>No applicants yet</h4><p>Faculty who apply to your jobs will appear here.</p></div>`;
+    document.getElementById('apCount').textContent = ids.length + (ids.length===1 ? ' applicant' : ' applicants');
+    window.scrollTo(0,0);
+  }
+  window.openAllApplicants = openAllApplicants;
 
   function openApplicantsView(jobId){
     activeJobId = jobId;
