@@ -1,875 +1,709 @@
-// ---------- Faculty profile data + slide-in panel ----------
-  const facultyProfiles = {
-    priya: {
-      avatar:'https://i.pravatar.cc/160?img=47', name:'Dr. Priya Menon', role:'Physics · Quantum Optics',
-      tags:['PhD','8 yrs experience','Hyderabad'], college:'IIT Bombay',
-      about:'Quantum optics researcher and educator with 8 years of university teaching experience. Focused on making advanced physics accessible through lab-first, project-based instruction. Open to full-time faculty and visiting research positions.',
-      skills:['Quantum Optics','Photonics','Research Supervision','Curriculum Design','MATLAB','LaTeX'],
-      education:[
-        ['PhD, Physics','IIT Bombay · 2011 – 2015'],
-        ['MSc, Physics','University of Hyderabad · 2009 – 2011']
-      ],
-      stats:[['14','Publications'],['210','Citations'],['1','Patent']],
-      experience:[
-        ['Associate Professor, Physics','KL University · 2019 – Present'],
-        ['Assistant Professor, Physics','Osmania University · 2015 – 2019']
-      ],
-      links:[
-        ['PhD Certificate — KL University.pdf','doc'],
-        ['Resume / CV.pdf','doc'],
-        ['Publication list (Google Scholar)','link'],
-        ['Patent certificate.pdf','doc']
-      ],
-      interests:{
-        departments:['Physics','Applied Sciences'],
-        designations:['Associate Professor','Professor'],
-        subjects:['Quantum Mechanics','Photonics','Electrodynamics'],
-        orgType:'University / Higher Education',
-        location:'Hyderabad, Vijayawada',
-        employmentType:'Full-time'
-      },
-      salary:{ presentCtc:1200000, expectedCtc:1600000, minAcceptable:1400000 }
-    },
-    rohit:{
-      avatar:'https://i.pravatar.cc/160?img=12', name:'Rohit Sharma', role:'Commerce · Accountancy',
-      tags:['PG','5 yrs experience','Chennai'], college:'Loyola College',
-      about:'Commerce lecturer specializing in accountancy for junior college boards. 5 years of classroom experience with a strong track record of board-exam results and student mentorship.',
-      skills:['Financial Accounting','Taxation Basics','Board Exam Prep','Mentoring','Tally','MS Excel'],
-      education:[
-        ['PG, Commerce','Loyola College · 2018 – 2020'],
-        ['BCom','Madras Christian College · 2015 – 2018']
-      ],
-      stats:[['5','Yrs experience'],['2','Boards taught'],['120+','Students mentored']],
-      experience:[
-        ['Senior Lecturer, Commerce','Narayana Junior College · 2021 – Present'],
-        ['Lecturer, Commerce','Sri Chaitanya College · 2019 – 2021']
-      ],
-      links:[
-        ['PG Degree Certificate.pdf','doc'],
-        ['Resume / CV.pdf','doc'],
-        ['Experience letter — Sri Chaitanya.pdf','doc']
-      ],
-      interests:{
-        departments:['Commerce','Management'],
-        designations:['Senior Lecturer','HOD'],
-        subjects:['Financial Accounting','Taxation','Business Studies'],
-        orgType:'Junior College',
-        location:'Chennai',
-        employmentType:'Full-time'
-      },
-      salary:{ presentCtc:480000, expectedCtc:600000, minAcceptable:550000 }
-    },
-    anjali:{
-      avatar:'https://i.pravatar.cc/160?img=32', name:'Dr. Anjali Kulkarni', role:'Computer Science · AI/ML',
-      tags:['PhD','11 yrs experience','Vijayawada'], college:'IIT Bombay',
-      about:'AI/ML researcher and professor with 11 years of experience across academia and applied research, including 3 patents and multiple funded projects. Passionate about mentoring students into research careers.',
-      skills:['Machine Learning','Deep Learning','Python','TensorFlow','Research Mentorship','Grant Writing'],
-      education:[
-        ['PhD, Computer Science','IIT Bombay · 2010 – 2014'],
-        ['MTech, Computer Science','VIT Vellore · 2008 – 2010']
-      ],
-      stats:[['22','Publications'],['340','Citations'],['3','Patents']],
-      experience:[
-        ['Professor, Computer Science','KL University · 2017 – Present'],
-        ['Assistant Professor, CSE','VIT Vellore · 2012 – 2017']
-      ],
-      links:[
-        ['PhD Certificate — IIT Bombay.pdf','doc'],
-        ['Resume / CV.pdf','doc'],
-        ['Publication list (Google Scholar)','link'],
-        ['Patent certificates (3).pdf','doc'],
-        ['Books published — list.pdf','doc']
-      ],
-      interests:{
-        departments:['Computer Science','Artificial Intelligence'],
-        designations:['Professor','HOD'],
-        subjects:['Machine Learning','Deep Learning','Data Structures'],
-        orgType:'University / Higher Education',
-        location:'Vijayawada, Hyderabad',
-        employmentType:'Full-time'
-      },
-      salary:{ presentCtc:1800000, expectedCtc:2400000, minAcceptable:2100000 }
+/* ==========================================================================
+   backend.js — connects the existing UI to the Laravel API (no more demo data).
+   Load AFTER layout.js on every page that uses store.js (see README).
+
+   What lives here:
+     - profile load/save   (candidate: /candidate/profile, company: /company/profile)
+     - public jobs         (/jobs, /jobs/{id}, /categories, /institutions)
+     - apply               (/jobs/{id}/apply)
+     - employer side       (/company/jobs, /company/applicants, /company/candidates,
+                            /company/invitations, /company/messages, application status)
+     - notifications       (/notifications)
+   Everything goes through window.api (js/api.js), which adds the Sanctum token.
+   ========================================================================== */
+(function(){
+  'use strict';
+  if(typeof api === 'undefined' || typeof saveState !== 'function') return;
+
+  const COLORS = ['var(--blue-700)','var(--green)','#7C3AED','#B45309','#BE123C','#0F766E','#4338CA'];
+  const DEFAULT_AVATAR = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAyNCAyNCc+PHJlY3Qgd2lkdGg9JzI0JyBoZWlnaHQ9JzI0JyBmaWxsPScjRUVGMkY3Jy8+PGcgZmlsbD0nbm9uZScgc3Ryb2tlPScjOTRBM0I4JyBzdHJva2Utd2lkdGg9JzEuNSc+PGNpcmNsZSBjeD0nMTInIGN5PSc5JyByPSczLjUnLz48cGF0aCBkPSdNNSAyMGMwLTMuNSAzLTUuNSA3LTUuNXM3IDIgNyA1LjUnLz48L2c+PC9zdmc+';
+
+  /* ---------------- small helpers ---------------- */
+  function esc(x){ return String(x == null ? '' : x).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function origin(){ return api.BASE.replace(/\/api$/, ''); }
+  function fileUrl(p){ if(!p) return ''; if(/^(https?:|data:)/.test(p)) return p; return origin() + '/' + String(p).replace(/^\/+/, ''); }
+  function splitList(s){ return String(s || '').split(/[,;\n]/).map(function(x){ return x.trim(); }).filter(Boolean); }
+  function inr(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
+  function initials(name){ return String(name || '??').trim().split(/\s+/).slice(0,2).map(function(w){ return w[0]; }).join('').toUpperCase() || '??'; }
+  function daysSince(d){ return d ? Math.max(0, Math.floor((Date.now() - new Date(d).getTime()) / 864e5)) : 0; }
+  function daysUntil(d){ if(!d) return null; const end = new Date(String(d).slice(0, 10) + 'T23:59:59'); /* date-only deadline = end of that day, local time */ return Math.max(0, Math.ceil((end.getTime() - Date.now()) / 864e5)); }
+  function items(res){ return Array.isArray(res) ? res : (res && Array.isArray(res.data) ? res.data : []); }
+  function qs(o){ const p = new URLSearchParams(); Object.keys(o || {}).forEach(function(k){ if(o[k] !== '' && o[k] != null) p.set(k, o[k]); }); const s = p.toString(); return s ? '?' + s : ''; }
+  async function paged(path, params, maxPages){
+    let out = [], page = 1, last = 1;
+    do{
+      const r = await api.get(path + qs(Object.assign({ per_page: 50, page: page }, params || {})), { silent403: true, noAuthRedirect: !api.hasToken() });
+      out = out.concat(items(r));
+      last = (r && (r.last_page || (r.meta && r.meta.last_page))) || 1; page++;
+    }while(page <= last && page <= (maxPages || 5));
+    return out;
+  }
+  function stripHeavy(obj){          // never push base64 images / huge blobs into JSON columns
+    return JSON.parse(JSON.stringify(obj, function(k, v){ return (typeof v === 'string' && v.indexOf('data:') === 0 && v.length > 500) ? '' : v; }));
+  }
+
+  /* ---------------- save status pill (Saving… / Saved / Not saved + Retry) ---------------- */
+  let _stEl = null, _stT = null, _retry = null;
+  function status(state, msg, retry){
+    if(!document.body) return;
+    if(!_stEl){
+      _stEl = document.createElement('div'); _stEl.id = 'bkSaveStatus'; _stEl.setAttribute('role', 'status');
+      _stEl.style.cssText = 'position:fixed;right:16px;bottom:16px;z-index:99998;padding:8px 14px;border-radius:999px;font:600 13px/1.3 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.18);max-width:min(92vw,420px);display:none;cursor:default;';
+      _stEl.addEventListener('click', function(){ if(_retry){ const r = _retry; _retry = null; r(); } });
+      document.body.appendChild(_stEl);
     }
+    clearTimeout(_stT); _retry = retry || null;
+    const C = { saving: ['#0B1F45', '#fff', '⏳ '], saved: ['#0F766E', '#fff', '✓ '], error: ['#B91C1C', '#fff', '⚠ '] }[state];
+    _stEl.style.background = C[0]; _stEl.style.color = C[1]; _stEl.style.cursor = retry ? 'pointer' : 'default';
+    _stEl.textContent = C[2] + msg + (retry ? ' — tap to retry' : ''); _stEl.style.display = 'block';
+    if(state === 'saved') _stT = setTimeout(function(){ _stEl.style.display = 'none'; }, 2200);
+  }
+  window.bkStatus = status;
+
+  /* ---------------- upload limits (same numbers the backend enforces: GET /limits) ---------------- */
+  const LIMIT_FALLBACK = { categories: {
+    profile_photo: { mimes: ['jpg','jpeg','png','webp'], max_kb: 2048 }, company_logo: { mimes: ['jpg','jpeg','png','webp'], max_kb: 2048 },
+    job_image: { mimes: ['jpg','jpeg','png','webp'], max_kb: 4096 }, resume: { mimes: ['pdf','doc','docx'], max_kb: 5120 },
+    certificate: { mimes: ['pdf','jpg','jpeg','png'], max_kb: 5120 }, video: { mimes: ['mp4','webm'], max_kb: 51200 }, other: { mimes: ['pdf','jpg','jpeg','png'], max_kb: 5120 } } };
+  let _limits = null;
+  async function limits(){
+    if(!_limits){ try{ _limits = await api.get('/limits', { noAuthRedirect: true, silent403: true }); }catch(e){ _limits = null; } }
+    return _limits && _limits.categories ? _limits : LIMIT_FALLBACK;
+  }
+  /* Returns '' if OK, otherwise the message to show. The backend re-checks everything; this just fails fast. */
+  window.bkCheckFile = async function(file, category){
+    const cfg = ((await limits()).categories || {})[category] || LIMIT_FALLBACK.categories.other;
+    if(!file || !file.size) return 'This file is empty. Choose another file.';
+    const ext = String((file.name || '').split('.').pop() || (file.type || '').split('/').pop()).toLowerCase();
+    if(file.name && cfg.mimes.indexOf(ext) < 0) return 'Unsupported file type. Allowed: ' + cfg.mimes.join(', ').toUpperCase() + '.';
+    if(file.size > cfg.max_kb * 1024) return 'File is too large. Maximum size is ' + Math.round(cfg.max_kb / 1024) + ' MB.';
+    return '';
   };
 
-  // ---------- Demo institutions + their posted jobs (for admin dashboard) ----------
-  const institutionsData = {
-    kluniversity:{ name:'KL University', type:'university', city:'Vijayawada, Andhra Pradesh', contact:'Radha Krishna', designation:'HR Head', email:'hr@kluniversity.in', phone:'+91 98480 12345', website:'www.kluniversity.in', joined:'Jan 2024',
-      jobs:[
-        { title:'Associate Professor — Physics', category:'University faculty', qualification:'PhD', location:'Vijayawada', applicants:14, status:'live', posted:'5 days ago' },
-        { title:'Assistant Professor — Computer Science', category:'University faculty', qualification:'PhD', location:'Vijayawada', applicants:22, status:'live', posted:'1 week ago' },
-        { title:'Professor — Mechanical Engineering', category:'University faculty', qualification:'PhD', location:'Vijayawada', applicants:9, status:'live', posted:'2 weeks ago' },
-        { title:'Assistant Professor — Mathematics', category:'University faculty', qualification:'PhD', location:'Vijayawada', applicants:17, status:'closed', posted:'1 month ago' },
-        { title:'Lab Coordinator — Electronics', category:'University faculty', qualification:'PG', location:'Vijayawada', applicants:6, status:'live', posted:'3 days ago' },
-        { title:'Associate Professor — Biotechnology', category:'University faculty', qualification:'PhD', location:'Vijayawada', applicants:11, status:'closed', posted:'6 weeks ago' }
-      ] },
-    osmania:{ name:'Osmania University', type:'university', city:'Hyderabad, Telangana', contact:'Dr. Meena Rao', designation:'Registrar', email:'registrar@osmania.ac.in', phone:'+91 90000 11122', website:'www.osmania.ac.in', joined:'Mar 2024',
-      jobs:[
-        { title:'Professor — English Literature', category:'University faculty', qualification:'PhD', location:'Hyderabad', applicants:8, status:'live', posted:'4 days ago' },
-        { title:'Assistant Professor — History', category:'University faculty', qualification:'PhD', location:'Hyderabad', applicants:12, status:'live', posted:'1 week ago' },
-        { title:'Associate Professor — Political Science', category:'University faculty', qualification:'PhD', location:'Hyderabad', applicants:5, status:'closed', posted:'1 month ago' }
-      ] },
-    narayana:{ name:'Narayana Junior College', type:'college', city:'Chennai, Tamil Nadu', contact:'S. Venkatesh', designation:'Principal', email:'principal@narayanajc.in', phone:'+91 98765 43210', website:'www.narayanagroup.com', joined:'Feb 2024',
-      jobs:[
-        { title:'Senior Lecturer — Commerce', category:'Junior college', qualification:'PG', location:'Chennai', applicants:19, status:'live', posted:'2 days ago' },
-        { title:'Lecturer — Mathematics (MPC)', category:'Junior college', qualification:'PG', location:'Chennai', applicants:27, status:'live', posted:'5 days ago' },
-        { title:'Lecturer — Botany (BiPC)', category:'Junior college', qualification:'PG', location:'Chennai', applicants:15, status:'live', posted:'1 week ago' },
-        { title:'Lecturer — Physics (MPC)', category:'Junior college', qualification:'PG', location:'Chennai', applicants:10, status:'closed', posted:'3 weeks ago' }
-      ] },
-    srichaitanya:{ name:'Sri Chaitanya College', type:'college', city:'Vijayawada, Andhra Pradesh', contact:'K. Suresh', designation:'HR Manager', email:'hr@srichaitanya.in', phone:'+91 91234 56789', website:'www.srichaitanya.in', joined:'Apr 2024',
-      jobs:[
-        { title:'Lecturer — Chemistry (MPC)', category:'Junior college', qualification:'PG', location:'Vijayawada', applicants:13, status:'live', posted:'6 days ago' },
-        { title:'Lecturer — Zoology (BiPC)', category:'Junior college', qualification:'PG', location:'Vijayawada', applicants:8, status:'live', posted:'2 weeks ago' }
-      ] },
-    vitvellore:{ name:'VIT Vellore', type:'university', city:'Vellore, Tamil Nadu', contact:'Dr. Anand Krishnan', designation:'Dean, Faculty Affairs', email:'dean.fa@vit.ac.in', phone:'+91 90876 54321', website:'www.vit.ac.in', joined:'Dec 2023',
-      jobs:[
-        { title:'Assistant Professor — Cybersecurity', category:'University faculty', qualification:'PhD', location:'Vellore', applicants:24, status:'live', posted:'3 days ago' },
-        { title:'Associate Professor — Data Science', category:'University faculty', qualification:'PhD', location:'Vellore', applicants:31, status:'live', posted:'1 week ago' },
-        { title:'Professor — VLSI Design', category:'University faculty', qualification:'PhD', location:'Vellore', applicants:7, status:'live', posted:'2 weeks ago' },
-        { title:'Assistant Professor — AI/ML', category:'University faculty', qualification:'PhD', location:'Vellore', applicants:29, status:'closed', posted:'5 weeks ago' },
-        { title:'Lab Instructor — Robotics', category:'University faculty', qualification:'PG', location:'Vellore', applicants:16, status:'live', posted:'4 days ago' }
-      ] },
-    dpsHyderabad:{ name:'Delhi Public School', type:'school', city:'Hyderabad, Telangana', contact:'Ritu Sharma', designation:'HR Head', email:'hr@dpshyd.edu.in', phone:'+91 99887 76655', website:'www.dpshyderabad.com', joined:'May 2024',
-      jobs:[
-        { title:'PGT — Mathematics', category:'School faculty', qualification:'PG', location:'Hyderabad', applicants:21, status:'live', posted:'1 week ago' },
-        { title:'TGT — Social Studies', category:'School faculty', qualification:'UG', location:'Hyderabad', applicants:18, status:'live', posted:'2 weeks ago' }
-      ] },
-    ctraining:{ name:'Computer Training Ltd', type:'college', city:'Rochester, NY, United States', contact:'Peter Smith', designation:'Director', email:'peter@ctrainingltd.com', phone:'585-908-7123', website:'www.ctrainingltd.com', joined:'Jun 2024',
-      jobs:[
-        { title:'Instructor — Networking Fundamentals', category:'Vocational training', qualification:'PG', location:'Rochester, NY', applicants:6, status:'live', posted:'5 days ago' }
-      ] },
-    coimbatoreArts:{ name:'Coimbatore Arts College', type:'college', city:'Coimbatore, Tamil Nadu', contact:'Dr. Latha Iyer', designation:'Principal', email:'principal@coimbatoreartscollege.edu.in', phone:'+91 94444 33221', website:'www.coimbatoreartscollege.edu.in', joined:'Jul 2024',
-      jobs:[
-        { title:'Assistant Professor — Fine Arts', category:'College faculty', qualification:'PG', location:'Coimbatore', applicants:9, status:'live', posted:'1 week ago' }
-      ] },
-    keralaCentral:{ name:'Kerala Central School', type:'school', city:'Kochi, Kerala', contact:'Thomas Jacob', designation:'HR Head', email:'hr@keralacentral.edu.in', phone:'+91 98470 22110', website:'www.keralacentralschool.in', joined:'Aug 2024',
-      jobs:[
-        { title:'PGT — English', category:'School faculty', qualification:'PG', location:'Kochi', applicants:12, status:'live', posted:'3 days ago' },
-        { title:'PRT — Primary Teacher', category:'School faculty', qualification:'UG', location:'Kochi', applicants:20, status:'live', posted:'6 days ago' },
-        { title:'TGT — Science', category:'School faculty', qualification:'PG', location:'Kochi', applicants:14, status:'closed', posted:'1 month ago' }
-      ] },
-    delhiCommerce:{ name:'Delhi School of Commerce', type:'school', city:'New Delhi, Delhi', contact:'Anjali Bhatia', designation:'Principal', email:'principal@delhicommerce.edu.in', phone:'+91 98100 44556', website:'www.delhicommerce.edu.in', joined:'Sep 2024',
-      jobs:[
-        { title:'PGT — Commerce', category:'School faculty', qualification:'PG', location:'New Delhi', applicants:16, status:'live', posted:'4 days ago' },
-        { title:'TGT — Economics', category:'School faculty', qualification:'PG', location:'New Delhi', applicants:11, status:'live', posted:'1 week ago' }
-      ] }
-  };
+  /* ---------------- categories ---------------- */
+  let _cats = null;
+  async function categories(){ if(!_cats){ try{ _cats = items(await api.get('/categories', { noAuthRedirect: true })); }catch(e){ return []; } } return _cats; } /* failures are not cached */
+  async function categoryId(name){ const c = (await categories()).find(function(x){ return x.name === name; }); return c ? c.id : null; }
 
-  // ---------- Extra demo candidates (auto-generated, 17 more → 20 total) ----------
-  (function(){
-    const COLLEGE_POOL = [
-      'IIT Bombay','IIT Delhi','IIT Madras','NIT Warangal','NIT Trichy','VNIT Nagpur',
-      'IIIT Hyderabad','BITS Pilani','Anna University','Jadavpur University',
-      'Osmania University','Delhi University','VIT Vellore','IIM Ahmedabad','Amrita University'
-    ];
-    const extra = [
-      ['ravikumar','Dr. Ravi Kumar','Mathematics · Applied Statistics','PhD','9 yrs experience','Bengaluru',53],
-      ['sneha','Sneha Reddy','English · Literature','PG','4 yrs experience','Hyderabad',44],
-      ['arjun','Arjun Nair','Chemistry · Organic Chemistry','PhD','7 yrs experience','Kochi',22],
-      ['meera','Meera Iyer','Biology · Zoology','PG','6 yrs experience','Chennai',31],
-      ['vikram','Dr. Vikram Rao','Electronics · VLSI Design','PhD','13 yrs experience','Vijayawada',15],
-      ['fatima','Fatima Sheikh','History · Indian History','PG','3 yrs experience','Hyderabad',29],
-      ['karthik','Karthik Subramanian','Mechanical Engineering · Thermodynamics','PhD','10 yrs experience','Chennai',18],
-      ['divya','Divya Prakash','Economics · Macroeconomics','PG','5 yrs experience','Vijayawada',36],
-      ['suresh','Suresh Babu','Physical Education · Sports Science','UG','8 yrs experience','Bengaluru',52],
-      ['pooja','Pooja Malhotra','Political Science · Public Policy','PG','4 yrs experience','Delhi',25],
-      ['imran','Imran Ali','Computer Science · Cybersecurity','PhD','6 yrs experience','Hyderabad',13],
-      ['lakshmi','Dr. Lakshmi Narayan','Mathematics · Number Theory','PhD','15 yrs experience','Chennai',49],
-      ['rajesh','Rajesh Pillai','Commerce · Taxation','PG','7 yrs experience','Kochi',33],
-      ['anitha','Anitha Krishnan','Biology · Botany','PG','5 yrs experience','Coimbatore',41],
-      ['zoya','Zoya Khan','English · Linguistics','PhD','8 yrs experience','Hyderabad',24],
-      ['manoj','Manoj Tiwari','Physics · Astrophysics','PhD','12 yrs experience','Delhi',11],
-      ['harini','Harini Venkatesh','Computer Science · Data Science','PG','3 yrs experience','Bengaluru',45]
-    ];
-    extra.forEach(([id,name,role,qual,exp,city,imgNum], i)=>{
-      const subject = role.split(' · ')[0];
-      const specialization = role.split(' · ')[1] || subject;
-      facultyProfiles[id] = {
-        avatar:`https://i.pravatar.cc/160?img=${imgNum}`,
-        name, role,
-        tags:[qual, exp, city],
-        college: COLLEGE_POOL[i % COLLEGE_POOL.length],
-        about:`${name.replace(/^Dr\.\s*/,'')} is a ${subject} educator specializing in ${specialization}, with ${exp} teaching ${qual==='PhD' ? 'and research' : ''} experience based in ${city}. ${qual==='PhD' ? 'Actively engaged in research and student mentorship, ' : ''}Open to new academic opportunities.`,
-        skills: qual==='PhD'
-          ? [specialization, subject, 'Research Supervision', 'Academic Writing', 'Grant Applications', 'Curriculum Design']
-          : [specialization, subject, 'Lesson Planning', 'Exam Preparation', 'Student Mentoring', 'Classroom Management'],
-        education: qual==='PhD'
-          ? [[`PhD, ${subject}`, `${COLLEGE_POOL[i % COLLEGE_POOL.length]} · 2008 – 2013`], [`MSc, ${subject}`, `${COLLEGE_POOL[(i+3) % COLLEGE_POOL.length]} · 2006 – 2008`]]
-          : [[`${qual}, ${subject}`, `${COLLEGE_POOL[i % COLLEGE_POOL.length]} · 2016 – 2019`], [`BSc, ${subject}`, `${COLLEGE_POOL[(i+3) % COLLEGE_POOL.length]} · 2013 – 2016`]],
-        stats: qual==='PhD'
-          ? [[String(Math.floor(Math.random()*20)+3),'Publications'],[String(Math.floor(Math.random()*300)+40),'Citations'],[String(Math.floor(Math.random()*3)),'Patents']]
-          : [[exp.split(' ')[0],'Yrs experience'],[String(Math.floor(Math.random()*3)+1),'Boards taught'],[String(Math.floor(Math.random()*150)+50)+'+','Students mentored']],
-        experience:[
-          [`${qual==='PhD' ? 'Associate Professor' : 'Lecturer'}, ${role.split(' · ')[0]}`, `${city} Institute of Technology · 2019 – Present`],
-          [`${qual==='PhD' ? 'Assistant Professor' : 'Junior Lecturer'}, ${role.split(' · ')[0]}`, `${city} College · 2014 – 2019`]
-        ],
-        links:[
-          [`${qual} Certificate.pdf`,'doc'],
-          ['Resume / CV.pdf','doc'],
-          ['Publication list (Google Scholar)','link']
-        ]
-      };
-    });
-  })();
-
-  // ---------- Auto banner (deterministic gradient from name's first letter) ----------
-  const BANNER_PALETTE = [
-    ['#0A66C2','#2E8FE0'], ['#7C3AED','#A78BFA'], ['#0F766E','#2DD4BF'],
-    ['#B45309','#F59E0B'], ['#BE123C','#FB7185'], ['#166534','#4ADE80'],
-    ['#1D4ED8','#60A5FA'], ['#9D174D','#F472B6'], ['#4338CA','#818CF8'],
-    ['#0369A1','#38BDF8'], ['#B91C1C','#F87171'], ['#065F46','#34D399'],
-    ['#6D28D9','#C4B5FD'], ['#92400E','#FBBF24'], ['#374151','#9CA3AF']
-  ];
-  function bannerGradient(name){
-    const letter = (name || '?').replace(/^(Dr\.|Mr\.|Ms\.|Mrs\.)\s*/i,'').trim().charAt(0).toUpperCase();
-    const idx = Math.max(0, letter.charCodeAt(0) - 65) % BANNER_PALETTE.length;
-    const [c1,c2] = BANNER_PALETTE[idx];
-    return `linear-gradient(135deg, ${c1}, ${c2})`;
-  }
-
-  function docIcon(type){
-    return type==='link'
-      ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 14L20 4M20 4H13M20 4V11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 13V18C18 19.1 17.1 20 16 20H6C4.9 20 4 19.1 4 18V8C4 6.9 4.9 6 6 6H11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-      : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 2V8H20" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>';
-  }
-
-  let slideProfileId = null;
-  function openProfile(id){
-    if(!isLoggedIn){ openAuth('post'); return; }
-    if(!facultyProfiles[id]) return;
-    window.location.href = `candidate-profile.html?id=${encodeURIComponent(id)}`;
-  }
-
-  // ---------- Full candidate profile page renderer (used by candidate-profile.html) ----------
-  function renderCandidateProfilePage(id){
-    const p = facultyProfiles[id];
-    if(!p){
-      const root = document.getElementById('cpRoot');
-      if(root) root.innerHTML = '<div style="padding:60px; text-align:center; color:var(--ink-faint);">Candidate not found.</div>';
-      return;
+  /* ---------------- jobs (public) ---------------- */
+  function salaryText(j, m){
+    if(m.salary_as_per_norms) return 'As per norms';
+    if(j.salary_min || j.salary_max){
+      const per = ({ year: 'Year', month: 'Month', lecture: 'Lecture', hour: 'Hour' })[m.salary_period] || 'Month';
+      return (j.salary_min && j.salary_max ? inr(j.salary_min) + ' – ' + inr(j.salary_max) : (j.salary_min ? inr(j.salary_min) + '+' : 'Up to ' + inr(j.salary_max))) + '/' + per + (m.salary_negotiable ? ' (negotiable)' : '');
     }
-    slideProfileId = id;
-    document.title = `${p.name} — Upadyay`;
-    const cpBanner = document.getElementById('cpBanner');
-    if(cpBanner) cpBanner.style.background = bannerGradient(p.name);
-    document.getElementById('cpAvatar').style.backgroundImage = `url('${p.avatar}')`;
-    document.getElementById('cpName').textContent = p.name;
-    document.getElementById('cpRole').textContent = p.role;
-    document.getElementById('cpTags').innerHTML = p.tags.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('');
-    document.getElementById('cpAbout').textContent = p.about || '';
-    document.getElementById('cpStats').innerHTML = p.stats.map(([num,label])=>`<div class="hp-stat"><span class="num tabular">${jbEsc(num)}</span><span class="label">${jbEsc(label)}</span></div>`).join('');
-    document.getElementById('cpExperience').innerHTML = p.experience.map(([t1,t2])=>`<div class="slide-exp-item"><div class="slide-exp-dot"></div><div><div class="t1">${jbEsc(t1)}</div><div class="t2">${jbEsc(t2)}</div></div></div>`).join('');
-    document.getElementById('cpEducation').innerHTML = (p.education||[]).map(([t1,t2])=>`<div class="slide-exp-item"><div class="slide-exp-dot"></div><div><div class="t1">${jbEsc(t1)}</div><div class="t2">${jbEsc(t2)}</div></div></div>`).join('');
-    document.getElementById('cpSkills').innerHTML = (p.skills||[]).map(s=>`<span class="hp-tag">${jbEsc(s)}</span>`).join('');
-    document.getElementById('cpLinks').innerHTML = p.links.map(([label,type,fid])=>`<a class="slide-link" href="javascript:void(0)" ${fid?`onclick="bkOpenFile(${fid})"`:''}>${docIcon(type)}${jbEsc(label)}</a>`).join('');
-    document.getElementById('cpCollege').textContent = p.college || '—';
-
-    // Roles / departments the candidate is interested in
-    const cpInterests = document.getElementById('cpInterests');
-    if(cpInterests){
-      const iv = p.interests || {};
-      const rows = [
-        ['Departments', iv.departments],
-        ['Designations', iv.designations],
-        ['Preferred subjects', iv.subjects],
-        ['Organisation type', iv.orgType ? [iv.orgType] : null],
-        ['Preferred location', iv.location ? [iv.location] : null],
-        ['Employment type', iv.employmentType ? [iv.employmentType] : null]
-      ].filter(([,v]) => v && v.length);
-      cpInterests.innerHTML = rows.length
-        ? rows.map(([label,vals])=>`
-            <div class="cp-interest-row">
-              <div class="cp-interest-label">${jbEsc(label)}</div>
-              <div class="jc-tags">${vals.map(v=>`<span class="hp-tag">${jbEsc(v)}</span>`).join('')}</div>
-            </div>`).join('')
-        : '<p class="slide-side-note">Not specified by the candidate yet.</p>';
-    }
-
-    // Salary — present / expected / proposed, with auto-calculated hike
-    const cpSalary = document.getElementById('cpSalary');
-    if(cpSalary){
-      const s = p.salary || {};
-      const fmtINR = n => n || n===0 ? '₹' + Number(n).toLocaleString('en-IN') : '—';
-      const present = Number(s.presentCtc)||0, expected = Number(s.expectedCtc)||0;
-      const hikePct = present>0 ? Math.round(((expected-present)/present)*100) : null;
-      cpSalary.innerHTML = `
-        <div class="cp-salary-grid">
-          <div class="cp-salary-cell"><div class="t2">Present salary</div><div class="t1 tabular">${fmtINR(present)}</div></div>
-          <div class="cp-salary-cell"><div class="t2">Expected salary</div><div class="t1 tabular">${fmtINR(expected)}</div></div>
-          <div class="cp-salary-cell"><div class="t2">Min. acceptable</div><div class="t1 tabular">${fmtINR(s.minAcceptable)}</div></div>
-          <div class="cp-salary-cell"><div class="t2">Hike expected</div><div class="t1 tabular">${hikePct!==null ? hikePct+'%' : '—'}</div></div>
-        </div>`;
-    }
-    const strengthPct = Math.min(100, 60 + p.links.length*10);
-    document.getElementById('cpStrengthFill').style.width = strengthPct + '%';
-    document.getElementById('cpStrengthNote').textContent = strengthPct >= 90 ? 'Verified & document-complete' : 'Verified profile';
-
-    let actions = document.getElementById('cpActions');
-    if(currentRole==='company'){
-      actions.style.display = 'flex';
-      actions.innerHTML = `
-        <button class="btn btn-light" onclick="messageCandidate('${id}')">Message</button>
-        ${candidateStatus[id]==='shortlisted'
-          ? `<button class="btn btn-primary" disabled>Shortlisted</button>`
-          : `<button class="btn btn-primary" onclick="inviteCandidate('${id}'); renderCandidateProfilePage('${id}');">${candidateStatus[id]==='invited' ? 'Invited ✓' : 'Invite candidate'}</button>`}
-        ${candidateStatus[id]==='invited' ? `<button class="btn btn-ghost" onclick="shortlistCandidate('${id}'); renderCandidateProfilePage('${id}');">Shortlist</button>` : ''}
-      `;
-    } else {
-      actions.style.display = 'none';
-    }
+    return 'Not disclosed';
   }
-
-  function switchDashTab(which){
-    // Only "My profile" exists now — Browse jobs tab was removed. Kept as a no-op
-    // so any legacy calls to switchDashTab('profile') don't error.
-    const pf = document.getElementById('dashProfileTab');
-    if(pf) pf.style.display = 'block';
-  }
-
-
-  /* Post a job / Posted jobs / Browse candidates stay locked until an admin approves the institution. */
-  const LOCKED_EMP_TABS = ['post','myjobs','candidates'];
-  function employerApproved(){ return String((currentCompany && currentCompany.verification) || '').toLowerCase() === 'approved'; }
-  function applyEmployerLock(){
-    const $ = id => document.getElementById(id);
-    const locked = !employerApproved();
-    [['subtabPost','post'],['subtabMyJobs','myjobs'],['subtabCandidates','candidates']].forEach(function(x){
-      const b = $(x[0]); if(!b) return;
-      b.classList.toggle('is-locked', locked);
-      b.setAttribute('aria-disabled', locked ? 'true' : 'false');
-      b.title = locked ? 'Locked until an admin approves your institution' : '';
-    });
-    const bar = $('employerTabsBar'); if(!bar) return;
-    let note = $('empLockNote');
-    if(locked && !note){
-      note = document.createElement('div'); note.id = 'empLockNote'; note.className = 'emp-lock-note';
-      note.textContent = 'Post a job, Posted jobs and Browse candidates unlock once an admin approves your institution. Complete and submit your institution profile to get reviewed.';
-      bar.insertAdjacentElement('afterend', note);
-    } else if(!locked && note){ note.remove(); }
-    if(locked){
-      const cur = (function(){ try{ return sessionStorage.getItem('upadyay_emp_tab'); }catch(e){ return null; } })();
-      if(LOCKED_EMP_TABS.indexOf(cur) !== -1) switchEmployerTab('company');
-    }
-    if(typeof instRender === 'function') instRender();   // refresh the Branches section when approval status is known
-  }
-  window.applyEmployerLock = applyEmployerLock;
-
-  function switchEmployerTab(which){
-    if(!window.__empLoad) window.__empApps = false;
-    const $ = id => document.getElementById(id);
-    if(!$('dashCompanyTab')) return;               // not on the employer page
-    if(LOCKED_EMP_TABS.indexOf(which) !== -1 && !employerApproved()){
-      which = 'company';
-      if(typeof showGenericToast === 'function') showGenericToast('Locked until an admin approves your institution.');
-    }
-    try{ sessionStorage.setItem('upadyay_emp_tab', which); }catch(e){}   // so a reload stays on this tab
-    $('dashCompanyTab').style.display = which==='company' ? 'block' : 'none';
-    $('dashPostTab').style.display = which==='post' ? 'block' : 'none';
-    $('dashCandidatesTab').style.display = which==='candidates' ? 'block' : 'none';
-    const myJobsTab = $('dashMyJobsTab');
-    if(myJobsTab) myJobsTab.style.display = which==='myjobs' ? 'block' : 'none';
-    $('subtabCompany').classList.toggle('active', which==='company');
-    $('subtabPost').classList.toggle('active', which==='post');
-    $('subtabCandidates').classList.toggle('active', which==='candidates');
-    const myJobsSubtab = $('subtabMyJobs');
-    if(myJobsSubtab) myJobsSubtab.classList.toggle('active', which==='myjobs');
-    $('candidateListWrap').style.display = which==='candidates' ? 'block' : 'none';
-    if(which!=='post') $('apListWrap').style.display = 'none';
-    if(which==='candidates') renderCandidates();
-    if(which==='post'){ renderPostedJobs(); if(typeof instFillCampuses==='function') instFillCampuses(); }
-    if(which==='company' && typeof instRender==='function') instRender();
-    if(typeof instHeader==='function') instHeader();
-    if(which==='myjobs') renderMyJobsCards();
-  }
-
-  // Dedicated "Posted jobs" view: a card per job with its applicant count,
-  // reached from the mini profile panel / "Jobs posted" stat.
-  function renderMyJobsCards(){
-    const wrap = document.getElementById('myJobsList');
-    if(!wrap) return;
-    const ids = Object.keys(jobsData);
-    const countEl = document.getElementById('myJobsCount');
-    if(countEl) countEl.textContent = ids.length + (ids.length===1 ? ' job posted' : ' jobs posted');
-    if(!ids.length){
-      wrap.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 20H7a2 2 0 01-2-2V6a2 2 0 012-2h6l6 6v8a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/></svg></div>
-          <h4>No jobs posted yet</h4>
-          <p>Once you post a job, it'll show up here as a card with its applicant count.</p>
-        </div>`;
-      return;
-    }
-    wrap.innerHTML = ids.slice().reverse().map(id=>{
-      const job = jobsData[id];
-      const count = job.applicantIds.length;
-      const meta = [job.category, job.qualification, job.location].filter(Boolean).join(' \u00b7 ') || 'Posted just now';
-      const extra = jobExtra(job);
-      return `
-      <div class="job-card pj-card" onclick="openApplicantsView('${id}')">
-        <div class="pj-main">
-          <div class="job-logo pj-logo" style="${companyLogoStyle()}"></div>
-          <div class="pj-info">
-            <div class="pj-head"><p class="pj-title">${jbEsc(job.title)}</p>${bkStatusBadge(job)}</div>
-            <p class="pj-meta">${jbEsc(meta)}</p>
-            ${extra ? `<p class="pj-extra">${jbEsc(extra)}</p>` : ''}
-            ${typeof instJobMeta==='function' ? instJobMeta(job) : ''}
-          </div>
-        </div>
-        <div class="pj-side">
-          <span class="pj-count"><b>${count}</b> ${count===1?'applicant':'applicants'}</span>
-          <div class="pj-actions">${jobActionButtons(id, job)}<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants</button></div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  function previewLogo(e){
-    const file = e.target.files[0];
-    if(!file) return;
-    const input = e.target;
-    const apply = function(url){
-      currentCompany.logo = url;
-      saveState();
-      refreshDashTopAccount();
-      if(typeof updateNavForLogin === 'function') updateNavForLogin();
-      const img = document.getElementById('logoPreview');
-      if(img){ img.src = url; img.style.display = 'block'; }
-      const ph = document.getElementById('logoPlaceholder'); if(ph) ph.style.display = 'none';
-      if(window.IN && IN.setLogo) IN.setLogo(url);
+  function mapJob(j){
+    const m = j.meta || {}, co = j.company || {};
+    const tags = [];
+    if(m.qualification) tags.push(m.qualification);
+    if(m.type_label || j.employment_type) tags.push(m.type_label || j.employment_type);
+    return {
+      id: j.id, title: j.title, org: co.company_name || 'Institution', logo: fileUrl(co.logo),
+      city: j.city || j.location || '', location: j.location || '', cat: (j.category && j.category.name) || m.category_label || '',
+      tags: tags, skills: (j.skills || []).map(function(s){ return s.name; }),
+      salary: salaryText(j, m), type: m.type_label || j.employment_type || 'Full-time', mode: 'In Office',
+      posted: daysSince(j.published_at || j.created_at), daysLeft: daysUntil(j.application_deadline),
+      applicants: j.applications_count || 0, minExp: Number(j.experience_min || 0),
+      color: COLORS[(j.id || 0) % COLORS.length], initials: initials(co.company_name),
+      role: m.role || '', dept: m.dept || '', qualification: m.qualification || '', description: j.description || '', raw: j
     };
-    if(window.LogoCrop){ LogoCrop.open(file, apply); }
-    else { const reader = new FileReader(); reader.onload = function(ev){ apply(ev.target.result); }; reader.readAsDataURL(file); }
-    input.value = '';
   }
+  async function fetchJobs(params){ return (await paged('/jobs', params, 4)).map(mapJob); }
 
-  // ---------- Company profile ----------
-  // currentCompany now lives in store.js (persisted across pages)
-
-  function saveCompany(){
-    currentCompany.name = document.getElementById('coName').value || 'Your institution';
-    currentCompany.type = document.getElementById('coType').value;
-    currentCompany.city = document.getElementById('coCity').value;
-    currentCompany.website = document.getElementById('coWebsite').value;
-    currentCompany.desc = document.getElementById('coDesc').value;
-    currentCompany.contactName = document.getElementById('coContactName').value;
-    currentCompany.designation = document.getElementById('coDesignation').value;
-    currentCompany.email = document.getElementById('coEmail').value;
-    currentCompany.phone = document.getElementById('coPhone').value;
-    currentCompany.saved = true;
-    saveState();
-    document.getElementById('dashName').textContent = currentCompany.name;
-    document.getElementById('dashAvatar').textContent = currentCompany.name.slice(0,2).toUpperCase();
-    document.getElementById('dashSub').textContent = 'Your poster panel — post jobs, review and invite candidates';
-    
-    document.getElementById('employerTabsBar').style.display = 'flex';
-    refreshDashTopAccount();
-    switchEmployerTab('post');
-    const note = document.getElementById('coSavedNote');
-    note.style.display = 'inline';
-    setTimeout(()=>{ note.style.display = 'none'; }, 2500);
+  /* Demo jobs: shown on Browse Jobs only while the API has no live jobs, so every category has sample cards. */
+  function demoJobs(){
+    var D=[
+      ['Mathematics Teacher (PGT)','Sunrise Public School','Hyderabad','Schools','M.Sc + B.Ed','Full-time',['Mathematics','CBSE','Class 9-12'],'₹35,000 – ₹50,000 / month',2,4,18,3],
+      ['Primary Class Teacher','Little Scholars School','Warangal','Schools','B.Ed','Full-time',['Primary','Classroom management'],'₹22,000 – ₹30,000 / month',1,6,9,0],
+      ['Computer Science Teacher','Vignan Model School','Vijayawada','Schools','B.Tech + B.Ed','Part-time',['Python','Computer Science'],'₹25,000 – ₹38,000 / month',3,10,12,1],
+      ['Physics Lecturer (Junior College)','Narayana Junior College','Hyderabad','Intermediate','M.Sc Physics','Full-time',['Physics','MPC','EAMCET'],'₹40,000 – ₹60,000 / month',1,5,27,4],
+      ['Chemistry Lecturer','Sri Chaitanya Junior College','Guntur','Intermediate','M.Sc Chemistry','Full-time',['Chemistry','BiPC'],'₹38,000 – ₹55,000 / month',4,3,15,2],
+      ['Commerce Lecturer','Gayatri Junior College','Karimnagar','Intermediate','M.Com','Full-time',['Accountancy','Economics'],'₹30,000 – ₹42,000 / month',2,7,8,0],
+      ['Assistant Professor – Computer Science','Upaadhyay University','Hyderabad','Higher Education','M.Tech + NET/SET','Full-time',['AI/ML','Data Structures','Research'],'₹57,700 – ₹1,82,400 / month',2,14,41,5],
+      ['Associate Professor – Management','Deccan Institute of Management','Bengaluru','Higher Education','PhD','Full-time',['Marketing','MBA','Publications'],'₹1,01,500 – ₹1,67,400 / month',5,20,22,8],
+      ['Visiting Faculty – Civil Engineering','JNTU College of Engineering','Warangal','Higher Education','M.Tech','Contract',['Structural','AutoCAD'],'₹1,500 / lecture',6,12,6,3]
+    ];
+    return D.map(function(d,i){
+      return { id:'demo-'+(i+1), title:d[0], org:d[1], logo:({'Schools':'../assets/logo/school.jpg','Intermediate':'../assets/logo/junior-college.jpg','Higher Education':'../assets/logo/university.jpg'})[d[3]]||'', description:'Join '+d[1]+' as '+d[0]+'. Required qualification: '+d[4]+'. Apply now to be considered for this opening.', city:d[2], location:d[2], cat:d[3], tags:[d[4],'Demo'], skills:d[6],
+        salary:d[7], type:d[5], mode:'In Office', posted:d[8], daysLeft:d[9], applicants:d[10], minExp:d[11],
+        color:COLORS[i%COLORS.length], initials:initials(d[1]), demo:true };
+    });
   }
+  /* Browse-jobs page: load from the API, then reuse the existing filters/cards. */
+  window.bkLoadBrowseJobs = async function(){
+    const list = document.getElementById('bjJobList');
+    if(list) list.innerHTML = '<div class="bj-empty" style="grid-column:1/-1;">Loading jobs…</div>';
+    try{ bjJobs = await fetchJobs({}); }
+    catch(e){ bjJobs = []; if(list) list.innerHTML = '<div class="bj-empty" style="grid-column:1/-1;">Could not load jobs. ' + esc(e.message) + '</div>'; return; }
+    if(!bjJobs.length && (window.UPADYAY_DEMO_JOBS === true || /^(localhost|127\.0\.0\.1)$/.test(location.hostname))) bjJobs = demoJobs(); /* demo cards never show on the live site */
+    const q = getParam('q'), loc = getParam('loc');
+    const kw = document.getElementById('bjKeyword'), lc = document.getElementById('bjLocation');
+    if(q && kw && !kw.value) kw.value = q;
+    if(loc && lc && !lc.value) lc.value = loc;
+    renderBrowseJobs();
+  };
 
-  function companyInitials(){
-    return (currentCompany.name || 'IN').trim().slice(0,2).toUpperCase();
-  }
-  function companyLogoStyle(){
-    return currentCompany.logo
-      ? `background-image:url('${currentCompany.logo}'); background-size:cover;`
-      : `background:var(--blue-700);`;
-  }
+  /* Apply (seeker). */
+  window.applyToJob = async function(id, title){
+    if(String(id).indexOf('demo-')===0){ api.toast('This is a demo job. Live jobs posted by institutions can be applied to.'); return; }
+    if(isLoggedIn && currentRole === 'company'){ api.toast('Institution accounts cannot apply. Log in with a faculty account.'); return; }
+    if(!isLoggedIn){ goTo('register', { role: 'seeker' }); return; }
+    if(currentRole !== 'seeker'){ api.toast('Only faculty accounts can apply to jobs.'); return; }
+    try{
+      await api.post('/jobs/' + id + '/apply', {});
+      try{ currentUser.appliedIds = currentUser.appliedIds || []; if(currentUser.appliedIds.indexOf(String(id)) < 0){ currentUser.appliedIds.push(String(id)); saveState(); } }catch(e){}
+      api.toast('Application sent' + (title ? ' for ' + title : ''));
+      document.querySelectorAll('[data-apply-job="' + id + '"]').forEach(function(b){ b.textContent = 'Applied ✓'; b.disabled = true; });
+    }catch(e){ api.toast(e.message); }
+  };
 
-  // ---------- Candidate pool + application status ----------
-  // status per candidate id: 'applied' | 'invited' | 'shortlisted'
-  // candidateStatus now lives in store.js (persisted across pages)
-
-  function statusBadge(id){
-    const s = candidateStatus[id];
-    if(s==='shortlisted') return '<span class="badge badge-accepted">Shortlisted</span>';
-    if(s==='invited') return '<span class="badge badge-pending">Invited</span>';
+  /* Static pages (For Faculty / Job view): shared loader. */
+  const SP_KEYS = { professor:/professor/i, 'associate-professor':/associate/i, 'assistant-professor':/assistant/i, lecturer:/lecturer/i,
+    research:/research professor/i, 'research-associate':/research associate/i, postdoctoral:/post-?doc/i, 'non-teaching':/non[- ]teaching/i,
+    'academic-coordinator':/coordinator/i, 'lab-staff':/\blab/i, administration:/admin/i };
+  function spCatFor(job){
+    const t = (job.role || '') + ' ' + job.title;
+    const order = ['research-associate','research','postdoctoral','associate-professor','assistant-professor','professor','lecturer','non-teaching','academic-coordinator','lab-staff','administration'];
+    for(let i = 0; i < order.length; i++){ if(SP_KEYS[order[i]].test(t)) return order[i]; }
     return '';
   }
+  let _spPromise = null;
+  window.spLoadJobs = function(){
+    if(!_spPromise){
+      _spPromise = fetchJobs({}).then(function(rows){
+        SP_JOBS = rows.map(function(j){
+          return { id: j.id, cat: spCatFor(j), title: j.title, inst: j.org, loc: j.city, subj: j.dept, qual: j.qualification || '—',
+                   exp: j.minExp, type: j.type, sal: j.salary, desc: j.description, raw: j };
+        });
+        return SP_JOBS;
+      }).catch(function(){ SP_JOBS = []; _spPromise = null; return SP_JOBS; });
+    }
+    return _spPromise;
+  };
+  window.spGetJob = async function(id){
+    await spLoadJobs();
+    let j = SP_JOBS.filter(function(x){ return x.id == id; })[0];
+    if(j) return j;
+    try{
+      const m = mapJob(await api.get('/jobs/' + id, { noAuthRedirect: true }));
+      return { id: m.id, cat: spCatFor(m), title: m.title, inst: m.org, loc: m.city, subj: m.dept, qual: m.qualification || '—', exp: m.minExp, type: m.type, sal: m.salary, desc: m.description, raw: m };
+    }catch(e){ return null; }
+  };
 
-  function inviteCandidate(id, ev){
-    if(ev) ev.stopPropagation();
-    candidateStatus[id] = 'invited';
-    saveState();
-    const p = facultyProfiles[id];
-    pushNotif(`Invited ${p ? p.name : 'a candidate'} to apply.`);
-    renderCandidates();
-    if(document.getElementById('applicantsView').style.display !== 'none') renderApplicants(activeJobId);
-  }
-  function shortlistCandidate(id, ev){
-    if(ev) ev.stopPropagation();
-    candidateStatus[id] = 'shortlisted';
-    saveState();
-    const p = facultyProfiles[id];
-    pushNotif(`Shortlisted ${p ? p.name : 'a candidate'}.`);
-    renderCandidates();
-    if(document.getElementById('applicantsView').style.display !== 'none') renderApplicants(activeJobId);
-  }
-  function messageCandidate(id, ev){
-    if(ev) ev.stopPropagation();
-    const p = facultyProfiles[id];
-    const msg = prompt(`Send a message to ${p ? p.name : 'this candidate'}:`, `Hi, we'd like to talk to you about an opening at ${currentCompany.name || 'our institution'}.`);
-    if(msg){ alert('Message sent to ' + (p ? p.name : 'candidate') + '.'); pushNotif(`Message sent to ${p ? p.name : 'a candidate'}.`); }
-  }
+  /* Home page: featured institutions come from the backend. */
+  window.bkLoadInstitutions = async function(){
+    try{
+      const r = await api.get('/institutions', { noAuthRedirect: true });
+      return items(r).map(function(c){ return [c.company_name || c.name, c.city || c.location || '']; }).filter(function(c){ return c[0]; });
+    }catch(e){ return []; }
+  };
 
-  /* Faculty details shown on every candidate card */
-  function facInfoHTML(p){
-    const rows = [];
-    const qual = (p.education && p.education[0] && (p.education[0].degree || p.education[0].title)) || (p.tags && p.tags[0]) || '';
-    const expTag = (p.tags || []).filter(t=>/experience/i.test(t))[0] || '';
-    const locTag = (p.tags || []).filter(t=>!/experience/i.test(t) && t !== qual)[0] || '';
-    if(qual) rows.push(['Qualification', qual]);
-    if(expTag) rows.push(['Experience', expTag.replace(/\s*experience/i,'')]);
-    if(p.college) rows.push(['Institution', p.college]);
-    if(locTag) rows.push(['Location', locTag]);
-    const st = p.stats || [];
-    const pubs = st.map(x=>x[0]+' '+x[1]).filter(x=>!/^0 /.test(x)).join(' · ');
-    if(pubs) rows.push(['Research', pubs]);
-    const skills = (p.skills || []).slice(0,4);
-    return `<div class="pc-info">${rows.map(r=>`<div class="pc-row"><span>${jbEsc(r[0])}</span><b title="${jbEsc(r[1])}">${jbEsc(r[1])}</b></div>`).join('')}</div>`
-      + (skills.length ? `<div class="jc-tags">${skills.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('')}</div>` : '');
-  }
+  /* ---------------- profiles: load + auto-save ---------------- */
+  let _syncReady = false, _lastSig = '', _timer = null, _instSig = '';
+  const _origSaveState = saveState;
 
-  function candidateCardHTML(id){
-    const p = facultyProfiles[id];
-    if(!p) return '';
-    return `
-      <div class="job-card profile-card profile-card-banner" onclick="openProfile('${id}')" style="cursor:pointer;">
-        <div class="pc-banner" style="background:${bannerGradient(p.name)};">
-          ${statusBadge(id)}
-          ${p.college ? `<span class="pc-college-badge">${jbEsc(p.college)}</span>` : ''}
-        </div>
-        <div class="pc-avatar-wrap">
-          <div class="job-logo pc-avatar" style="background-image:url('${jbEsc(p.avatar)}'); background-size:cover;"></div>
-        </div>
-        <div class="pc-body">
-          <div class="pc-headline">
-            <p class="jc-title">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
-            <p class="jc-org">${jbEsc(p.role)}</p>
-          </div>
-          ${facInfoHTML(p)}
-          <div class="jc-foot">
-            <span class="jc-posted">Open to opportunities</span>
-            <div class="pc-actions">
-              <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
-              ${candidateStatus[id]==='shortlisted'
-                ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
-                : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited ✓' : 'Invite'}</button>`}
-            </div>
-          </div>
-        </div>
-      </div>`;
+  function cap(s){ s = String(s || ''); return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  async function hydrateSeeker(){
+    const u = await api.get('/candidate/profile', { silent403: true });
+    const cp = (u && (u.candidate_profile || u.candidateProfile)) || {}, pd = cp.profile_data || {};
+    Object.assign(currentUser, pd);
+    if(u.name) currentUser.name = u.name;
+    if(u.email) currentUser.email = u.email;
+    if(u.phone) currentUser.phone = u.phone;
+    if(cp.date_of_birth && !currentUser.dob) currentUser.dob = String(cp.date_of_birth).slice(0, 10);
+    if(cp.gender && !currentUser.gender) currentUser.gender = cap(cp.gender);
+    if(cp.city && !currentUser.city) currentUser.city = cp.city;
+    if(cp.state && !currentUser.state) currentUser.state = cp.state;
+    if(cp.location && !currentUser.location) currentUser.location = cp.location;
+    if(cp.current_job_title && !currentUser.currentDesignation) currentUser.currentDesignation = cp.current_job_title;
+    if(cp.total_experience != null && !currentUser.experience) currentUser.experience = String(cp.total_experience);
+    if(cp.profile_photo) currentUser.avatar = fileUrl(cp.profile_photo);   // server column is the source of truth
+    _lastSig = JSON.stringify(seekerPayload());
+  }
+  function seekerPayload(){
+    const U = currentUser, body = { name: String(U.name || '').trim().slice(0, 120) || undefined, phone: U.phone ? String(U.phone).trim().slice(0, 20) : null };
+    const dob = /^\d{4}-\d{2}-\d{2}$/.test(U.dob || '') && new Date(U.dob) < new Date() ? U.dob : undefined;
+    const g = String(U.gender || '').toLowerCase();
+    const exp = parseFloat(U.experience);
+    body.date_of_birth = dob || (U.dob ? undefined : null);
+    body.gender = g ? (g === 'male' || g === 'female' ? g : 'other') : null;   // 'Non-binary' / 'Prefer not to say' -> other (full label kept in profile_data)
+    body.location = (U.location || U.currentLocation || '').slice(0, 190) || null;
+    body.city = (U.city || '').slice(0, 100) || null;
+    body.state = (U.state || '').slice(0, 100) || null;
+    body.current_job_title = (U.currentDesignation || '').slice(0, 190) || null;
+    body.total_experience = isFinite(exp) && exp >= 0 && exp <= 60 ? exp : (U.experience ? undefined : null);
+    body.profile_data = stripHeavy(U);
+    Object.keys(body).forEach(function(k){ if(body[k] === undefined) delete body[k]; });
+    return body;
   }
 
-  /* Highest degree from a faculty profile (PhD > Master's > Bachelor's > anything else) */
-  function highestDegree(p){
-    const list = (p.education || []).map(e=>e.degree || e.title || '').filter(Boolean);
-    const rank = d=> /ph\.?d|doctor/i.test(d) ? 4 : /m\.?(sc|a|tech|com|ed|phil)\b|master|mba|mca/i.test(d) ? 3 : /b\.?(sc|a|tech|com|ed)\b|bachelor|b\.?e\b/i.test(d) ? 2 : 1;
-    list.sort((a,b)=>rank(b)-rank(a));
-    return list[0] || (p.tags && p.tags[0]) || '';
-  }
-
-  /* Applicant card: one per row — name, role, job applied for, highest degree */
-  function applicantCardHTML(id){
-    const p = facultyProfiles[id];
-    if(!p) return '';
-    const jobs = Object.keys(jobsData).filter(k=>(jobsData[k].applicantIds||[]).indexOf(id)>-1).map(k=>jobsData[k].title);
-    const deg = highestDegree(p);
-    return `
-      <div class="job-card ap-card" onclick="openProfile('${id}')">
-        <div class="job-logo ap-avatar" style="background-image:url('${jbEsc(p.avatar)}'); background-size:cover; background-position:center;"></div>
-        <div class="ap-info">
-          <p class="ap-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
-          <p class="ap-role">${jbEsc(p.role)}</p>
-          <div class="ap-tags">
-            ${jobs.length ? `<span class="ap-tag ap-tag-job">Applied for: ${jbEsc(jobs[0])}${jobs.length>1 ? ' +'+(jobs.length-1) : ''}</span>` : ''}
-            ${deg ? `<span class="ap-tag ap-tag-deg">${jbEsc(deg)}</span>` : ''}
-          </div>
-        </div>
-        <div class="ap-actions">
-          <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
-          ${candidateStatus[id]==='shortlisted'
-            ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
-            : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
-        </div>
-      </div>`;
-  }
-
-  const CAND_PAGE_SIZE = 8;
-  let candVisibleCount = CAND_PAGE_SIZE;
-
-  function renderCandidates(resetPaging){
-    if(resetPaging !== false) candVisibleCount = CAND_PAGE_SIZE;
-    const q = (document.getElementById('candSearch').value || '').toLowerCase();
-    const ids = Object.keys(facultyProfiles).filter(id=>{
-      const p = facultyProfiles[id];
-      return !q || p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q);
-    });
-    const visibleIds = ids.slice(0, candVisibleCount);
-    document.getElementById('candidateList').innerHTML = visibleIds.map(candidateCardHTML).join('') || `
-      <div class="empty-state">
-        <div class="empty-state-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M17 20H7a2 2 0 01-2-2V6a2 2 0 012-2h6l6 6v8a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="14" r="2.5" stroke="currentColor" stroke-width="2"/></svg></div>
-        <h4>No profiles found</h4>
-        <p>No published profiles match your search and filters yet. Try clearing a filter or broadening your search.</p>
-      </div>`;
-    document.getElementById('candidateCount').textContent = ids.length + (ids.length===1 ? ' profile found' : ' profiles found');
-
-    const moreWrap = document.getElementById('candidateShowMoreWrap');
-    if(moreWrap){
-      const remaining = ids.length - visibleIds.length;
-      if(remaining > 0){
-        moreWrap.style.display = 'flex';
-        document.getElementById('candidateShowMoreBtn').textContent = `Show ${Math.min(remaining, CAND_PAGE_SIZE)} more`;
-      } else {
-        moreWrap.style.display = 'none';
+  function normUrl(u){ u = String(u || '').trim(); if(!u) return undefined; if(!/^https?:\/\//i.test(u)) u = 'https://' + u; try{ new URL(u); return u.slice(0, 255); }catch(e){ return undefined; } }
+  function instState(){ try{ return JSON.parse(localStorage.getItem('upadyay_inst_v1')) || null; }catch(e){ return null; } }
+  async function hydrateCompany(){
+    const c = await api.get('/company/profile', { silent403: true });
+    const pd = (c && c.profile_data) || {};
+    Object.assign(currentCompany, pd.app || {});
+    if(c.company_name) currentCompany.name = c.company_name;
+    if(c.industry) currentCompany.type = c.industry;
+    if(c.city) currentCompany.city = c.city;
+    if(c.website) currentCompany.website = c.website;
+    if(c.description) currentCompany.desc = c.description;
+    if(c.email) currentCompany.email = c.email;
+    if(c.phone) currentCompany.phone = c.phone;
+    if(c.logo) currentCompany.logo = fileUrl(c.logo); /* server is the source of truth */
+    currentCompany.verification = c.verification_status || '';
+    const uid = String((api.user && api.user.id) || c.user_id || '');
+    let owner = null; try{ owner = localStorage.getItem('upadyay_inst_owner'); }catch(e){}
+    if(uid && owner && owner !== uid){ /* another institution used this browser: never carry its form over */
+      try{ localStorage.removeItem('upadyay_inst_v1'); if(pd.inst) localStorage.setItem('upadyay_inst_v1', JSON.stringify(pd.inst)); localStorage.setItem('upadyay_inst_owner', uid); }catch(e){}
+      try{ if(!sessionStorage.getItem('upadyay_inst_reload')){ sessionStorage.setItem('upadyay_inst_reload', '1'); location.reload(); return; } }catch(e){}
+    }else{
+      try{ sessionStorage.removeItem('upadyay_inst_reload'); if(uid && !owner) localStorage.setItem('upadyay_inst_owner', uid); }catch(e){}
+      if(pd.inst && !instState()){ /* new device / cleared browser: bring the saved institution form in and redraw it */
+        try{ localStorage.setItem('upadyay_inst_v1', JSON.stringify(pd.inst)); }catch(e){}
+        if(typeof instReload === 'function') instReload();
       }
     }
+    _instSig = JSON.stringify(instState());
+    _lastSig = JSON.stringify(companyPayload());
   }
-  function showMoreCandidates(){
-    candVisibleCount += CAND_PAGE_SIZE;
-    renderCandidates(false);
-  }
-
-  // ---------- Jobs + applicants ----------
-  // job counter now lives in store.js as postedJobCount
-  let activeJobId = null;
-  let editingJobId = null;   // set while the Post-a-job form is editing an existing job
-  const jobsData = postedJobs; // persisted in store.js: id -> {title, category, qualification, location, applicantIds}
-  const allCandidateIds = Object.keys(facultyProfiles);
-
-  // ---------- Post a job: helpers ----------
-  function jbEsc(x){ return String(x==null?'':x).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-  // A dropdown value, or the text typed in its "Other" box (falls back to "Other" if left empty)
-  function jbPick(id){ const el = document.getElementById(id); const val = ((el && el.value) || '').trim(); if(val !== 'Other') return val; const o = document.getElementById(id + 'Other'); return ((o && o.value) || '').trim() || 'Other'; }
-  function jbClear(k){ const f = document.getElementById('jf-'+k); if(f) f.classList.remove('err'); }
-  function jbErr(k, m){ const f = document.getElementById('jf-'+k); if(!f) return; f.classList.add('err'); const e = f.querySelector('.in-err'); if(e) e.textContent = m; }
-  function jbMoney(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
-  // One-line summary of the new job fields (role, experience, salary, notice period). Plain text.
-  function jobExtra(job){
-    const parts = [];
-    if(job.role) parts.push(job.role);
-    if(job.expMin !== undefined && job.expMin !== ''){
-      parts.push(job.expMin + ((job.expMax !== undefined && job.expMax !== '') ? '–' + job.expMax : '+') + ' yrs experience');
-    }
-    if(job.salMin){
-      parts.push(jbMoney(job.salMin) + '–' + jbMoney(job.salMax) + ' / ' + (job.salPeriod === 'year' ? 'year' : 'month') + (job.salNeg ? ' (negotiable)' : ''));
-    } else if(job.salNorms){
-      parts.push('Pay as per UGC / AICTE norms');
-    } else if(job.salNeg){
-      parts.push('Salary negotiable');
-    }
-    if(job.notice) parts.push('Notice: ' + job.notice);
-    return parts.join(' · ');
+  function companyPayload(){
+    const C = currentCompany, inst = instState(), d = (inst && inst.d) || {};
+    /* Main-campus address lives in the institution form; mirror it into the real columns so search/admin/jobs see it. */
+    const place = [d.area, d.city, d.state].map(function(x){ return String(x || '').trim(); }).filter(Boolean).join(', ');
+    const body = { company_name: C.name || undefined, industry: C.type || null, city: String(d.city || C.city || '').slice(0, 100) || null,
+                   state: String(d.state || '').slice(0, 100) || null, location: place.slice(0, 190) || null,
+                   website: normUrl(C.website) || (C.website ? undefined : null), description: C.desc ? String(C.desc).slice(0, 5000) : null,
+                   phone: C.phone ? String(C.phone).slice(0, 20) : null };
+    if(/^\S+@\S+\.\S+$/.test(C.email || '')) body.email = C.email; else if(!C.email) body.email = null;
+    body.profile_data = stripHeavy({ app: { contactName: C.contactName, designation: C.designation, saved: C.saved, logo: C.logo }, inst: instState() });
+    Object.keys(body).forEach(function(k){ if(body[k] === undefined) delete body[k]; });
+    return body;
   }
 
-  function addJob(e){
-    if(e && e.preventDefault) e.preventDefault();
-    const v = id => (document.getElementById(id).value || '').trim();
-    const chk = id => !!document.getElementById(id).checked;
-    ['title','role','category','dept','type','qual','notice','exp','expmax','salmin','salmax','campus'].forEach(jbClear);
-
-    const title = v('jbTitle'), role = (v('jbRole') === 'Other' && v('jbRoleOther')) ? v('jbRoleOther') : v('jbRole'), category = jbPick('jbCategory'), dept = v('jbDept'), type = jbPick('jbType');
-    const qualification = jbPick('jbQualification'), notice = jbPick('jbNotice');
-    const expMin = v('jbExpMin'), expMax = v('jbExpMax');
-    const salMin = v('jbSalMin'), salMax = v('jbSalMax'), salPeriod = v('jbSalPeriod') || 'month';
-    const salNeg = chk('jbSalNeg'), salNorms = chk('jbSalNorms');
-    const campusVal = v('jbCampus');
-
-    let first = null;
-    const bad = (k, m) => { jbErr(k, m); if(!first) first = k; };
-    if(!title) bad('title', 'Enter the job title');
-    if(!role) bad('role', 'Select the role');
-    if(!category) bad('category', 'Select a category');
-    if(!dept) bad('dept', 'Enter the department or subject');
-    if(!type) bad('type', 'Select the employment type');
-    if(!qualification) bad('qual', 'Select the qualification needed');
-    if(!notice) bad('notice', 'Select the notice period you accept');
-    if(expMin === '') bad('exp', 'Enter minimum experience. Use 0 for freshers');
-    else if(!(Number(expMin) >= 0 && Number(expMin) <= 50)) bad('exp', 'Enter a number between 0 and 50');
-    if(expMax !== '' && Number(expMax) < Number(expMin || 0)) bad('expmax', 'Maximum cannot be lower than minimum');
-    if(!salNorms){
-      if(salMin === '' || !(Number(salMin) > 0)) bad('salmin', 'Enter the minimum salary');
-      if(salMax === '' || !(Number(salMax) > 0)) bad('salmax', 'Enter the maximum salary');
-      else if(salMin !== '' && Number(salMax) < Number(salMin)) bad('salmax', 'Maximum cannot be lower than minimum');
-    }
-    if(!campusVal) bad('campus', 'Select the campus for this job');
-
-    if(first){
-      const el = document.querySelector('#jf-'+first+' input, #jf-'+first+' select');
-      if(el){ try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); } }
-      return;
-    }
-
-    let campus = '', campusLoc = '';
-    if(typeof instCampusOptions === 'function'){
-      const opt = instCampusOptions().find(o => o.v === campusVal);
-      if(opt){ campus = opt.n; campusLoc = opt.loc; }
-    }
-    const location = v('jbLocation') || campusLoc;
-    const jobPayload = {
-      title, role, dept, type, category, qualification, notice,
-      vacancies: v('jbVac'), expMin, expMax, salMin, salMax, salPeriod, salNeg, salNorms,
-      campus, campusLoc, location, desc: v('jbDesc'), skills: v('jbSkills'), deadline: v('jbDeadline')
-    };
-    const editing = (editingJobId && jobsData[editingJobId]) ? jobsData[editingJobId] : null;
-    (editing ? bkUpdateJob(editing.id, jobPayload) : bkPostJob(jobPayload)).then(function(){
-    if(editing) endEditJob();
-
-    // reset the form and confirm
-    ['jbTitle','jbRole','jbRoleOther','jbCategory','jbCategoryOther','jbDept','jbType','jbTypeOther','jbVac','jbQualification','jbQualificationOther','jbNotice','jbNoticeOther','jbExpMin','jbExpMax','jbSalMin','jbSalMax','jbLocation','jbDesc','jbSkills','jbDeadline','jbCampus'].forEach(i=>{ const el = document.getElementById(i); if(el) el.value = ''; });
-    ['jbRoleOther','jbCategoryOther','jbTypeOther','jbQualificationOther','jbNoticeOther'].forEach(i=>{ const el = document.getElementById(i); if(el) el.style.display = 'none'; });
-    document.getElementById('jbSalPeriod').value = 'month';
-    document.getElementById('jbSalNeg').checked = false;
-    document.getElementById('jbSalNorms').checked = false;
-    if(typeof instCampusChange === 'function') instCampusChange();
-    const ok = document.getElementById('jbOk');
-    if(ok){
-      ok.innerHTML = editing
-        ? '<b>Changes saved.</b> ' + jbEsc(title) + (campus ? ' · ' + jbEsc(campus) : '') + ' has been updated. Find it under Posted jobs.'
-        : '<b>Job posted.</b> ' + jbEsc(title) + (campus ? ' · ' + jbEsc(campus) : '') + ' is now live. Find it under Posted jobs.';
-      ok.style.display = 'block';
-      
-      setTimeout(()=>{ ok.style.display = 'none'; }, 7000);
-    }
-    }).catch(function(err){ api.toast(err.message || (editing ? 'Could not save the changes.' : 'Could not post the job.')); });
-  }
-
-  // ---------- Edit / close / reopen / delete a posted job (all saved on the server) ----------
-  function jbSetSelect(id, v){
-    const el = document.getElementById(id), o = document.getElementById(id + 'Other'); if(!el) return;
-    v = String(v == null ? '' : v);
-    const has = Array.prototype.some.call(el.options, function(x){ return x.value === v; });
-    const hasOther = Array.prototype.some.call(el.options, function(x){ return x.value === 'Other'; });
-    if(!v || has){ el.value = v; if(o){ o.value = ''; o.style.display = 'none'; } }
-    else if(hasOther){ el.value = 'Other'; if(o){ o.value = v === 'Other' ? '' : v; o.style.display = ''; } }
-    else el.value = v;
-  }
-  function jbSetVal(id, v){ const el = document.getElementById(id); if(el) el.value = (v == null ? '' : v); }
-  function editJob(id){
-    const j = jobsData[id]; if(!j) return;
-    if(typeof closeApplicantsView === 'function' && activeJobId) closeApplicantsView();
-    switchEmployerTab('post');
-    if(typeof instFillCampuses === 'function') instFillCampuses();
-    editingJobId = id; window.__jbEditing = true;
-    jbSetVal('jbTitle', j.title); jbSetSelect('jbRole', j.role); jbSetSelect('jbCategory', j.category); jbSetVal('jbDept', j.dept);
-    jbSetSelect('jbType', j.type); jbSetVal('jbVac', j.vacancies); jbSetSelect('jbQualification', j.qualification); jbSetSelect('jbNotice', j.notice);
-    jbSetVal('jbExpMin', j.expMin); jbSetVal('jbExpMax', j.expMax); jbSetVal('jbSalMin', j.salMin); jbSetVal('jbSalMax', j.salMax);
-    jbSetVal('jbSalPeriod', j.salPeriod || 'month');
-    const neg = document.getElementById('jbSalNeg'), norms = document.getElementById('jbSalNorms');
-    if(neg) neg.checked = !!j.salNeg; if(norms) norms.checked = !!j.salNorms;
-    jbSetVal('jbLocation', j.location); jbSetVal('jbDesc', j.desc); jbSetVal('jbSkills', j.skills); jbSetVal('jbDeadline', j.deadline);
-    const camp = document.getElementById('jbCampus');
-    if(camp && typeof instCampusOptions === 'function'){ const o = instCampusOptions().find(function(x){ return x.n === j.campus; }); camp.value = o ? o.v : ''; if(typeof instCampusChange === 'function') instCampusChange(); }
-    const bar = document.getElementById('jbEditBar');
-    if(bar){ bar.innerHTML = '<b>Editing:</b> ' + jbEsc(j.title) + ' &nbsp; <button type="button" class="btn btn-ghost btn-sm" onclick="cancelEditJob()">Cancel editing</button>'; bar.style.display = 'block'; }
-    if(typeof jbJump === 'function') jbJump(0);
-    window.scrollTo(0, 0);
-  }
-  function endEditJob(){
-    editingJobId = null; window.__jbEditing = false;
-    const bar = document.getElementById('jbEditBar'); if(bar) bar.style.display = 'none';
-    const f = document.getElementById('jobPostForm'); if(f) f.dispatchEvent(new Event('change', { bubbles: true }));   // repaint the step button text
-  }
-  function cancelEditJob(){
-    endEditJob();
-    ['jbTitle','jbRole','jbRoleOther','jbCategory','jbCategoryOther','jbDept','jbType','jbTypeOther','jbVac','jbQualification','jbQualificationOther','jbNotice','jbNoticeOther','jbExpMin','jbExpMax','jbSalMin','jbSalMax','jbLocation','jbDesc','jbSkills','jbDeadline','jbCampus'].forEach(function(i){ const el = document.getElementById(i); if(el) el.value = ''; });
-    ['jbRoleOther','jbCategoryOther','jbTypeOther','jbQualificationOther','jbNoticeOther'].forEach(function(i){ const el = document.getElementById(i); if(el) el.style.display = 'none'; });
-    const p = document.getElementById('jbSalPeriod'); if(p) p.value = 'month';
-    const n1 = document.getElementById('jbSalNeg'), n2 = document.getElementById('jbSalNorms'); if(n1) n1.checked = false; if(n2) n2.checked = false;
-    if(typeof instCampusChange === 'function') instCampusChange();
-    if(typeof jbJump === 'function') jbJump(0);
-  }
-  async function jobSetStatus(id, status){
-    const j = jobsData[id]; if(!j) return;
-    try{ await bkSetJobStatus(j.id, status); api.toast(status === 'closed' ? 'Job closed. Candidates can no longer apply.' : 'Job is live again.'); if(activeJobId === id) openApplicantsView(id); }
-    catch(e){ api.toast(e.message || 'Could not update the job.'); }
-  }
-  async function jobDelete(id){
-    const j = jobsData[id]; if(!j) return;
-    if(!confirm('Delete "' + j.title + '"? Its applications are deleted with it. This cannot be undone.')) return;
+  async function pushProfile(){
+    if(!_syncReady || !api.hasToken()) return;
+    const isCo = currentRole === 'company';
+    if(!isCo && currentRole !== 'seeker') return;
+    const body = isCo ? companyPayload() : seekerPayload();
+    const sig = JSON.stringify(body);
+    if(sig === _lastSig) return;
+    status('saving', 'Saving…');
     try{
-      await bkDeleteJob(j.id);
-      if(editingJobId === id) cancelEditJob();
-      if(activeJobId === id) closeApplicantsView();
-      api.toast('Job deleted.');
-    }catch(e){ api.toast(e.message || 'Could not delete the job.'); }
+      await api.put(isCo ? '/company/profile' : '/candidate/profile', body, { silent403: true });
+      _lastSig = sig;
+      status('saved', 'All changes saved');
+    }catch(e){
+      if(e.status !== 401) status('error', e.status === 0 ? 'Offline — not saved' : 'Not saved: ' + e.message, pushProfile);
+    }
   }
-  function jobActionButtons(id, job){
-    const toggle = job.status === 'published' ? ['Close job', 'closed'] : [job.status === 'draft' ? 'Publish' : 'Reopen', 'published'];
-    return '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); editJob(\'' + id + '\')">Edit</button>'
-      + '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); jobSetStatus(\'' + id + '\',\'' + toggle[1] + '\')">' + toggle[0] + '</button>'
-      + '<button class="btn btn-ghost btn-sm" style="color:#B3261E;border-color:#B3261E" onclick="event.stopPropagation(); jobDelete(\'' + id + '\')">Delete</button>';
+  /* Explicit, awaited save for the faculty profile form: resolves only after the server confirms (throws ApiError otherwise). */
+  window.bkSaveSeekerProfile = async function(){
+    if(currentRole !== 'seeker') throw new Error('Only faculty accounts have a faculty profile.');
+    if(window.bkProfileLoaded === false) throw new Error('Your profile did not load. Reload the page before saving so nothing is overwritten.');
+    const body = seekerPayload();
+    const u = await api.put('/candidate/profile', body, { silent403: true });
+    _lastSig = JSON.stringify(body);
+    const cp = (u && (u.candidate_profile || u.candidateProfile)) || {};
+    if(cp.profile_photo) currentUser.avatar = fileUrl(cp.profile_photo);
+    _origSaveState();
+    return u;
+  };
+  /* Re-read the saved profile from the server (used on tab focus so other tabs/devices' edits show up). */
+  window.bkRefreshSeeker = async function(){ await hydrateSeeker(); window.bkProfileLoaded = true; window.bkProfileError = ''; _syncReady = true; _origSaveState(); };
+  function schedulePush(){ clearTimeout(_timer); _timer = setTimeout(pushProfile, 900); }
+  function flushPush(){
+    if(currentRole === 'company' && _syncReady){                 // institution form edits not yet noticed by the 3s poll
+      const s = JSON.stringify(instState());
+      if(s !== _instSig){ _instSig = s; clearTimeout(_timer); _timer = null; pushProfile(); return; }
+    }
+    if(_timer){ clearTimeout(_timer); _timer = null; pushProfile(); }
+  }
+  /* institution.js calls this on every save() so the server copy follows right away instead of waiting for the poll. */
+  window.bkInstChanged = function(){
+    if(currentRole !== 'company' || !_syncReady) return;
+    const s = JSON.stringify(instState());
+    if(s !== _instSig){ _instSig = s; schedulePush(); }
+  };
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') flushPush(); });
+  window.addEventListener('pagehide', flushPush);
+
+  /* Every existing saveState() call now also syncs to the backend (debounced, only if something changed). */
+  saveState = function(){ _origSaveState(); schedulePush(); };
+  setInterval(function(){                     // institution form saves straight to localStorage; mirror it
+    if(currentRole !== 'company' || !_syncReady) return;
+    const s = JSON.stringify(instState());
+    if(s !== _instSig){ _instSig = s; schedulePush(); }
+  }, 3000);
+
+  /* Admin approval / rejection should lock or unlock the institution's dashboard without a re-login:
+     re-read the verification status when the tab regains focus and once a minute while it is visible. */
+  const VERIFY_MSG = {
+    approved: 'Your institution was approved. Post a job, Posted jobs and Browse candidates are now unlocked.',
+    rejected: 'Your institution was not approved. Open your notifications to see the reason.',
+    blocked: 'Your institution has been blocked. Contact support.',
+    pending: 'Your institution is waiting for admin review.'
+  };
+  async function refreshVerification(){
+    if(currentRole !== 'company' || !_syncReady || !api.hasToken() || document.visibilityState === 'hidden') return;
+    try{
+      const c = await api.get('/company/profile', { silent403: true });
+      const v = String((c && c.verification_status) || '').toLowerCase();
+      if(!v || v === String(currentCompany.verification || '').toLowerCase()) return;
+      currentCompany.verification = v;
+      if(typeof applyEmployerLock === 'function') applyEmployerLock();
+      if(typeof loadNotifs === 'function') loadNotifs();
+      if(typeof showGenericToast === 'function' && VERIFY_MSG[v]) showGenericToast(VERIFY_MSG[v]);
+    }catch(e){ /* offline or session ended: the next tick retries; 401 is handled by api.js */ }
+  }
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') refreshVerification(); });
+  setInterval(refreshVerification, 60000);
+
+  let _hydration = null;
+  window.bkHydrate = function(){
+    if(!_hydration){
+      _hydration = (async function(){
+        try{
+          if(currentRole === 'seeker'){ await hydrateSeeker(); window.bkProfileLoaded = true; window.bkProfileError = ''; }
+          else if(currentRole === 'company'){ await hydrateCompany(); if(typeof applyEmployerLock === 'function') applyEmployerLock(); }
+          _syncReady = true;
+          _origSaveState();
+          if(currentRole === 'company'){ try{ await loadEmployer(); }catch(e){ console.warn('[backend] employer data', e); } }
+          loadNotifs();
+        }catch(e){
+          console.warn('[backend] hydrate failed', e);
+          if(currentRole === 'seeker'){ window.bkProfileLoaded = false; window.bkProfileError = (e && e.message) || 'Network error'; }
+          if(e && e.status === 404){ _syncReady = true; }
+        }
+      })();
+    }
+    return _hydration;
+  };
+  /* Protected pages wait for the profile to load before they draw their forms. */
+  const _requireLogin = requireLogin;
+  requireLogin = async function(role){
+    const ok = await _requireLogin(role);
+    if(ok) await bkHydrate();
+    return ok;
+  };
+  /* Pages that don't call requireLogin (home, jobs…) still load notifications + profile in the background. */
+  if(typeof authReady !== 'undefined'){ authReady.then(function(u){ if(u) bkHydrate(); }); }
+
+  /* Logout: flush pending edits, then remove this account's institution form so the next login starts clean. */
+  if(typeof logoutUser === 'function'){
+    const _lo = logoutUser;
+    logoutUser = async function(){
+      try{ await pushProfile(); }catch(e){}
+      try{
+        const clean = currentRole !== 'company' || JSON.stringify(companyPayload()) === _lastSig;
+        if(clean){ localStorage.removeItem('upadyay_inst_v1'); localStorage.removeItem('upadyay_inst_owner'); sessionStorage.removeItem('upadyay_inst_reload'); }
+      }catch(e){}
+      return _lo.apply(this, arguments);
+    };
   }
 
-  // Rebuilds the "your posted jobs" list from saved data (so it survives page loads)
-  function renderPostedJobs(){
-    const list = document.getElementById('jobList');
-    if(!list) return;
-    list.innerHTML = '';
-    Object.keys(jobsData).forEach(id=>{
-      const job = jobsData[id];
-      const item = document.createElement('div');
-      item.className = 'job-list-item';
-      item.style.cursor = 'pointer';
-      item.style.display = 'flex';
-      item.style.alignItems = 'center';
-      item.onclick = ()=> openApplicantsView(id);
-      item.innerHTML = `
-        <div class="job-logo" style="width:34px; height:34px; border-radius:8px; margin-right:10px; ${companyLogoStyle()}"></div>
-        <div style="flex:1;"><div class="jt">${jbEsc(job.title)}</div><div class="jm">${jbEsc([job.category,job.qualification,job.location].filter(Boolean).join(' · ') || 'Posted just now')} · ${job.applicantIds.length} applicants</div>${jobExtra(job) ? `<div class="jm">${jbEsc(jobExtra(job))}</div>` : ''}${typeof instJobMeta==='function' ? instJobMeta(job) : ''}</div>
-        ${bkStatusBadge(job)}`;
-      list.prepend(item);
+  /* ---------------- notifications ---------------- */
+  async function loadNotifs(){
+    if(!api.hasToken()) return;
+    try{
+      const d = await api.get('/notifications?per_page=20', { silent403: true, noAuthRedirect: true });
+      const rows = d && d.notifications ? items(d.notifications) : [];
+      dashNotifs = rows.map(function(n){
+        return { id: n.id, read: !!n.read_at, time: n.created_at, text: '<b>' + esc(n.title) + '</b>' + (n.message ? ' — ' + esc(n.message) : '') };
+      });
+      hasUnreadNotif = !!(d && d.unread_count > 0);
+      _origSaveState();
+      ['navBellDot','dashBellDot','bjBellDot'].forEach(function(id){ const el = document.getElementById(id); if(el) el.style.display = hasUnreadNotif ? 'block' : 'none'; });
+    }catch(e){ /* keep whatever we had */ }
+  }
+  function markRead(){
+    if(!api.hasToken()) return;
+    api.put('/notifications/read-all', {}, { silent403: true, noAuthRedirect: true }).then(function(){
+      hasUnreadNotif = false; (dashNotifs || []).forEach(function(n){ n.read = true; }); _origSaveState();
+      ['navBellDot','dashBellDot','bjBellDot'].forEach(function(id){ const el = document.getElementById(id); if(el) el.style.display = 'none'; });
+    }).catch(function(){});
+  }
+  if(typeof openNotifPanel === 'function'){ const o = openNotifPanel; openNotifPanel = function(){ o.apply(this, arguments); markRead(); }; }
+  if(typeof toggleDashNotifs === 'function'){ const o2 = toggleDashNotifs; toggleDashNotifs = function(){ o2.apply(this, arguments); markRead(); }; }
+  setInterval(loadNotifs, 60000);
+  /* pushNotif now only adds a local line for things the server doesn't announce itself. */
+  window.bkLoadNotifs = loadNotifs;
+
+  /* ---------------- employer: jobs, candidates, applicants ---------------- */
+  const appByCandidate = {};          // candidateId -> latest application id (for status updates)
+  const appByJobCand = {};            // jobKey:candidateId -> application id
+
+  function mapPostedJob(j){
+    const m = j.meta || {};
+    return {
+      id: j.id, status: j.status, title: j.title, role: m.role || '', dept: m.dept || '', type: m.type_label || j.employment_type,
+      category: (j.category && j.category.name) || m.category_label || '', qualification: m.qualification || '', notice: m.notice || '',
+      vacancies: j.vacancy_count, expMin: j.experience_min == null ? '' : j.experience_min, expMax: j.experience_max == null ? '' : j.experience_max,
+      salMin: j.salary_min == null ? '' : j.salary_min, salMax: j.salary_max == null ? '' : j.salary_max,
+      salPeriod: m.salary_period || 'month', salNeg: !!m.salary_negotiable, salNorms: !!m.salary_as_per_norms,
+      campus: m.campus || '', campusLoc: m.campus_loc || '', location: j.location, desc: j.description,
+      skills: (j.skills || []).map(function(s){ return s.name; }).join(', '),
+      deadline: j.application_deadline ? String(j.application_deadline).slice(0, 10) : '', applicantIds: [], applicantCount: j.applications_count || 0
+    };
+  }
+  function mapCandidate(u){
+    const cp = u.candidate_profile || u.candidateProfile || {}, pd = cp.profile_data || {};
+    const skillNames = (u.skills || []).map(function(s){ return s.name; });
+    const exp = cp.total_experience != null ? cp.total_experience : pd.experience;
+    const edu = [];
+    if(pd.qualification || pd.subject) edu.push([[pd.qualification, pd.subject].filter(Boolean).join(', '), [pd.college, pd.highestQualYear].filter(Boolean).join(' · ')]);
+    (pd.additionalQualifications || []).forEach(function(q){ edu.push([[q.qualification, q.specialization].filter(Boolean).join(', '), [q.college, q.year].filter(Boolean).join(' · ')]); });
+    const expRows = (pd.employmentHistory || []).map(function(e){
+      return [[e.designation, e.department].filter(Boolean).join(', '), [e.org, (e.from || '') + ' – ' + (e.currentlyWorking ? 'Present' : (e.to || ''))].filter(Boolean).join(' · ')];
     });
+    if(!expRows.length && pd.currentOrg) expRows.push([pd.currentDesignation || 'Faculty', pd.currentOrg]);
+    const links = [];
+    (u.resumes || []).forEach(function(r){ if(r.file) links.push([r.file.original_name || 'Resume', 'doc', r.file.id]); });
+    (u.certificates || []).forEach(function(c){ if(c.file) links.push([c.file.original_name || 'Certificate', 'doc', c.file.id]); });
+    (pd.otherDocuments || []).forEach(function(d){ if(d && d.label) links.push([d.label, 'link']); });
+    const fp = pd.fp || null;
+    if(fp){ /* the faculty profile editor saves its data under profile_data.fp */
+      const EN = { phd: 'Ph.D.', pg: "Master's", mphil: 'M.Phil', ug: "Bachelor's", dip: 'Diploma' }, e2 = [], x2 = [];
+      ['phd','pg','mphil','ug','dip'].forEach(function(k){
+        const e = fp.edu && fp.edu[k]; if(!e || !(e.type || e.major || e.area || e.uni)) return;
+        e2.push([[e.type || EN[k], e.major || e.area].filter(Boolean).join(', '), [e.college || e.uni, e.end].filter(Boolean).join(' · ')]);
+      });
+      (fp.jobs || []).forEach(function(j){
+        if(!j || !j.org) return;
+        const yrs = (j.start ? String(j.start).slice(0, 4) : '') + ' – ' + (j.cur ? 'Present' : (j.end ? String(j.end).slice(0, 4) : ''));
+        x2.push([[j.desig, j.dept].filter(Boolean).join(', '), [j.org, yrs].filter(Boolean).join(' · ')]);
+      });
+      if(e2.length){ edu.length = 0; e2.forEach(function(r){ edu.push(r); }); }
+      if(x2.length){ expRows.length = 0; x2.forEach(function(r){ expRows.push(r); }); }
+      (fp.links || []).forEach(function(l){ if(l && l.u) links.push([l.t || l.u, 'link', l.u]); });
+    }
+    return {
+      id: u.id, avatar: fileUrl(cp.profile_photo) || (pd.avatar && pd.avatar.indexOf('data:') !== 0 ? pd.avatar : DEFAULT_AVATAR),
+      name: u.name || 'Candidate', role: cp.current_job_title || pd.currentDesignation || (pd.fp && pd.fp.desig) || pd.subject || 'Faculty',
+      tags: [pd.qualification || (pd.fp && pd.fp.high), exp ? exp + ' yrs experience' : '', cp.city || pd.city || pd.location].filter(Boolean),
+      college: pd.college || pd.currentOrg || ((((pd.fp && pd.fp.jobs) || []).filter(function(j){ return j && j.cur; })[0]) || {}).org || '', about: cp.bio || pd.about || (pd.fp && pd.fp.headline) || '',
+      skills: skillNames.length ? skillNames : [].concat(pd.academicSkills || [], (pd.fp && pd.fp.subjects) || [], splitList(pd.programmingLanguages), splitList(pd.softwareTools)).slice(0, 14),
+      education: edu, experience: expRows,
+      stats: [[String(pd.journalPublications || 0), 'Publications'], [String(pd.totalPatents || 0), 'Patents'], [String(pd.numProjects || 0), 'Projects']],
+      links: links,
+      interests: { departments: splitList(pd.preferredDepartments).concat((pd.fp && pd.fp.prefLevels) || []), designations: splitList(pd.preferredDesignations).concat((pd.fp && pd.fp.prefJob) || []), subjects: splitList(pd.preferredTeachingSubjects).concat((pd.fp && pd.fp.prefSubs) || []),
+                   orgType: pd.preferredOrgType || '', location: pd.preferredLocation || pd.preferredWorkLocation || ((pd.fp && pd.fp.prefLoc) || []).join(', '), employmentType: pd.preferredEmploymentType || '' },
+      salary: { presentCtc: pd.presentCtc, expectedCtc: pd.expectedCtc, minAcceptable: '' } /* employers never receive the minimum acceptable salary */
+    };
+  }
+  function setProfile(u){ const p = mapCandidate(u); facultyProfiles[String(u.id)] = p; return p; }
+
+  async function loadEmployer(){
+    const fetched = await Promise.all([
+      paged('/company/jobs', {}, 10),
+      paged('/company/applicants', {}, 10),
+      api.get('/company/candidates?per_page=50', { silent403: true }).catch(function(e){ console.warn('[backend] candidates', e); return []; })
+    ]);
+    Object.keys(facultyProfiles).forEach(function(k){ delete facultyProfiles[k]; });
+    Object.keys(candidateStatus).forEach(function(k){ if(candidateStatus[k] !== 'invited') delete candidateStatus[k]; });
+    Object.keys(postedJobs).forEach(function(k){ delete postedJobs[k]; });
+    const jobs = fetched[0];
+    jobs.forEach(function(j){ postedJobs['j' + j.id] = mapPostedJob(j); });
+    const apps = fetched[1];
+    apps.forEach(function(a){
+      const cand = a.candidate; if(!cand) return;
+      const cid = String(cand.id), key = 'j' + a.job_id;
+      if(!facultyProfiles[cid]) setProfile(cand);
+      if(postedJobs[key] && postedJobs[key].applicantIds.indexOf(cid) < 0) postedJobs[key].applicantIds.push(cid);
+      appByJobCand[key + ':' + cid] = a.id;
+      if(!appByCandidate[cid] || a.id > appByCandidate[cid]) appByCandidate[cid] = a.id;
+      if(['shortlisted','interview','selected'].indexOf(a.status) > -1) candidateStatus[cid] = 'shortlisted';
+    });
+    const cands = fetched[2];
+    items(cands).forEach(function(u){ if(!facultyProfiles[String(u.id)]) setProfile(u); });
+    _origSaveState();
+    if(typeof renderPostedJobs === 'function') renderPostedJobs();
+    if(typeof renderMyJobsCards === 'function') renderMyJobsCards();
+    if(document.getElementById('candidateList') && typeof renderCandidates === 'function') renderCandidates();
+  }
+  window.bkReloadEmployer = loadEmployer;
+
+  window.bkEnsureCandidate = async function(id){
+    if(facultyProfiles[String(id)]) return facultyProfiles[String(id)];
+    try{ return setProfile(await api.get('/company/candidates/' + encodeURIComponent(id))); }catch(e){ return null; }
+  };
+  window.bkOpenFile = async function(fileId){
+    const w = window.open('', '_blank'); /* opened inside the click, so popup blockers allow it */
+    try{
+      const r = await api.get('/files/' + fileId + '/link');
+      const url = r && (r.url || r.link);
+      if(url){ if(w){ w.opener = null; w.location.href = url; } else { window.location.href = url; } }
+      else { if(w) w.close(); api.toast('File link unavailable.'); }
+    }catch(e){ if(w) w.close(); api.toast(e.message); }
+  };
+  /* ---------------- uploads: POST /files/upload (multipart) ---------------- */
+  /* replacesId = id of the previous file in the same slot: the server saves the new one, then deletes that one. */
+  window.bkUploadFile = async function(fileOrBlob, category, name, replacesId){
+    if(!api.hasToken()) throw new Error('Please log in again to upload files.');
+    const bad = await bkCheckFile(fileOrBlob.name ? fileOrBlob : new File([fileOrBlob], name || 'upload.' + String(fileOrBlob.type || '').split('/').pop()), category);
+    if(bad){ status('error', bad); throw new Error(bad); }
+    status('saving', 'Uploading…');
+    try{
+      const fd = new FormData();
+      fd.append('file', fileOrBlob, name || fileOrBlob.name || 'upload');
+      fd.append('category', category); /* company_logo | job_image | other */
+      if(replacesId) fd.append('replaces', replacesId);
+      const d = await api.post('/files/upload', fd);
+      const f = d && d.file ? d.file : d;
+      if(!f || !f.id) throw new Error('The server did not confirm the upload.');
+      status('saved', 'Uploaded');
+      return { id: f.id, url: f.url || '', name: f.original_name || name || '' };
+    }catch(e){ status('error', 'Upload failed: ' + ((e && e.message) || 'error')); throw e; }
+  };
+  window.bkDeleteFile = async function(id){
+    if(!id) return;
+    try{ await api.del('/files/' + id); status('saved', 'File deleted'); }
+    catch(e){ if(e.status !== 404) status('error', 'Could not delete file: ' + e.message); throw e; }
+  };
+  window.bkRemoveLogo = async function(){
+    try{ await api.del('/company/logo'); status('saved', 'Logo removed'); }
+    catch(e){ status('error', 'Could not remove logo: ' + e.message); throw e; }
+  };
+  window.bkDataUrlToBlob = function(u){
+    const m = /^data:([^;,]+)(;base64)?,(.*)$/.exec(u || ''); if(!m) throw new Error('Invalid image.');
+    const bin = m[2] ? atob(m[3]) : decodeURIComponent(m[3]), arr = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], { type: m[1] });
+  };
+
+  window.bkStatusBadge = function(job){
+    const s = job && job.status;
+    if(s === 'published') return '<span class="badge-live">Live</span>';
+    if(s === 'closed' || s === 'expired') return '<span class="badge badge-pending">Closed</span>';
+    return '<span class="badge badge-pending" title="Visible after admin approval">Draft</span>';
+  };
+
+  /* Form fields -> API job body (shared by post and edit). `keepDeadline` = the deadline already saved on the job being edited:
+     an unchanged, already-past deadline is allowed so an old job can still be edited, closed or reopened. */
+  async function jobBody(f, keepDeadline){
+    const typeMap = { 'Full-time': 'full-time', 'Part-time': 'part-time', 'Contract': 'contract', 'Visiting faculty': 'part-time' };
+    const loc = f.location || f.campusLoc || 'India';
+    const num = function(x){ return x === '' || x == null || isNaN(Number(x)) ? null : Number(x); };
+    if(num(f.expMin) != null && num(f.expMax) != null && num(f.expMin) > num(f.expMax)) throw new Error('Minimum experience cannot be more than maximum.');
+    if(!f.salNorms && num(f.salMin) != null && num(f.salMax) != null && num(f.salMin) > num(f.salMax)) throw new Error('Minimum salary cannot be more than maximum.');
+    if(f.deadline && f.deadline !== keepDeadline && new Date(f.deadline + 'T23:59:59') < new Date()) throw new Error('Application deadline is in the past.');
+    return {
+      title: f.title,
+      description: f.desc || [f.role, f.dept, f.qualification && ('Qualification: ' + f.qualification)].filter(Boolean).join(' · ') || f.title,
+      requirements: f.qualification ? ('Qualification: ' + f.qualification + (f.notice ? ' · Notice period: ' + f.notice : '')) : null,
+      location: loc, city: String(loc).split(',')[0].trim().slice(0, 100) || null,
+      employment_type: typeMap[f.type] || 'full-time', category_id: await categoryId(f.category),
+      experience_min: num(f.expMin), experience_max: num(f.expMax),
+      salary_min: f.salNorms ? null : num(f.salMin), salary_max: f.salNorms ? null : num(f.salMax),
+      vacancy_count: Math.max(1, parseInt(f.vacancies, 10) || 1), application_deadline: f.deadline || null,
+      skills: splitList(f.skills).slice(0, 30),
+      meta: { role: f.role, dept: f.dept, qualification: f.qualification, notice: f.notice, type_label: f.type, category_label: f.category,
+              salary_period: f.salPeriod, salary_negotiable: !!f.salNeg, salary_as_per_norms: !!f.salNorms, campus: f.campus, campus_loc: f.campusLoc }
+    };
+  }
+  /* Put a job returned by the API into the posted-jobs list, keeping the applicant list the page already has. */
+  function storeJob(job){
+    const key = 'j' + job.id, prev = postedJobs[key], m = mapPostedJob(job);
+    if(prev){ m.applicantIds = prev.applicantIds || []; if(!job.applications_count) m.applicantCount = prev.applicantCount || 0; }
+    postedJobs[key] = m;
+    _origSaveState();
+    if(typeof renderPostedJobs === 'function') renderPostedJobs();
+    if(typeof renderMyJobsCards === 'function') renderMyJobsCards();
+    return m;
   }
 
-  /* Sidebar > Applicants: every applicant across all jobs, in one list */
-  function openAllApplicants(){
-    window.__empLoad = true; switchEmployerTab('myjobs'); window.__empLoad = false; window.__empApps = true;
-    const mj = document.getElementById('dashMyJobsTab'); if(mj) mj.style.display = 'none';
-    const ids = []; Object.keys(jobsData).forEach(k=>(jobsData[k].applicantIds||[]).forEach(c=>{ if(ids.indexOf(c)<0) ids.push(c); }));
-    const wrap = document.getElementById('apListWrap'); wrap.style.display = 'block';
-    document.getElementById('apList').innerHTML = ids.map(applicantCardHTML).join('') || `
-      <div class="empty-state"><h4>No applicants yet</h4><p>Faculty who apply to your jobs will appear here.</p></div>`;
-    document.getElementById('apCount').textContent = ids.length + (ids.length===1 ? ' applicant' : ' applicants');
-    window.scrollTo(0,0);
-  }
-  window.openAllApplicants = openAllApplicants;
+  /* Edit a job → PUT /company/jobs/{id}. Status is left as it is (use bkSetJobStatus to close / reopen). */
+  window.bkUpdateJob = async function(id, f){
+    const prev = postedJobs['j' + id];
+    const body = await jobBody(f, prev && prev.deadline);
+    const job = await api.put('/company/jobs/' + id, body);
+    storeJob(job);
+    return job;
+  };
+  /* Close / reopen / publish → PUT /company/jobs/{id} {status}. */
+  window.bkSetJobStatus = async function(id, status){
+    const job = await api.put('/company/jobs/' + id, { status: status });
+    storeJob(job);
+    return job;
+  };
+  /* Delete a job (its applications go with it) → DELETE /company/jobs/{id}. */
+  window.bkDeleteJob = async function(id){
+    await api.del('/company/jobs/' + id);
+    delete postedJobs['j' + id];
+    _origSaveState();
+    if(typeof renderPostedJobs === 'function') renderPostedJobs();
+    if(typeof renderMyJobsCards === 'function') renderMyJobsCards();
+  };
 
-  function openApplicantsView(jobId){
-    activeJobId = jobId;
-    // works from the "Post a job" list or from the dedicated "Posted jobs" page
-    const postTab = document.getElementById('dashPostTab');
-    if(postTab && postTab.style.display === 'none') switchEmployerTab('post');
-    document.getElementById('jobPostForm').style.display = 'none';
-    document.getElementById('applicantsView').style.display = 'block';
-    document.getElementById('apListWrap').style.display = 'block';
-    const job = jobsData[jobId];
-    document.getElementById('apJobTitle').textContent = job.title;
-    document.getElementById('apJobMeta').textContent = [job.category, job.qualification, job.location].filter(Boolean).join(' · ');
-    const apExtra = document.getElementById('apJobExtra');
-    if(apExtra) apExtra.textContent = jobExtra(job);
-    const apInst = document.getElementById('apJobInst');
-    if(apInst && typeof instJobHeader==='function') apInst.innerHTML = instJobHeader(job);
-    const apAct = document.getElementById('apJobActions');
-    if(apAct) apAct.innerHTML = bkStatusBadge(job) + ' ' + jobActionButtons(jobId, job);
-    renderApplicants(jobId);
+  /* Post a job → POST /company/jobs */
+  window.bkPostJob = async function(f){
+    const body = await jobBody(f);
+    body.status = 'published';
+    let job;
+    try{ job = await api.post('/company/jobs', body, { silent403: true }); }
+    catch(e){
+      if(e.status === 403){                        // company/branch not approved yet → keep it as a draft
+        body.status = 'draft';
+        job = await api.post('/company/jobs', body);
+        api.toast('Saved as a draft — it goes live once the institution is approved.');
+      }else throw e;
+    }
+    postedJobs['j' + job.id] = mapPostedJob(job);
+    _origSaveState();
+    renderPostedJobs();
+    if(typeof renderMyJobsCards === 'function') renderMyJobsCards();
+    return job;
+  };
+
+  function activeApiJobId(){ const j = (typeof activeJobId !== 'undefined' && activeJobId) ? postedJobs[activeJobId] : null; return j ? j.id : undefined; }
+  function refreshCandidateViews(){
+    if(typeof renderCandidates === 'function' && document.getElementById('candidateList')) renderCandidates(false);
+    const av = document.getElementById('applicantsView');
+    if(av && av.style.display !== 'none' && typeof renderApplicants === 'function') renderApplicants(activeJobId);
   }
-  function closeApplicantsView(){
-    document.getElementById('jobPostForm').style.display = 'block';
-    document.getElementById('applicantsView').style.display = 'none';
-    document.getElementById('apListWrap').style.display = 'none';
-    activeJobId = null;
+  window.inviteCandidate = async function(id, ev){
+    if(ev) ev.stopPropagation();
+    try{
+      await api.post('/company/invitations', { candidate_id: Number(id), job_id: activeApiJobId() });
+      candidateStatus[id] = 'invited'; _origSaveState();
+      const p = facultyProfiles[id]; api.toast('Invitation sent to ' + (p ? p.name : 'the candidate') + '.');
+      refreshCandidateViews();
+    }catch(e){ api.toast(e.message); }
+  };
+  window.shortlistCandidate = async function(id, ev){
+    if(ev) ev.stopPropagation();
+    const key = (typeof activeJobId !== 'undefined' && activeJobId) ? activeJobId : null;
+    const appId = key ? appByJobCand[key + ':' + id] : appByCandidate[id]; /* with a job open, only that job's application counts */
+    if(!appId){ api.toast(key ? 'This candidate has not applied to this job. Invite them first.' : 'This candidate has not applied to any of your jobs yet — invite them first.'); return; }
+    try{
+      await api.put('/company/applications/' + appId + '/status', { status: 'shortlisted' });
+      candidateStatus[id] = 'shortlisted'; _origSaveState();
+      const p = facultyProfiles[id]; api.toast('Shortlisted ' + (p ? p.name : 'candidate') + '.');
+      refreshCandidateViews();
+    }catch(e){ api.toast(e.message); }
+  };
+  window.messageCandidate = async function(id, ev){
+    if(ev) ev.stopPropagation();
+    const p = facultyProfiles[id];
+    const msg = prompt('Send a message to ' + (p ? p.name : 'this candidate') + ':', "Hi, we'd like to talk to you about an opening at " + (currentCompany.name || 'our institution') + '.');
+    if(!msg || !msg.trim()) return;
+    try{ await api.post('/company/messages', { candidate_id: Number(id), message: msg.trim().slice(0, 2000) }); api.toast('Message sent.'); }
+    catch(e){ api.toast(e.message); }
+  };
+  /* Company profile form → PUT /company/profile (saveState hook) + validation errors surfaced. */
+  if(typeof saveCompany === 'function'){
+    const sc = saveCompany;
+    saveCompany = function(){
+      sc.apply(this, arguments);
+    if(!_syncReady || !api.hasToken()) return; /* never overwrite the server before the profile has loaded */
+    clearTimeout(_timer);
+      status('saving', 'Saving…');
+      api.put('/company/profile', companyPayload(), { silent403: true })
+        .then(function(){ _lastSig = JSON.stringify(companyPayload()); status('saved', 'All changes saved'); })
+        .catch(function(e){ status('error', 'Not saved: ' + e.message, function(){ saveCompany(); }); });
+    };
   }
-  function renderApplicants(jobId){
-    const job = jobsData[jobId];
-    if(!job) return;
-    document.getElementById('apList').innerHTML = job.applicantIds.map(applicantCardHTML).join('') || `
-      <div class="empty-state">
-        <div class="empty-state-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/></svg></div>
-        <h4>No applicants yet</h4>
-        <p>Once faculty or staff apply to this job, they'll show up here.</p>
-      </div>`;
-    document.getElementById('apCount').textContent = job.applicantIds.length + (job.applicantIds.length===1 ? ' applicant' : ' applicants');
-  }
+})();
