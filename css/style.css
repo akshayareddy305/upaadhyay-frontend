@@ -1295,3 +1295,17 @@ body.page-auth .auth-card, .role-popup-card{margin-left:auto; margin-right:auto;
 #miniPanel .mini-dd-wrap:not(.dd-open) #miniCompanyInfo,#miniPanel .mini-dd-wrap:not(.dd-open) #miniBranchInfo,
 #miniPanel #miniSeekerSection:not(.dd-open) #miniRows,#miniPanel #miniSeekerSection:not(.dd-open) #miniSubjectsWrap,#miniPanel #miniSeekerSection:not(.dd-open) #miniLevelsWrap{display:none!important}
 #miniPanel .dd-open #miniCompanyInfo,#miniPanel .dd-open #miniBranchInfo,#miniPanel #miniSeekerSection.dd-open #miniRows{border:1px solid var(--line);border-top:0;border-radius:0 0 4px 4px;padding:2px 12px;background:#fff}
+
+
+/* ---- Candidate cards: 6px edges + faculty info rows ---- */
+.profile-card, .profile-card-banner, .job-card.profile-card{border-radius:6px !important;}
+.pc-banner{border-radius:6px 6px 0 0;}
+.pc-info{display:flex; flex-direction:column; gap:5px; margin:10px 0 8px; text-align:left;}
+.pc-row{display:flex; justify-content:space-between; gap:10px; font-size:12.5px; line-height:1.35;}
+.pc-row span{color:var(--ink-faint); flex-shrink:0;}
+.pc-row b{font-weight:600; color:var(--ink); text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
+
+/* ---- Dashboard pages must always scroll ---- */
+html, body.page{height:auto !important; min-height:100%; overflow-y:auto !important; overflow-x:hidden;}
+.dash-overlay.page-mode, .dash-overlay.page-mode .dash-inner-wide, .dash-overlay.page-mode .dash-panel,
+.dash-fullbleed{overflow:visible !important; height:auto !important; max-height:none !important;}
