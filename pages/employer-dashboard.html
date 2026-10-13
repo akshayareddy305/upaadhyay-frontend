@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Employer Dashboard — Upadyay</title>
-<link rel="stylesheet" href="../css/style.css?v=6">
+<link rel="stylesheet" href="../css/style.css?v=7">
 <link rel="stylesheet" href="../css/institution.css?v=18">
 <style>#dashInnerWide{visibility:hidden}#dashInnerWide.ready{visibility:visible}</style>
 <link rel="stylesheet" href="../css/sidebar.css?v=10">
@@ -174,11 +174,16 @@
 
           <div id="applicantsView" style="display:none;">
             <button class="btn btn-ghost btn-sm" onclick="closeApplicantsView()" style="margin-bottom:14px;">← Back to jobs</button>
-            <div id="apJobInst" style="margin-bottom:8px;"></div>
-            <h3 id="apJobTitle" style="margin-bottom:2px;"></h3>
-            <p class="sub" id="apJobMeta" style="margin-top:0; margin-bottom:0;"></p>
-            <p class="sub" id="apJobExtra" style="margin-top:4px; margin-bottom:0;"></p>
-            <div id="apJobActions" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px;"></div>
+            <div class="jh-card">
+              <div class="jh-logo" id="apJobLogo"></div>
+              <div class="jh-main">
+                <div id="apJobInst" class="jh-inst"></div>
+                <h3 id="apJobTitle" class="jh-title"></h3>
+                <p class="sub jh-meta" id="apJobMeta"></p>
+                <p class="sub jh-extra" id="apJobExtra"></p>
+              </div>
+              <div id="apJobActions" class="jh-actions"></div>
+            </div>
           </div>
         </div>
 
@@ -221,7 +226,7 @@
 
 <script src="../js/api.js?v=2"></script>
 <script src="../js/store.js?v=2"></script>
-<script src="../js/employer.js?v=10"></script>
+<script src="../js/employer.js?v=11"></script>
 <script src="../js/logo-crop.js"></script>
 <script src="../js/institution.js?v=15"></script>
 <script>
