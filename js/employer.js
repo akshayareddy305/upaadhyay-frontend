@@ -420,7 +420,7 @@
           <div class="pj-actions">${jobActionButtons(id, job)}<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants</button></div>
         </div>
       </div>`;
-    }catch(err){ console.error('Posted job card failed', id, err); return ''; } }).join('');
+    }catch(err){ console.error('Posted job card failed', id, err); return '<div class="job-card" style="color:#B3261E">Card error: '+jbEsc(err && err.message)+'</div>'; } }).join('');
   }
 
   function previewLogo(e){
