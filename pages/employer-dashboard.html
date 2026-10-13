@@ -172,18 +172,19 @@
             <div id="jobList" style="margin-top:18px;"></div>
           </div>
 
-          <div id="applicantsView" style="display:none;">
-            <button class="btn btn-ghost btn-sm" onclick="closeApplicantsView()" style="margin-bottom:14px;">← Back to jobs</button>
-            <div class="jh-card">
-              <div class="jh-logo" id="apJobLogo"></div>
-              <div class="jh-main">
-                <div id="apJobInst" class="jh-inst"></div>
-                <h3 id="apJobTitle" class="jh-title"></h3>
-                <p class="sub jh-meta" id="apJobMeta"></p>
-                <p class="sub jh-extra" id="apJobExtra"></p>
-              </div>
-              <div id="apJobActions" class="jh-actions"></div>
+        </div>
+
+        <div id="applicantsView" style="display:none;">
+          <button class="btn btn-ghost btn-sm" onclick="closeApplicantsView()" style="margin-bottom:14px;">← Back to jobs</button>
+          <div class="jh-card">
+            <div class="jh-logo" id="apJobLogo"></div>
+            <div class="jh-main">
+              <div id="apJobInst" class="jh-inst"></div>
+              <h3 id="apJobTitle" class="jh-title"></h3>
+              <p class="sub jh-meta" id="apJobMeta"></p>
+              <p class="sub jh-extra" id="apJobExtra"></p>
             </div>
+            <div id="apJobActions" class="jh-actions"></div>
           </div>
         </div>
 
@@ -226,7 +227,7 @@
 
 <script src="../js/api.js?v=2"></script>
 <script src="../js/store.js?v=2"></script>
-<script src="../js/employer.js?v=11"></script>
+<script src="../js/employer.js?v=12"></script>
 <script src="../js/logo-crop.js"></script>
 <script src="../js/institution.js?v=15"></script>
 <script>
@@ -284,8 +285,14 @@ mountNav(); mountChrome();
 requireLogin('company').then(function(ok){ if(!ok) return;
   let _kept = null; try{ _kept = sessionStorage.getItem('upadyay_emp_tab'); }catch(e){}
   openDash(currentCompany.name || 'Institution', 'post');
+  let _view = ''; try{ _view = sessionStorage.getItem('upadyay_emp_view') || ''; }catch(e){}
   const _t = getParam('tab') || _kept;
   if(_t==='candidates' || _t==='company' || _t==='myjobs' || _t==='post') switchEmployerTab(_t);
+  try{
+    const _v = _view;
+    if(_v === 'apps' && typeof openAllApplicants === 'function') openAllApplicants();
+    else if(_v.indexOf('job:') === 0 && typeof openApplicantsView === 'function' && typeof jobsData !== 'undefined' && jobsData[_v.slice(4)]) openApplicantsView(_v.slice(4));
+  }catch(e){}
   if(typeof applyEmployerLock==='function') applyEmployerLock();
   window.scrollTo(0,0);
 });
