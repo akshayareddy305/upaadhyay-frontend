@@ -1,8 +1,8 @@
 // admin/js/admin.js — admin dashboard (overview, institution verification queue, job applications, faculty).
 // Every number and row comes from the Laravel API (/api/admin/*); nothing here is demo data.
 
-const TABS = ['overview', 'institutions', 'applications', 'faculty', 'jobs', 'files', 'notifications', 'catalog'];
-const TITLES = { overview:'Overview', institutions:'Institutions', applications:'Job Applications', faculty:'Faculty', jobs:'Jobs', files:'Files', notifications:'Announcements', catalog:'Skills & Categories' };
+const TABS = ['overview', 'institutions', 'branches', 'applications', 'faculty', 'jobs', 'files', 'notifications', 'catalog'];
+const TITLES = { overview:'Overview', institutions:'Institutions', branches:'Sub-branch requests', applications:'Job Applications', faculty:'Faculty', jobs:'Jobs', files:'Files', notifications:'Announcements', catalog:'Skills & Categories' };
 const INST_STATUSES = [['pending', 'Pending review'], ['approved', 'Approved'], ['rejected', 'Rejected'], ['blocked', 'Blocked'], ['', 'All']];
 const PER_PAGE = 15;
 
@@ -13,7 +13,8 @@ const S = {
   fac:  { status:'', search:'', page:1, last:1, total:0 },
   jobs: { status:'', search:'', page:1, last:1, total:0 },
   files:{ category:'', page:1, last:1, total:0 },
-  notes:{ page:1, last:1, total:0 }
+  notes:{ page:1, last:1, total:0 },
+  br:   { status:'pending', page:1, last:1, total:0 }
 };
 
 const $ = function(id){ return document.getElementById(id); };
@@ -46,6 +47,7 @@ function adminGo(tab, status){
   if(tab === 'institutions') loadInstitutions();
   if(tab === 'applications') loadApplications();
   if(tab === 'faculty') loadFaculty();
+  if(tab === 'branches') loadBranches();
   ['jobs', 'files', 'notifications', 'catalog'].forEach(function(t){ if(tab === t && typeof window['load_' + t] === 'function') window['load_' + t](); });
 }
 window.adminGo = adminGo;
@@ -208,6 +210,60 @@ async function toggleUser(id, block, name){
 }
 window.toggleUser = toggleUser;
 
+/* ------------------------------------------------------------------ sub-branch requests (admin decision; the main institution decides separately) */
+const BR_MAIN = { pending:'Waiting', approved:'Approved', rejected:'Rejected' };
+async function loadBranches(){
+  $('brBody').innerHTML = '<tr><td colspan="6" class="admin-loading">Loading…</td></tr>';
+  try{
+    const res = await api.get('/admin/branch-requests' + qs({ status:S.br.status, page:S.br.page, per_page:PER_PAGE }));
+    applyPage(S.br, res);
+    const rows = (res && res.data) || [];
+    window.__brRows = rows;
+    $('brCount').textContent = S.br.total + (S.br.total === 1 ? ' request' : ' requests');
+    $('brBody').innerHTML = rows.map(function(b){
+      const loc = [b.city, b.state].filter(Boolean).join(', '), m = b.main || {};
+      return '<tr><td><div class="admin-row-name">' + avatarHtml(b.name, b.logo) + '<div>' + esc(b.name || '—') + '<small>' + esc(loc || b.email || '') + '</small></div></div></td>'
+        + '<td>' + (m.id ? '<a href="company.html?id=' + m.id + '" style="color:var(--blue-700);font-weight:600">' + esc(m.name) + '</a><small class="muted" style="display:block">Code ' + esc(m.code || '') + '</small>' : '—') + '</td>'
+        + '<td>' + pill(b.main_status === 'approved' ? 'approved' : b.main_status === 'rejected' ? 'rejected' : 'pending') + '</td>'
+        + '<td>' + pill(b.admin_status || 'pending') + (b.approved ? '<small class="muted" style="display:block">Live</small>' : '') + '</td>'
+        + '<td>' + esc(fmtDate(b.submitted_at)) + '</td>'
+        + '<td class="act"><div class="admin-rowbtns"><button type="button" class="btn btn-ghost btn-sm" onclick="viewBranch(' + b.id + ')">View</button>'
+        + (b.admin_status === 'pending' ? '<button type="button" class="btn btn-ghost btn-sm" onclick="decideBranch(' + b.id + ',\'approve\')">Approve</button><button type="button" class="btn btn-ghost btn-sm danger" onclick="decideBranch(' + b.id + ',\'reject\')">Reject</button>' : '')
+        + '</div></td></tr>';
+    }).join('') || emptyRow(6, 'No sub-branch requests.');
+    $('brPager').innerHTML = pagerHtml(S.br, 'requests');
+  }catch(e){
+    $('brBody').innerHTML = errorRow(6, e.message, 'loadBranches'); $('brPager').innerHTML = '';
+  }
+}
+window.loadBranches = loadBranches;
+function viewBranch(id){
+  const b = (window.__brRows || []).filter(function(x){ return x.id === id; })[0]; if(!b) return;
+  const p = b.profile || {}, m = b.main || {};
+  const kv = function(k, v){ return v ? '<div style="display:flex;justify-content:space-between;gap:14px;padding:5px 0;border-bottom:1px solid var(--line)"><span class="muted">' + esc(k) + '</span><b style="text-align:right">' + esc(v) + '</b></div>' : ''; };
+  askDialog({ title: b.name, confirmLabel: 'Close', body:
+    kv('Joining', m.name) + kv('Main institution code', m.code) + kv('Main institution decision', BR_MAIN[b.main_status] || '') + kv('Type', b.type)
+    + kv('Location', [b.address || p.addr, b.city, b.state, p.pin].filter(Boolean).join(', ')) + kv('Established', p.year) + kv('Website', b.website)
+    + kv('Email', b.email) + kv('Phone', b.phone) + kv('Representative', p.rname) + kv('Designation', p.rdes)
+    + (b.description || p.about1 ? '<p style="margin:10px 0 0;font-size:13.5px">' + esc(b.description || p.about1) + '</p>' : '')
+    + (b.note ? '<p style="margin:10px 0 0;font-size:13.5px;color:#B3261E">Reason: ' + esc(b.note) + '</p>' : '') });
+}
+window.viewBranch = viewBranch;
+async function decideBranch(id, action){
+  const b = (window.__brRows || []).filter(function(x){ return x.id === id; })[0] || {};
+  const ok = action === 'approve';
+  const r = await askDialog({
+    title: (ok ? 'Approve ' : 'Reject ') + (b.name || 'sub-branch') + '?',
+    body: ok ? 'This sub-branch goes live once ' + esc((b.main && b.main.name) || 'its main institution') + ' also approves.' : 'The sub-branch and its main institution will be told it was rejected.',
+    confirmLabel: ok ? 'Approve' : 'Reject', danger: !ok,
+    reason: ok ? null : { label:'Reason', placeholder:'Reason shown to the sub-branch', required:true }
+  });
+  if(!r.ok) return;
+  try{ await api.put('/admin/branch-requests/' + id + '/' + action, ok ? {} : { reason:r.reason }); toast(ok ? 'Sub-branch approved.' : 'Sub-branch rejected.'); loadBranches(); }
+  catch(e){ toast(e.message, true); }
+}
+window.decideBranch = decideBranch;
+
 /* ------------------------------------------------------------------ events + start */
 function bindList(pagerId, st, loader){
   $(pagerId).addEventListener('click', function(e){
@@ -233,7 +289,7 @@ function bindFilter(el, st, key, loader, wait){
     const b = e.target.closest('.admin-tab'); if(!b) return;
     S.inst.status = b.dataset.status; S.inst.page = 1; adminGo('institutions');
   });
-  bindList('instPager', S.inst, loadInstitutions); bindList('appPager', S.apps, loadApplications); bindList('facPager', S.fac, loadFaculty);
+  bindList('instPager', S.inst, loadInstitutions); bindList('appPager', S.apps, loadApplications); bindList('facPager', S.fac, loadFaculty); bindList('brPager', S.br, loadBranches); bindFilter($('brStatus'), S.br, 'status', loadBranches);
   bindFilter($('instSearch'), S.inst, 'search', loadInstitutions, 350);
   bindFilter($('appSearch'), S.apps, 'search', loadApplications, 350); bindFilter($('appStatus'), S.apps, 'status', loadApplications);
   bindFilter($('facSearch'), S.fac, 'search', loadFaculty, 350);       bindFilter($('facStatus'), S.fac, 'status', loadFaculty);
