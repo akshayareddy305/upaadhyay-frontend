@@ -409,7 +409,7 @@
         <div class="pj-main">
           <div class="job-logo pj-logo" style="${companyLogoStyle()}"></div>
           <div class="pj-info">
-            <div class="pj-head"><p class="pj-title">${jbEsc(job.title)}</p>${bkStatusBadge(job)}</div>
+            <div class="pj-head"><p class="pj-title">${jbEsc(job.title)}</p>${typeof bkStatusBadge==='function' ? bkStatusBadge(job) : ''}</div>
             <p class="pj-meta">${jbEsc(meta)}</p>
             ${extra ? `<p class="pj-extra">${jbEsc(extra)}</p>` : ''}
             ${typeof instJobMeta==='function' ? instJobMeta(job) : ''}
