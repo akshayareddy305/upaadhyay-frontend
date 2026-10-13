@@ -95,6 +95,7 @@ function view(){
   $('swMode').innerHTML=r?'<a href="#" onclick="setMode(\'login\');return false" style="font-size:13px;font-weight:600;">Already have an account? Log in</a>':'<a href="#" onclick="setMode(\'register\');return false" style="font-size:13px;font-weight:600;">New sub-branch? Create an account</a>';
   err('');
 }
+const BCODE=(new URLSearchParams(location.search).get('branch_code')||'').replace(/\D/g,'').slice(0,5);
 function closeSub(){location.href=(mode==='login'?'login.html':'register.html')+'?role=company'}
 function setMode(m){mode=m;step=1;view()}
 function setMethod(m){method=m;$('methodEmail').classList.toggle('active',m==='email');$('methodPhone').classList.toggle('active',m==='phone');$('emailF').style.display=m==='email'?'block':'none';$('phoneF').style.display=m==='phone'?'block':'none'}
@@ -119,14 +120,14 @@ function submitAuth(e){
     if(pw!==$('pw2').value){err('Passwords do not match.');return false}
     try{localStorage.setItem('nwSubAccount',JSON.stringify({id:id,pw:pw,branch:$('bn').value.trim(),contact:$('cp').value.trim()}))}catch(x){}
     setBranchSession(id,$('bn').value.trim());
-    location.href='institution-network.html?start=code';return false;
+    location.href='institution-network.html?start=code'+(BCODE?'&branch_code='+BCODE:'');return false;
   }
   var a=ls('nwSubAccount');
   if(!a){err('No sub-branch account found. Create an account first.');return false}
   if(a.id!==id||a.pw!==pw){err('Wrong email/phone or password.');return false}
   setBranchSession(id,a.branch);
   var d=ls('nwSub');
-  location.href='institution-network.html?start='+(d&&d.st==='approved'?'dash':'code');
+  location.href='institution-network.html?start='+(d&&d.st==='approved'?'dash':'code')+(BCODE?'&branch_code='+BCODE:'');
   return false;
 }
 view();
