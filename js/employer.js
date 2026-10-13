@@ -399,22 +399,28 @@
         </div>`;
       return;
     }
-    wrap.innerHTML = ids.slice().reverse().map(id=>{
+    wrap.innerHTML = ids.slice().reverse().map(id=>{ try{
       const job = jobsData[id];
-      const count = job.applicantIds.length;
+      const count = (job.applicantIds || []).length;
+      const meta = [job.category, job.qualification, job.location].filter(Boolean).join(' \u00b7 ') || 'Posted just now';
+      const extra = jobExtra(job);
       return `
-      <div class="job-card" onclick="openApplicantsView('${id}')" style="cursor:pointer;">
-        <div class="job-card-top">
-          <div class="job-logo" style="width:34px; height:34px; border-radius:8px; ${companyLogoStyle()}"></div>
-          <div><p class="jc-title">${jbEsc(job.title)}</p><p class="jc-org">${jbEsc([job.category,job.qualification,job.location].filter(Boolean).join(' · ') || 'Posted just now')}</p>${jobExtra(job) ? `<p class="jc-org" style="white-space:normal; margin-top:3px;">${jbEsc(jobExtra(job))}</p>` : ''}${typeof instJobMeta==='function' ? instJobMeta(job) : ''}</div>
-          ${bkStatusBadge(job)}
+      <div class="job-card pj-card" onclick="openApplicantsView('${id}')">
+        <div class="pj-main">
+          <div class="job-logo pj-logo" style="${companyLogoStyle()}"></div>
+          <div class="pj-info">
+            <div class="pj-head"><p class="pj-title">${jbEsc(job.title)}</p>${bkStatusBadge(job)}</div>
+            <p class="pj-meta">${jbEsc(meta)}</p>
+            ${extra ? `<p class="pj-extra">${jbEsc(extra)}</p>` : ''}
+            ${typeof instJobMeta==='function' ? instJobMeta(job) : ''}
+          </div>
         </div>
-        <div class="jc-foot">
-          <span class="jc-posted">${count} ${count===1?'applicant':'applicants'}</span>
-          <span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${jobActionButtons(id, job)}<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants</button></span>
+        <div class="pj-side">
+          <span class="pj-count"><b>${count}</b> ${count===1?'applicant':'applicants'}</span>
+          <div class="pj-actions">${jobActionButtons(id, job)}<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants</button></div>
         </div>
       </div>`;
-    }).join('');
+    }catch(err){ console.error('Posted job card failed', id, err); return ''; } }).join('');
   }
 
   function previewLogo(e){
@@ -553,6 +559,40 @@
                 : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited ✓' : 'Invite'}</button>`}
             </div>
           </div>
+        </div>
+      </div>`;
+  }
+
+  /* Highest degree from a faculty profile (PhD > Master's > Bachelor's > anything else) */
+  function highestDegree(p){
+    const list = (p.education || []).map(e=>e.degree || e.title || '').filter(Boolean);
+    const rank = d=> /ph\.?d|doctor/i.test(d) ? 4 : /m\.?(sc|a|tech|com|ed|phil)\b|master|mba|mca/i.test(d) ? 3 : /b\.?(sc|a|tech|com|ed)\b|bachelor|b\.?e\b/i.test(d) ? 2 : 1;
+    list.sort((a,b)=>rank(b)-rank(a));
+    return list[0] || (p.tags && p.tags[0]) || '';
+  }
+
+  /* Applicant card: one per row — name, role, job applied for, highest degree */
+  function applicantCardHTML(id){
+    const p = facultyProfiles[id];
+    if(!p) return '';
+    const jobs = Object.keys(jobsData).filter(k=>(jobsData[k].applicantIds||[]).indexOf(id)>-1).map(k=>jobsData[k].title);
+    const deg = highestDegree(p);
+    return `
+      <div class="job-card ap-card" onclick="openProfile('${id}')">
+        <div class="job-logo ap-avatar" style="background-image:url('${jbEsc(p.avatar)}'); background-size:cover; background-position:center;"></div>
+        <div class="ap-info">
+          <p class="ap-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
+          <p class="ap-role">${jbEsc(p.role)}</p>
+          <div class="ap-tags">
+            ${jobs.length ? `<span class="ap-tag ap-tag-job">Applied for: ${jbEsc(jobs[0])}${jobs.length>1 ? ' +'+(jobs.length-1) : ''}</span>` : ''}
+            ${deg ? `<span class="ap-tag ap-tag-deg">${jbEsc(deg)}</span>` : ''}
+          </div>
+        </div>
+        <div class="ap-actions">
+          <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
+          ${candidateStatus[id]==='shortlisted'
+            ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
+            : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
         </div>
       </div>`;
   }
@@ -790,7 +830,7 @@
     const mj = document.getElementById('dashMyJobsTab'); if(mj) mj.style.display = 'none';
     const ids = []; Object.keys(jobsData).forEach(k=>(jobsData[k].applicantIds||[]).forEach(c=>{ if(ids.indexOf(c)<0) ids.push(c); }));
     const wrap = document.getElementById('apListWrap'); wrap.style.display = 'block';
-    document.getElementById('apList').innerHTML = ids.map(candidateCardHTML).join('') || `
+    document.getElementById('apList').innerHTML = ids.map(applicantCardHTML).join('') || `
       <div class="empty-state"><h4>No applicants yet</h4><p>Faculty who apply to your jobs will appear here.</p></div>`;
     document.getElementById('apCount').textContent = ids.length + (ids.length===1 ? ' applicant' : ' applicants');
     window.scrollTo(0,0);
@@ -825,7 +865,7 @@
   function renderApplicants(jobId){
     const job = jobsData[jobId];
     if(!job) return;
-    document.getElementById('apList').innerHTML = job.applicantIds.map(candidateCardHTML).join('') || `
+    document.getElementById('apList').innerHTML = job.applicantIds.map(applicantCardHTML).join('') || `
       <div class="empty-state">
         <div class="empty-state-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/></svg></div>
         <h4>No applicants yet</h4>
