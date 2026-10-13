@@ -237,5 +237,24 @@
     };
   }
 
+  /* ---------- Main institution <-> sub-branch (code based; main institution AND admin both approve) ---------- */
+  api.branches = {
+    lookup:   function(code){ return request('GET', '/institutions?code=' + encodeURIComponent(code), undefined, { noAuthRedirect: true }); },
+    search:   function(q){ return request('GET', '/institutions?q=' + encodeURIComponent(q), undefined, { noAuthRedirect: true }); },
+    // sub-branch side
+    mine:     function(){ return request('GET', '/company/branch', undefined, { silent403: true }); },
+    connect:  function(code){ return request('POST', '/company/branch/connect', { code: code }); },
+    submit:   function(code){ return request('POST', '/company/branch/join', code ? { code: code } : {}); },
+    withdraw: function(){ return request('DELETE', '/company/branch'); },
+    // main institution side
+    list:     function(){ return request('GET', '/company/branches', undefined, { silent403: true }); },
+    view:     function(id){ return request('GET', '/company/branches/' + id); },
+    decide:   function(id, action, reason){ return request('PUT', '/company/branches/' + id + '/' + action, reason ? { reason: reason } : {}); },
+    setCode:  function(code){ return request('PUT', '/company/institution-code', code ? { code: code } : {}); },
+    // admin side
+    adminList:   function(status){ return request('GET', '/admin/branch-requests' + (status ? '?status=' + status : '')); },
+    adminDecide: function(id, action, reason){ return request('PUT', '/admin/branch-requests/' + id + '/' + action, reason ? { reason: reason } : {}); }
+  };
+
   window.api = api;
 })();
