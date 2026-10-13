@@ -1309,3 +1309,37 @@ body.page-auth .auth-card, .role-popup-card{margin-left:auto; margin-right:auto;
 html, body.page{height:auto !important; min-height:100%; overflow-y:auto !important; overflow-x:hidden;}
 .dash-overlay.page-mode, .dash-overlay.page-mode .dash-inner-wide, .dash-overlay.page-mode .dash-panel,
 .dash-fullbleed{overflow:visible !important; height:auto !important; max-height:none !important;}
+
+
+/* ---- Posted jobs: wide rectangle cards with shadow ---- */
+#myJobsList{grid-template-columns:1fr; gap:16px; max-width:980px;}
+.pj-card{display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 22px; cursor:pointer;
+  border:1px solid #DDE4F0; border-radius:8px !important; background:#fff; box-shadow:0 6px 22px rgba(16,36,84,.12);}
+.pj-card:hover{box-shadow:0 12px 32px rgba(16,36,84,.18);}
+.pj-main{display:flex; align-items:flex-start; gap:14px; min-width:0; flex:1;}
+.pj-logo{width:48px; height:48px; border-radius:8px; flex-shrink:0;}
+.pj-info{min-width:0; flex:1;}
+.pj-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.pj-title{margin:0; font-size:17px; font-weight:700; color:var(--ink); text-transform:capitalize;}
+.pj-meta{margin:4px 0 0; font-size:13.5px; font-weight:500; color:var(--ink-soft);}
+.pj-extra{margin:3px 0 0; font-size:13px; color:var(--ink-faint); line-height:1.45;}
+.pj-side{display:flex; flex-direction:column; align-items:flex-end; gap:10px; flex-shrink:0;}
+.pj-count{font-size:13px; color:var(--ink-soft);} .pj-count b{color:var(--blue-700); font-size:15px;}
+.pj-actions{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
+@media(max-width:760px){.pj-card{flex-direction:column; align-items:stretch;} .pj-side{align-items:flex-start;}}
+
+/* ---- Applicants: one card per row ---- */
+#apList{grid-template-columns:1fr; gap:14px; max-width:980px;}
+.ap-card{display:flex; align-items:center; gap:16px; padding:16px 22px; cursor:pointer;
+  border:1px solid #DDE4F0; border-radius:8px !important; background:#fff; box-shadow:0 6px 22px rgba(16,36,84,.12);}
+.ap-card:hover{box-shadow:0 12px 32px rgba(16,36,84,.18);}
+.ap-avatar{width:56px; height:56px; border-radius:50%; border:2px solid var(--blue-100); background-color:var(--blue-50);}
+.ap-info{flex:1; min-width:0;}
+.ap-name{margin:0; font-size:16px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px;}
+.ap-role{margin:2px 0 0; font-size:13px; color:var(--ink-soft);}
+.ap-tags{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+.ap-tag{font-size:12px; font-weight:600; padding:4px 10px; border-radius:4px; white-space:nowrap;}
+.ap-tag-job{background:#EAF1FF; color:var(--blue-700);}
+.ap-tag-deg{background:#E8F6EE; color:#13794A;}
+.ap-actions{display:flex; gap:8px; flex-shrink:0;}
+@media(max-width:640px){.ap-card{flex-wrap:wrap;} .ap-actions{width:100%;}}
