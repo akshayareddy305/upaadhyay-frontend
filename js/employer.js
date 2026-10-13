@@ -383,7 +383,9 @@ if(typeof window.bkStatusBadge !== 'function'){
     const myJobsSubtab = $('subtabMyJobs');
     if(myJobsSubtab) myJobsSubtab.classList.toggle('active', which==='myjobs');
     $('candidateListWrap').style.display = which==='candidates' ? 'block' : 'none';
-    if(which!=='post') $('apListWrap').style.display = 'none';
+    $('apListWrap').style.display = 'none';
+    const _av = $('applicantsView'); if(_av) _av.style.display = 'none';
+    if(!window.__empLoad){ try{ sessionStorage.removeItem('upadyay_emp_view'); }catch(e){} }
     if(which==='candidates') renderCandidates();
     if(which==='post'){ renderPostedJobs(); if(typeof instFillCampuses==='function') instFillCampuses(); }
     if(which==='company' && typeof instRender==='function') instRender();
@@ -396,6 +398,11 @@ if(typeof window.bkStatusBadge !== 'function'){
   function renderMyJobsCards(){
     const wrap = document.getElementById('myJobsList');
     if(!wrap) return;
+    try{
+      const av = document.getElementById('applicantsView');
+      if(av && av.style.display !== 'none' && activeJobId && jobsData[activeJobId]) renderApplicants(activeJobId);
+      else if(window.__empApps && document.getElementById('apListWrap').style.display !== 'none') paintAllApplicants();
+    }catch(e){}
     const ids = Object.keys(jobsData);
     const countEl = document.getElementById('myJobsCount');
     if(countEl) countEl.textContent = ids.length + (ids.length===1 ? ' job posted' : ' jobs posted');
@@ -837,26 +844,31 @@ if(typeof window.bkStatusBadge !== 'function'){
   }
 
   /* Sidebar > Applicants: every applicant across all jobs, in one list */
-  function openAllApplicants(){
-    window.__empLoad = true; switchEmployerTab('myjobs'); window.__empLoad = false; window.__empApps = true;
-    const mj = document.getElementById('dashMyJobsTab'); if(mj) mj.style.display = 'none';
+  function paintAllApplicants(){
     const ids = []; Object.keys(jobsData).forEach(k=>(jobsData[k].applicantIds||[]).forEach(c=>{ if(ids.indexOf(c)<0) ids.push(c); }));
-    const wrap = document.getElementById('apListWrap'); wrap.style.display = 'block';
     document.getElementById('apList').innerHTML = ids.map(applicantCardHTML).join('') || `
       <div class="empty-state"><h4>No applicants yet</h4><p>Faculty who apply to your jobs will appear here.</p></div>`;
     document.getElementById('apCount').textContent = ids.length + (ids.length===1 ? ' applicant' : ' applicants');
+  }
+  function openAllApplicants(){
+    window.__empLoad = true; switchEmployerTab('myjobs'); window.__empLoad = false; window.__empApps = true;
+    const mj = document.getElementById('dashMyJobsTab'); if(mj) mj.style.display = 'none';
+    document.getElementById('apListWrap').style.display = 'block';
+    paintAllApplicants();
+    try{ sessionStorage.setItem('upadyay_emp_view','apps'); }catch(e){}
     window.scrollTo(0,0);
   }
   window.openAllApplicants = openAllApplicants;
 
   function openApplicantsView(jobId){
     activeJobId = jobId;
-    // works from the "Post a job" list or from the dedicated "Posted jobs" page
-    const postTab = document.getElementById('dashPostTab');
-    if(postTab && postTab.style.display === 'none') switchEmployerTab('post');
-    document.getElementById('jobPostForm').style.display = 'none';
+    window.__empApps = false;
+    // stay in whichever option the user is in (Posted jobs / Post a job): hide that option's list, show this job's applicants
+    const pt = document.getElementById('dashPostTab'); if(pt) pt.style.display = 'none';
+    const mj = document.getElementById('dashMyJobsTab'); if(mj) mj.style.display = 'none';
     document.getElementById('applicantsView').style.display = 'block';
     document.getElementById('apListWrap').style.display = 'block';
+    try{ sessionStorage.setItem('upadyay_emp_view','job:'+jobId); }catch(e){}
     const job = jobsData[jobId];
     document.getElementById('apJobTitle').textContent = job.title;
     document.getElementById('apJobMeta').textContent = [job.category, job.qualification, job.location].filter(Boolean).join(' \u00b7 ');
@@ -870,10 +882,9 @@ if(typeof window.bkStatusBadge !== 'function'){
     renderApplicants(jobId);
   }
   function closeApplicantsView(){
-    document.getElementById('jobPostForm').style.display = 'block';
-    document.getElementById('applicantsView').style.display = 'none';
-    document.getElementById('apListWrap').style.display = 'none';
     activeJobId = null;
+    let cur = 'myjobs'; try{ cur = sessionStorage.getItem('upadyay_emp_tab') || 'myjobs'; }catch(e){}
+    switchEmployerTab(cur === 'post' ? 'post' : 'myjobs');   // back to the same option's list
   }
   function renderApplicants(jobId){
     const job = jobsData[jobId];
