@@ -393,7 +393,7 @@
 @media(max-width:640px){#employerSetupNote{font-size:12.5px;padding:10px 12px}}
 
 /* ===== Sidebar stays visible while scrolling (sits below site nav + tab bar) ===== */
-#dashInnerWide .in-side{top:104px;max-height:calc(100vh - 120px);overflow-y:auto;align-self:start;z-index:10}
+#dashInnerWide .in-side{top:104px;max-height:calc(100vh / var(--ui-zoom,1) - 120px);overflow-y:auto;align-self:start;z-index:10}
 @media(max-width:900px){#dashInnerWide .in-side{position:static;max-height:none;overflow:visible}}
 
 /* ===== Tabs locked until admin approves the institution ===== */
@@ -406,7 +406,7 @@
 /* ===== v16: wizard locked to the viewport. Banner, title and step list stay put; only the form card scrolls ===== */
 @media(min-width:901px) and (min-height:560px){
   html:has(.in-fixed),body:has(.in-fixed){overflow:hidden}
-  #dashInnerWide #instRoot .in-fixed .in-layout{height:calc(100vh - 200px);min-height:360px;align-items:stretch}
+  #dashInnerWide #instRoot .in-fixed .in-layout{height:calc(100vh / var(--ui-zoom,1) - 200px);min-height:360px;align-items:stretch}
   #dashInnerWide #instRoot .in-fixed .in-side{position:static;top:auto;align-self:start;max-height:100%;overflow-y:auto}
   #dashInnerWide #instRoot .in-fixed .in-main{height:100%;max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
   #dashInnerWide #instRoot .in-fixed .in-main .in-actions{position:sticky;bottom:0;z-index:5;background:#fff;box-shadow:0 -6px 12px -8px rgba(11,29,58,.18)}
