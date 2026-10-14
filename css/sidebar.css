@@ -65,7 +65,7 @@ body.up-has-side #app .dash-tabs{display:none !important}
 
 /* job seeker: Browse jobs is shown inside the dashboard content area */
 .up-embed{display:none}
-.up-embed iframe{display:block;width:100%;height:calc(100vh - var(--nav-h,65px) - 40px);min-height:520px;border:0;background:transparent}
+.up-embed iframe{display:block;width:100%;height:calc(100vh / var(--ui-zoom,1) - var(--nav-h,65px) - 40px);min-height:520px;border:0;background:transparent}
 
 /* job seeker: profile sections live in the sidebar under "My profile" */
 .up-sub{display:flex;flex-direction:column;gap:1px;margin:2px 0 6px 22px;padding-left:10px;border-left:1px solid var(--line)}
