@@ -422,19 +422,15 @@ if(typeof window.bkStatusBadge !== 'function'){
       const extra = jobExtra(job);
       return `
       <div class="job-card pj-card" onclick="openApplicantsView('${id}')">
-        <div class="pj-main">
-          <div class="job-logo pj-logo" style="${companyLogoStyle()}"></div>
-          <div class="pj-info">
-            <div class="pj-head"><p class="pj-title">${jbEsc(job.title)}</p>${typeof bkStatusBadge==='function' ? bkStatusBadge(job) : ''}</div>
-            <p class="pj-meta">${jbEsc(meta)}</p>
-            ${extra ? `<p class="pj-extra">${jbEsc(extra)}</p>` : ''}
-            ${typeof instJobMeta==='function' ? instJobMeta(job) : ''}
-          </div>
-        </div>
-        <div class="pj-side">
-          <span class="pj-count"><b>${count}</b> ${count===1?'applicant':'applicants'}</span>
-          <div class="pj-actions">${jobActionButtons(id, job)}<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants</button></div>
-        </div>
+        <span class="pj-badge">${typeof bkStatusBadge==='function' ? bkStatusBadge(job) : ''}</span>
+        <div class="job-logo pj-logo" style="${companyLogoStyle()}"></div>
+        <div class="pj-college">${jbEsc((currentCompany && currentCompany.name) || 'Your institution')}</div>
+        <div class="pj-role">${jbEsc(job.role || job.title)}</div>
+        <div class="pj-price">${jbEsc(jobPriceText(job))}</div>
+        <div class="pj-count"><b>${count}</b> ${count===1?'applicant':'applicants'}</div>
+        <div class="pj-line"></div>
+        <button class="pj-view" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants (${count})</button>
+        <div class="pj-actions">${jobActionButtons(id, job)}</div>
       </div>`;
     }catch(err){ console.error('Posted job card failed', id, err); return '<div class="job-card" style="color:#B3261E">Card error: '+jbEsc(err && err.message)+'</div>'; } }).join('');
   }
@@ -709,6 +705,12 @@ if(typeof window.bkStatusBadge !== 'function'){
   function jbErr(k, m){ const f = document.getElementById('jf-'+k); if(!f) return; f.classList.add('err'); const e = f.querySelector('.in-err'); if(e) e.textContent = m; }
   function jbMoney(n){ return '₹' + Number(n).toLocaleString('en-IN'); }
   // One-line summary of the new job fields (role, experience, salary, notice period). Plain text.
+  function jobPriceText(job){
+    if(job.salMin) return jbMoney(job.salMin) + '\u2013' + jbMoney(job.salMax) + ' / ' + (job.salPeriod === 'year' ? 'yr' : 'mo');
+    if(job.salNorms) return 'As per UGC / AICTE norms';
+    if(job.salNeg) return 'Negotiable';
+    return 'Salary not specified';
+  }
   function jobExtra(job){
     const parts = [];
     if(job.role) parts.push(job.role);
