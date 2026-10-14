@@ -7,6 +7,7 @@
 <title>Admin — Upaadhyay</title>
 <link rel="icon" href="../assets/logo/favicon-32.png">
 <link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="css/admin-extra.css">
 </head>
 <body>
   <div class="admin-shell">
@@ -17,6 +18,7 @@
 
         <!-- Overview -->
         <section id="panelOverview" hidden>
+          <div class="x-bar"><input type="search" id="ovSearch" placeholder="Search in overview lists" aria-label="Search overview"><span class="x-bar-r" id="ovTools"></span></div>
           <div class="admin-stats" id="ovStats"></div>
           <div class="admin-two-col">
             <div class="admin-panel">
@@ -48,7 +50,8 @@
 
         <!-- Job applications -->
         <section id="panelApplications" hidden>
-          <div class="admin-panel">
+          <div id="appCards"></div>
+          <div class="admin-panel" style="display:none">
             <div class="admin-search-row">
               <input type="search" id="appSearch" placeholder="Search by applicant name or email" aria-label="Search applications">
               <select id="appStatus" aria-label="Filter by status">
@@ -168,5 +171,6 @@
 <script src="js/ui.js"></script>
 <script src="js/admin.js"></script>
 <script src="js/manage.js"></script>
+<script src="js/extras.js"></script>
 </body>
 </html>
