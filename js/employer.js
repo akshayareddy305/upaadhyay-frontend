@@ -870,19 +870,25 @@ if(typeof window.bkStatusBadge !== 'function'){
     const list = document.getElementById('jobList');
     if(!list) return;
     list.innerHTML = '';
+    const jlHead = document.getElementById('jobListHead'), jlCount = document.getElementById('jobListCount'), jlN = Object.keys(jobsData).length;
+    if(jlHead) jlHead.style.display = jlN ? 'flex' : 'none';
+    if(jlCount) jlCount.textContent = jlN + (jlN===1 ? ' job posted' : ' jobs posted');
     Object.keys(jobsData).forEach(id=>{
       const job = jobsData[id];
       const item = document.createElement('div');
       item.className = 'job-list-item jl-card';
       item.onclick = ()=> openApplicantsView(id);
       const n = (job.applicantIds||[]).length;
-      const meta = [job.category, job.location].filter(Boolean).join(' \u00b7 ') || 'Posted just now';
+      let price = '';
+      if(job.salMin) price = jbMoney(job.salMin) + '\u2013' + jbMoney(job.salMax) + ' / ' + (job.salPeriod === 'year' ? 'yr' : 'mo');
+      else if(job.salNorms) price = 'As per UGC / AICTE norms';
+      else if(job.salNeg) price = 'Negotiable';
       item.innerHTML = `
-        <div class="jl-top">
-          <div class="job-logo jl-logo" style="${companyLogoStyle()}"></div>
-          <div class="jl-info"><div class="jt">${jbEsc(job.title)}</div><div class="jm">${jbEsc(meta)}</div></div>
-          ${bkStatusBadge(job)}
-        </div>
+        <span class="jl-badge">${bkStatusBadge(job)}</span>
+        <div class="job-logo jl-logo" style="${companyLogoStyle()}"></div>
+        <div class="jl-college">${jbEsc((currentCompany && currentCompany.name) || 'Your institution')}</div>
+        <div class="jl-role">${jbEsc(job.role || job.title)}</div>
+        <div class="jl-price">${jbEsc(price || 'Salary not specified')}</div>
         <div class="jl-line"></div>
         <button class="jl-view" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants (${n})</button>`;
       list.prepend(item);
