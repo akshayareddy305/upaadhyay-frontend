@@ -559,37 +559,92 @@ if(typeof window.bkStatusBadge !== 'function'){
     return ini.slice(0,5);
   }
 
+  /* Saved candidates (employer's shortlist-for-later), kept in this browser */
+  function savedCands(){ try{ return JSON.parse(localStorage.getItem('upaadhyay_saved_cands')||'[]'); }catch(e){ return []; } }
+  function saveCandidate(id, ev){
+    if(ev) ev.stopPropagation();
+    let l = savedCands(); l = l.indexOf(id)>-1 ? l.filter(x=>x!==id) : l.concat(id);
+    try{ localStorage.setItem('upaadhyay_saved_cands', JSON.stringify(l)); }catch(e){}
+    renderCandidates(false);
+  }
+  function downloadCandidateCV(id, ev){
+    if(ev) ev.stopPropagation();
+    const p = facultyProfiles[id];
+    const cv = ((p && p.links) || []).filter(l=>/resume|\bcv\b/i.test(l[0] || ''))[0];
+    if(cv && cv[2]) window.open(cv[2], '_blank');
+    else alert('This candidate has not uploaded a CV yet.');
+  }
+  function toggleCandMenu(id, ev){
+    if(ev) ev.stopPropagation();
+    const m = document.getElementById('cm-'+id), open = m && m.classList.contains('open');
+    document.querySelectorAll('.cr-menu.open').forEach(x=>x.classList.remove('open'));
+    if(m && !open) m.classList.add('open');
+  }
+  document.addEventListener('click', function(){ document.querySelectorAll('.cr-menu.open').forEach(x=>x.classList.remove('open')); });
+
   function candidateCardHTML(id){
     const p = facultyProfiles[id];
     if(!p) return '';
-    const qual = (p.education && p.education[0] && (p.education[0].degree || p.education[0].title)) || (p.tags && p.tags[0]) || '';
+    const ed = (p.education || [])[0];
+    const edTitle = Array.isArray(ed) ? ed[0] : (ed && (ed.degree || ed.title)) || '';
+    const edSub = Array.isArray(ed) ? ed[1] : (ed && [ed.college, ed.years].filter(Boolean).join(' \u00b7 ')) || p.college || '';
+    const qual = edTitle || (p.tags && p.tags[0]) || '';
     const expTag = (p.tags || []).filter(t=>/experience/i.test(t))[0] || '';
-    const exp = expTag ? expTag.replace(/\s*experience/i,'') : '';
-    const locTag = (p.tags || []).filter(t=>!/experience/i.test(t) && t !== qual)[0] || '';
-    const chips = [qual].concat((p.skills || []).slice(0,3)).filter(Boolean).slice(0,3);
-    const meta = [p.college, locTag, exp ? exp + ' exp' : ''].filter(Boolean).join(' \u00b7 ');
-    const short = collegeShort(p.college);
-    const roleLine = [short, p.role || 'Faculty'].filter(Boolean).join('-');
+    const exp = expTag ? expTag.replace(/\s*experience/i,'').trim() : '';
+    const loc = (p.tags || []).filter(t=>!/experience/i.test(t) && t !== qual)[0] || '';
+    const roleLine = [collegeShort(p.college), p.role || 'Faculty'].filter(Boolean).join('-');
+    const skills = p.skills || [], shown = skills.slice(0,6), more = skills.length - shown.length;
     const ini = String(p.name||'?').replace(/^(dr|mr|mrs|ms|prof)\.?\s+/i,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
-    const av = p.avatar ? `<span class="cc-av" style="background-image:url('${jbEsc(p.avatar)}')"></span>` : `<span class="cc-av cc-av-ph">${jbEsc(ini)}</span>`;
+    const av = p.avatar ? `<span class="cr-av" style="background-image:url('${jbEsc(p.avatar)}')"></span>` : `<span class="cr-av cr-av-ini">${jbEsc(ini)}</span>`;
     const st = statusBadge(id);
+    const saved = savedCands().indexOf(id) > -1;
+    const IC = {
+      pin:'<path d="M12 21s7-6.2 7-11.5A7 7 0 005 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+      bag:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2"/>',
+      cap:'<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/>',
+      inst:'<path d="M4 21V5l8-2 8 2v16"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/>',
+      book:'<path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2z"/><path d="M4 21V5"/>',
+      award:'<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>',
+      proj:'<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
+      dl:'<path d="M12 4v11M7 11l5 5 5-5M5 20h14"/>',
+      bm:'<path d="M6 3h12v18l-6-4-6 4z"/>'
+    };
+    const svg = (k,sz)=>`<svg width="${sz||16}" height="${sz||16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
+    const statIcons = ['book','award','proj'];
+    const stats = (p.stats || []).slice(0,3).map((x,i)=>`<div class="cr-stat"><span class="cr-stat-ic">${svg(statIcons[i])}</span><div><b>${jbEsc(x[0])}</b><small>${jbEsc(x[1])}</small></div></div>`).join('');
     return `
-      <div class="job-card cc-card" onclick="openProfile('${id}')">
-        <div class="cc-banner" style="background:${bannerGradient(p.name)};">
-          <span class="cc-tag">Open to opportunities</span>
-          ${st || (exp ? `<span class="cc-exp">${jbEsc(exp)}</span>` : '')}
-          ${av}
+      <div class="job-card cr-card" onclick="openProfile('${id}')">
+        <div class="cr-id">
+          <div class="cr-av-wrap">${av}<i class="cr-dot"></i></div>
+          <div class="cr-id-txt">
+            <p class="cr-name">${jbEsc(p.name)}<span class="cr-ver"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#2563EB"/><path d="M7.5 12.5l3 3 6-6.5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Verified</span>${st || ''}</p>
+            <p class="cr-role">${jbEsc(roleLine)}</p>
+            ${loc ? `<p class="cr-line">${svg('pin')}${jbEsc(loc)}</p>` : ''}
+            ${exp ? `<p class="cr-line">${svg('bag')}${jbEsc(exp)} experience</p>` : ''}
+            <p class="cr-open"><i></i>Open to Work</p>
+          </div>
         </div>
-        <div class="cc-body">
-          <p class="cc-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
-          <p class="cc-org">${jbEsc(roleLine)}</p>
-          <div class="cc-chips">${chips.map(c=>`<span>${jbEsc(c)}</span>`).join('')}</div>
-          <p class="cc-meta">${meta ? jbEsc(meta) : 'Profile details not added yet'}</p>
-          <div class="cc-foot">
-            <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
-            ${candidateStatus[id]==='shortlisted'
-              ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
-              : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
+        <div class="cr-mid">
+          <p class="cr-h">Skills</p>
+          <div class="cr-skills">${shown.map(t=>`<span>${jbEsc(t)}</span>`).join('') || '<em>No skills added yet</em>'}${more>0 ? `<span class="cr-more">+${more}</span>` : ''}</div>
+          ${qual ? `<p class="cr-line">${svg('cap')}${jbEsc(qual)}</p>` : ''}
+          ${edSub ? `<p class="cr-line">${svg('inst')}${jbEsc(edSub)}</p>` : ''}
+        </div>
+        <div class="cr-stats">${stats}</div>
+        <div class="cr-act">
+          <div class="cr-act-main">
+            <button class="btn btn-primary" onclick="event.stopPropagation(); openProfile('${id}')">View Profile</button>
+            <button class="btn btn-light" onclick="downloadCandidateCV('${id}', event)">${svg('dl',15)}Download CV</button>
+            <button class="btn btn-light ${saved?'is-saved':''}" onclick="saveCandidate('${id}', event)">${svg('bm',15)}${saved?'Saved':'Save Profile'}</button>
+          </div>
+          <div class="cr-kebab">
+            <button class="cr-kebab-btn" aria-label="More" onclick="toggleCandMenu('${id}', event)"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button>
+            <div class="cr-menu" id="cm-${id}">
+              <button onclick="messageCandidate('${id}', event)">Message</button>
+              ${candidateStatus[id]==='shortlisted'
+                ? `<button disabled>Shortlisted</button>`
+                : `<button onclick="inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
+            </div>
           </div>
         </div>
       </div>`;
