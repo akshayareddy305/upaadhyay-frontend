@@ -552,30 +552,29 @@ if(typeof window.bkStatusBadge !== 'function'){
   function candidateCardHTML(id){
     const p = facultyProfiles[id];
     if(!p) return '';
+    const qual = (p.education && p.education[0] && (p.education[0].degree || p.education[0].title)) || (p.tags && p.tags[0]) || '';
+    const expTag = (p.tags || []).filter(t=>/experience/i.test(t))[0] || '';
+    const exp = expTag ? expTag.replace(/\s*experience/i,'') : '';
+    const locTag = (p.tags || []).filter(t=>!/experience/i.test(t) && t !== qual)[0] || '';
+    const chips = [qual].concat((p.skills || []).slice(0,3)).filter(Boolean).slice(0,3);
+    const meta = [p.college, locTag, exp ? exp + ' exp' : ''].filter(Boolean).join(' \u00b7 ');
+    const av = p.avatar ? `<span class="cc-av" style="background-image:url('${jbEsc(p.avatar)}')"></span>` : `<span class="cc-av cc-av-ph"></span>`;
+    const st = statusBadge(id);
     return `
-      <div class="job-card profile-card profile-card-banner" onclick="openProfile('${id}')" style="cursor:pointer;">
-        <div class="pc-banner" style="background:${bannerGradient(p.name)};">
-          ${statusBadge(id)}
-          ${p.college ? `<span class="pc-college-badge">${jbEsc(p.college)}</span>` : ''}
+      <div class="job-card cc-card" onclick="openProfile('${id}')">
+        <div class="cc-top">
+          <span class="cc-tag">Open to opportunities</span>
+          ${st || (exp ? `<span class="cc-exp">${jbEsc(exp)}</span>` : '')}
         </div>
-        <div class="pc-avatar-wrap">
-          <div class="job-logo pc-avatar" style="background-image:url('${jbEsc(p.avatar)}'); background-size:cover;"></div>
-        </div>
-        <div class="pc-body">
-          <div class="pc-headline">
-            <p class="jc-title">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
-            <p class="jc-org">${jbEsc(p.role)}</p>
-          </div>
-          ${facInfoHTML(p)}
-          <div class="jc-foot">
-            <span class="jc-posted">Open to opportunities</span>
-            <div class="pc-actions">
-              <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
-              ${candidateStatus[id]==='shortlisted'
-                ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
-                : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited ✓' : 'Invite'}</button>`}
-            </div>
-          </div>
+        <p class="cc-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
+        <div class="cc-org">${av}<span>${jbEsc(p.role || 'Faculty')}</span></div>
+        <div class="cc-chips">${chips.map(c=>`<span>${jbEsc(c)}</span>`).join('')}</div>
+        <p class="cc-meta">${meta ? jbEsc(meta) : 'Profile details not added yet'}</p>
+        <div class="cc-foot">
+          <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
+          ${candidateStatus[id]==='shortlisted'
+            ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
+            : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
         </div>
       </div>`;
   }
