@@ -1438,3 +1438,18 @@ html, body.page{height:auto !important; min-height:100%; overflow-y:auto !import
 .jl-line{height:1px; background:#DDE4F0; width:100%; margin:auto 0 4px; padding:0;}
 .jl-view{display:block; margin:0 auto; background:none; border:0; font:700 12.5px inherit; font-family:inherit; letter-spacing:.04em; color:var(--blue-700); text-transform:uppercase; cursor:pointer; padding:4px 8px;}
 .jl-view:hover{text-decoration:underline;}
+
+/* ---- Posted jobs tab: same card as Post tab, a little bigger ---- */
+#myJobsList{grid-template-columns:repeat(auto-fill,330px); gap:18px;}
+#myJobsList .pj-card{position:relative; display:flex !important; flex-direction:column; align-items:center; text-align:center; gap:3px;
+  width:330px; min-height:250px; box-sizing:border-box; border-radius:3px !important; padding:18px 20px 12px !important; overflow:hidden; cursor:pointer;}
+.pj-badge{position:absolute; top:10px; right:10px;}
+#myJobsList .pj-logo{width:56px; height:56px; border-radius:3px !important; margin:0 0 8px !important; flex-shrink:0;}
+.pj-college{font-size:16px; font-weight:700; color:var(--ink); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.pj-role{font-size:14px; font-weight:600; color:var(--blue-700); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.pj-price{font-size:13.5px; color:var(--ink-soft); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+#myJobsList .pj-count{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+.pj-line{height:1px; background:#DDE4F0; width:100%; margin:auto 0 4px;}
+.pj-view{display:block; margin:0 auto; background:none; border:0; font:700 13px inherit; font-family:inherit; letter-spacing:.04em; color:var(--blue-700); text-transform:uppercase; cursor:pointer; padding:4px 8px;}
+.pj-view:hover{text-decoration:underline;}
+#myJobsList .pj-actions{justify-content:center; gap:6px; margin-top:4px; padding:0; border:0;}
