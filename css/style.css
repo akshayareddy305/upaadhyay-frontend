@@ -1426,15 +1426,15 @@ html, body.page{height:auto !important; min-height:100%; overflow-y:auto !import
 #jobList .job-list-item .jt{font-size:15px; text-transform:capitalize;}
 #jobList .job-list-item .jm{font-size:12px; line-height:1.4;}
 
-/* ---- Post tab: small landscape job card (3:2, 3px radius, main info + centered action) ---- */
+/* ---- Post tab: small landscape job card (centered logo, college, role, price, line, action) ---- */
 #jobList{grid-template-columns:repeat(auto-fill,270px);}
-#jobList .jl-card{display:flex; flex-direction:column; justify-content:space-between; aspect-ratio:3/2; width:270px; box-sizing:border-box;
-  border-radius:3px !important; padding:14px 16px 10px; cursor:pointer; overflow:hidden;}
-.jl-top{display:flex; align-items:center; gap:10px; min-width:0;}
-.jl-logo{width:38px; height:38px; border-radius:3px !important; flex-shrink:0; margin:0 !important;}
-.jl-info{flex:1; min-width:0;}
-#jobList .jl-card .jt{font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-#jobList .jl-card .jm{font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-.jl-line{height:1px; background:#DDE4F0; margin:0 auto; width:100%;}
+#jobList .jl-card{position:relative; display:flex !important; flex-direction:column; align-items:center; text-align:center; justify-content:flex-start; gap:2px;
+  width:270px; min-height:180px; box-sizing:border-box; border-radius:3px !important; padding:14px 16px 10px !important; cursor:pointer; overflow:hidden;}
+.jl-badge{position:absolute; top:8px; right:8px;}
+#jobList .jl-logo{width:46px; height:46px; border-radius:3px !important; margin:0 0 6px !important; flex-shrink:0;}
+.jl-college{font-size:14px; font-weight:700; color:var(--ink); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.jl-role{font-size:13px; font-weight:600; color:var(--blue-700); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.jl-price{font-size:12.5px; color:var(--ink-soft); max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.jl-line{height:1px; background:#DDE4F0; width:100%; margin:auto 0 4px; padding:0;}
 .jl-view{display:block; margin:0 auto; background:none; border:0; font:700 12.5px inherit; font-family:inherit; letter-spacing:.04em; color:var(--blue-700); text-transform:uppercase; cursor:pointer; padding:4px 8px;}
 .jl-view:hover{text-decoration:underline;}
