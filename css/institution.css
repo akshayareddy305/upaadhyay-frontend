@@ -430,3 +430,12 @@
 .vf-step.on .vf-n{background:var(--blue-700);color:#fff}
 .vf-step.done .vf-n{background:var(--green);color:#fff}
 .vf-nav{margin-top:16px}
+
+/* Verified state: small centred card instead of the full status block */
+.in-vcard{display:flex; align-items:center; gap:14px; max-width:400px; margin:34px auto; padding:14px 16px; background:#fff; border:1px solid var(--line); border-radius:3px; box-shadow:0 6px 20px rgba(15,35,80,.10);}
+.in-vcard-logo{flex:none; width:52px; height:52px; border-radius:3px; border:1px solid var(--line); background:#EEF3FF; color:var(--blue-700); font-weight:700; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+.in-vcard-logo img{width:100%; height:100%; object-fit:cover;}
+.in-vcard-txt{flex:1; min-width:0;}
+.in-vcard-name{margin:0 0 2px; font-size:15px; font-weight:700; color:var(--blue-900); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.in-vcard-sub{margin:0 0 6px; font-size:12.5px; color:var(--ink-soft);}
+@media(max-width:480px){.in-vcard{flex-wrap:wrap;}}
