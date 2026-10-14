@@ -544,8 +544,9 @@ if(typeof window.bkStatusBadge !== 'function'){
     const pubs = st.map(x=>x[0]+' '+x[1]).filter(x=>!/^0 /.test(x)).join(' · ');
     if(pubs) rows.push(['Research', pubs]);
     const skills = (p.skills || []).slice(0,4);
+    if(!rows.length) return `<div class="pc-info"><div class="pc-empty">Profile details not added yet</div></div><div class="jc-tags"></div>`;
     return `<div class="pc-info">${rows.map(r=>`<div class="pc-row"><span>${jbEsc(r[0])}</span><b title="${jbEsc(r[1])}">${jbEsc(r[1])}</b></div>`).join('')}</div>`
-      + (skills.length ? `<div class="jc-tags">${skills.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('')}</div>` : '');
+      + `<div class="jc-tags">${skills.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('')}</div>`;
   }
 
   function candidateCardHTML(id){
