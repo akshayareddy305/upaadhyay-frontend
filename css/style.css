@@ -1200,25 +1200,21 @@ body.page-auth{ overflow:hidden; }
 .dash-inner-wide#dashInnerWide{margin-left:auto; margin-right:auto;}
 body.page-auth .auth-card, .role-popup-card{margin-left:auto; margin-right:auto;}
 
-/* ---------- Browse candidates: uniform profile cards (banner + avatar on top, details below) ---------- */
-#candidateList{grid-template-columns:repeat(auto-fill,minmax(290px,1fr));grid-auto-rows:1fr;align-items:stretch;gap:18px}
-#candidateList .profile-card-banner{display:flex;flex-direction:column;height:100%;min-height:0;box-shadow:0 4px 14px rgba(16,36,84,.10)}
-#candidateList .pc-banner{height:84px;min-height:84px;flex:none}
-#candidateList .pc-banner > .badge{top:10px;left:10px}
-#candidateList .pc-college-badge{top:10px;right:10px;bottom:auto;left:auto;max-width:55%;font-size:10.5px;padding:3px 8px}
-#candidateList .pc-avatar-wrap{position:relative;left:auto;top:auto;width:auto;height:0;display:flex;justify-content:center;pointer-events:none}
-#candidateList .pc-avatar{width:76px;height:76px;margin-top:-38px;border-width:4px}
-#candidateList .pc-body{padding:46px 18px 16px;text-align:center;flex:1;display:flex;flex-direction:column}
-#candidateList .pc-headline{margin-bottom:10px}
-#candidateList .pc-body .jc-title{justify-content:center;font-size:16px}
-#candidateList .pc-body .jc-org{font-size:12.5px}
-#candidateList .pc-info{min-height:88px;margin:0 0 8px;border-top:1px solid var(--line);padding-top:10px}
-#candidateList .pc-empty{font-size:12.5px;color:var(--ink-faint);text-align:center;padding:14px 0}
-#candidateList .pc-body .jc-tags{justify-content:center;gap:5px;margin:0 0 12px;min-height:26px;max-height:26px;overflow:hidden;flex-wrap:wrap}
-#candidateList .pc-body .jc-foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);flex-direction:column;align-items:stretch;gap:10px}
-#candidateList .pc-body .jc-posted{text-align:center;font-size:12px}
-#candidateList .pc-actions{width:100%}
-#candidateList .pc-actions .btn{height:34px;padding:0 12px;font-size:13px;flex:1}
+/* ---------- Browse candidates: flat cards, same look as the job cards ---------- */
+#candidateList{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));grid-auto-rows:1fr;align-items:stretch;gap:18px}
+.cc-card{display:flex;flex-direction:column;align-items:center;text-align:center;padding:18px 20px 16px;cursor:pointer;height:100%}
+.cc-top{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;margin-bottom:12px}
+.cc-tag{font-size:12px;font-weight:700;color:#fff;background:#F59E0B;padding:6px 12px;border-radius:2px;white-space:nowrap}
+.cc-exp{font-size:13px;font-weight:700;color:var(--ink)}
+.cc-name{margin:0 0 6px;font-family:'Lora',serif;font-size:17px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;gap:6px;max-width:100%}
+.cc-org{display:flex;align-items:center;justify-content:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--blue-600);margin-bottom:12px}
+.cc-av{width:26px;height:26px;border-radius:50%;background-size:cover;background-position:center;border:1px solid var(--line);flex:none}
+.cc-av-ph{background-color:var(--blue-50)}
+.cc-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-bottom:12px;min-height:34px}
+.cc-chips span{font-size:12.5px;color:var(--ink-soft);border:1px solid var(--line);background:#fff;padding:6px 12px;border-radius:2px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc-meta{margin:0 0 14px;font-size:12.5px;color:var(--ink-faint);line-height:1.5}
+.cc-foot{display:flex;gap:10px;width:100%;margin-top:auto;padding-top:12px;border-top:1px solid var(--line)}
+.cc-foot .btn{flex:1;height:34px;padding:0 12px;font-size:13px;justify-content:center}
 @media(max-width:560px){#candidateList{grid-template-columns:1fr}}
 
 /* Profile card: institution details (company accounts) */
