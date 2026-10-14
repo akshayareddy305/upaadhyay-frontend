@@ -549,6 +549,16 @@ if(typeof window.bkStatusBadge !== 'function'){
       + `<div class="jc-tags">${skills.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('')}</div>`;
   }
 
+  /* College short code: "IIIT Nagpur" -> IIIT, "Andhra University" -> AU */
+  function collegeShort(name){
+    const n = String(name || '').trim();
+    if(!n) return '';
+    const caps = n.split(/[\s,.\-]+/).filter(w=>/^[A-Z]{2,6}$/.test(w))[0];
+    if(caps) return caps;
+    const ini = n.split(/[\s,.\-]+/).filter(w=>w && !/^(of|the|and|for|&|in)$/i.test(w)).map(w=>w[0].toUpperCase()).join('');
+    return ini.slice(0,5);
+  }
+
   function candidateCardHTML(id){
     const p = facultyProfiles[id];
     if(!p) return '';
@@ -558,23 +568,29 @@ if(typeof window.bkStatusBadge !== 'function'){
     const locTag = (p.tags || []).filter(t=>!/experience/i.test(t) && t !== qual)[0] || '';
     const chips = [qual].concat((p.skills || []).slice(0,3)).filter(Boolean).slice(0,3);
     const meta = [p.college, locTag, exp ? exp + ' exp' : ''].filter(Boolean).join(' \u00b7 ');
-    const av = p.avatar ? `<span class="cc-av" style="background-image:url('${jbEsc(p.avatar)}')"></span>` : `<span class="cc-av cc-av-ph"></span>`;
+    const short = collegeShort(p.college);
+    const roleLine = [short, p.role || 'Faculty'].filter(Boolean).join('-');
+    const ini = String(p.name||'?').replace(/^(dr|mr|mrs|ms|prof)\.?\s+/i,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+    const av = p.avatar ? `<span class="cc-av" style="background-image:url('${jbEsc(p.avatar)}')"></span>` : `<span class="cc-av cc-av-ph">${jbEsc(ini)}</span>`;
     const st = statusBadge(id);
     return `
       <div class="job-card cc-card" onclick="openProfile('${id}')">
-        <div class="cc-top">
+        <div class="cc-banner" style="background:${bannerGradient(p.name)};">
           <span class="cc-tag">Open to opportunities</span>
           ${st || (exp ? `<span class="cc-exp">${jbEsc(exp)}</span>` : '')}
+          ${av}
         </div>
-        <p class="cc-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
-        <div class="cc-org">${av}<span>${jbEsc(p.role || 'Faculty')}</span></div>
-        <div class="cc-chips">${chips.map(c=>`<span>${jbEsc(c)}</span>`).join('')}</div>
-        <p class="cc-meta">${meta ? jbEsc(meta) : 'Profile details not added yet'}</p>
-        <div class="cc-foot">
-          <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
-          ${candidateStatus[id]==='shortlisted'
-            ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
-            : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
+        <div class="cc-body">
+          <p class="cc-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
+          <p class="cc-org">${jbEsc(roleLine)}</p>
+          <div class="cc-chips">${chips.map(c=>`<span>${jbEsc(c)}</span>`).join('')}</div>
+          <p class="cc-meta">${meta ? jbEsc(meta) : 'Profile details not added yet'}</p>
+          <div class="cc-foot">
+            <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
+            ${candidateStatus[id]==='shortlisted'
+              ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
+              : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
+          </div>
         </div>
       </div>`;
   }
@@ -616,7 +632,7 @@ if(typeof window.bkStatusBadge !== 'function'){
       </div>`;
   }
 
-  const CAND_PAGE_SIZE = 8;
+  const CAND_PAGE_SIZE = 5;
   let candVisibleCount = CAND_PAGE_SIZE;
 
   function renderCandidates(resetPaging){
@@ -640,12 +656,13 @@ if(typeof window.bkStatusBadge !== 'function'){
       const remaining = ids.length - visibleIds.length;
       if(remaining > 0){
         moreWrap.style.display = 'flex';
-        document.getElementById('candidateShowMoreBtn').textContent = `Show ${Math.min(remaining, CAND_PAGE_SIZE)} more`;
+        document.getElementById('candidateShowMoreBtn').textContent = `View more (${remaining})`;
       } else {
         moreWrap.style.display = 'none';
       }
     }
   }
+  document.addEventListener('input', function(e){ if(e.target && e.target.id==='candSearch') renderCandidates(); });
   function showMoreCandidates(){
     candVisibleCount += CAND_PAGE_SIZE;
     renderCandidates(false);
