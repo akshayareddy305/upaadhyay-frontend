@@ -226,6 +226,25 @@
 .bjn-meta{ margin-bottom:6px; }
 .bjn-line{ margin:4px auto 6px; }
 </style>
+<style>
+/* v5: compact cards — visible border, rounded edges, soft shadow (applicant-card look) */
+.bjn-card{ padding:12px 14px 8px; border:1.5px solid #C9D6EE; border-radius:10px; box-shadow:0 1px 2px rgba(15,35,80,.06), 0 6px 16px rgba(15,35,80,.10); overflow:hidden; }
+.bjn-card:hover{ border-color:var(--blue-500); box-shadow:0 2px 4px rgba(15,35,80,.08), 0 10px 22px rgba(15,35,80,.16); transform:translateY(-2px); }
+.bjn-top{ margin-bottom:6px; }
+.bjn-pill{ font-size:11px; padding:3px 10px; border-radius:6px; }
+.bjn-sal{ font-size:12.5px; }
+.bjn-title{ font-size:15px; margin:0 0 4px; }
+.bjn-inst{ margin-bottom:6px; gap:6px; }
+.bjn-logo{ width:22px; height:22px; border-radius:6px; }
+.bjn-logo img, .bjn-logo span{ border-radius:6px !important; }
+.bjn-name{ font-size:12.5px; }
+.bjn-chips{ margin-bottom:6px; gap:5px; }
+.bjn-chip{ font-size:11px; padding:2px 9px; border:1.5px solid #DCE6F5; border-radius:6px; }
+.bjn-desc{ font-size:12px; margin:0 0 4px; }
+.bjn-meta{ font-size:11px; margin-bottom:4px; }
+.bjn-line{ width:100%; margin:2px 0 4px; background:#E3E9F4; }
+.bjn-btn{ font-size:12px; padding:2px; }
+</style>
 <script>window.UPADYAY_DEMO_JOBS = true; /* demo cards show only while the API has no live jobs; remove this line to hide them */</script>
 <script src="../js/api.js"></script>
 <script src="../js/store.js"></script>
