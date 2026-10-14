@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /pages/login.html
+Disallow: /pages/register.html
+Disallow: /pages/faculty-dashboard.html
+Disallow: /pages/employer-dashboard.html
+Disallow: /pages/profile.html
+Disallow: /pages/candidate-profile.html
+Disallow: /pages/subbranch-auth.html
+Disallow: /pages/institution-network.html
+
+Sitemap: https://upaadhyay.com/sitemap.xml
