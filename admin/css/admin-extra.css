@@ -1,0 +1,64 @@
+/* admin-extra.css — compact "zoomed-out" layout + new views. Loaded after admin.css. */
+:root{--side-w:206px}
+body{font-size:12.5px}
+.admin-side-brand{padding:12px 14px;font-size:14px}.admin-side-brand img{height:26px}
+.admin-nav-group-label{padding:10px 10px 4px;font-size:9.5px}
+.admin-nav-item{padding:7px 10px;font-size:12.5px;gap:9px}
+.admin-top{padding:8px 20px}.admin-top-title{font-size:14px}.admin-top-right{font-size:12px}
+.admin-body{padding:14px 18px}
+.admin-footer{padding:10px 20px;font-size:11.5px}
+.btn{padding:6px 12px;font-size:12px}.btn-sm{padding:4px 9px;font-size:11.5px}
+.admin-viewbtn{padding:4px 10px;font-size:11.5px}
+.admin-pill{padding:2px 8px;font-size:10.5px}
+.admin-stats{gap:12px}.admin-stat-top{padding:12px 14px}.admin-stat-top .n{font-size:24px}.admin-stat-top .l{font-size:11.5px;margin-top:4px}
+.admin-stat-bot{padding:6px 14px;font-size:11px}
+.admin-panel{margin-bottom:14px}.admin-panel-head{padding:10px 14px;font-size:13px}
+.admin-two-col{gap:14px}
+/* tables: one clean line per record, aligned columns */
+.admin-table{font-size:12.5px}
+.admin-table th{padding:8px 12px;font-size:10.5px}
+.admin-table td{padding:8px 12px;white-space:nowrap;vertical-align:middle;line-height:1.3}
+.admin-table td small{font-size:11px}
+.admin-table td:first-child{white-space:normal;min-width:150px}
+.admin-row-name{gap:8px}.admin-avatar{width:28px;height:28px;font-size:10.5px;border-radius:6px}
+.admin-rowbtns{display:inline-flex;flex-wrap:nowrap;gap:5px;justify-content:flex-end}
+.admin-table td.act{width:1%}
+.admin-search-row,.admin-toolbar{padding:10px 14px;gap:8px}
+.admin-search-row input,.admin-search-row select,.admin-toolbar select,.x-sort{padding:6px 9px;font-size:12.5px;border:1px solid var(--line);border-radius:var(--radius-sm);background:#fff;font-family:inherit}
+.admin-tab{padding:7px 10px 9px;font-size:12.5px}
+.admin-pager{padding:9px 14px;font-size:11.5px}
+/* shared toolbar bits */
+.x-tools{margin-left:auto;display:inline-flex;gap:8px;align-items:center}
+.x-bar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.x-bar input{flex:1;min-width:160px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12.5px;background:#fff}
+.x-bar-r{display:inline-flex;gap:8px}
+/* college cards */
+.xc-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.xc-head h3{margin:0;font-size:14px;color:var(--blue-900)}
+.xc-head input{flex:1;min-width:180px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:12.5px;background:#fff}
+.xc-crumb{font-size:12px;color:var(--ink-faint);margin-bottom:10px}.xc-crumb a{color:var(--blue-700);cursor:pointer;font-weight:600}
+.xc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.xc-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:12px;cursor:pointer;box-shadow:var(--shadow-sm);transition:border-color .15s,box-shadow .15s}
+.xc-card:hover{border-color:var(--blue-500);box-shadow:var(--shadow-md)}
+.xc-top{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.xc-top b{display:block;font-size:13px;line-height:1.25}.xc-top small{color:var(--ink-faint);font-size:11px}
+.xc-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.xc-stat{background:var(--blue-50);border-radius:var(--radius-sm);padding:6px 8px;text-align:center}
+.xc-stat b{display:block;font-size:17px;color:var(--blue-700)}.xc-stat span{font-size:10.5px;color:var(--ink-soft)}
+.xc-about{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 18px;padding:14px;font-size:12.5px}
+.xc-about div span{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint)}
+.xc-about p{grid-column:1/-1;margin:2px 0 0;color:var(--ink-soft)}
+.xc-job small{display:block;color:var(--ink-faint);font-size:11px;margin:2px 0 8px}
+.xc-jobmeta{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;color:var(--ink-soft)}
+/* faculty drawer */
+.xd-bg{position:fixed;inset:0;background:rgba(11,29,58,.35);z-index:60;display:flex;justify-content:flex-end}
+.xd{width:min(480px,100%);height:100%;background:#fff;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.xd-top{display:flex;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+.xd-top .admin-avatar{width:40px;height:40px;font-size:13px}.xd-top b{display:block;font-size:14px}.xd-top small{color:var(--ink-faint)}
+.xd-x{margin-left:auto;border:0;background:none;font-size:20px;cursor:pointer;color:var(--ink-soft)}
+.xd-tabs{display:flex;gap:4px;padding:0 12px;border-bottom:1px solid var(--line)}
+.xd-body{padding:14px 16px;overflow:auto;flex:1;font-size:12.5px}
+.xd-kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}.xd-kv span{color:var(--ink-faint)}.xd-kv b{text-align:right}
+.xd-item{padding:8px 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}
+.xd-item small{display:block;color:var(--ink-faint)}
+.xd-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
