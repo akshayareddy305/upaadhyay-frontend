@@ -1406,3 +1406,22 @@ html, body.page{height:auto !important; min-height:100%; overflow-y:auto !import
 .ap-tag{font-size:11px; padding:2px 8px; border-radius:6px; max-width:100%; overflow:hidden; text-overflow:ellipsis;}
 .ap-actions{width:100%; gap:6px; padding-top:8px; border-top:1px solid #E3E9F4;}
 .ap-actions .btn{flex:1; padding:5px 8px; font-size:12px; border-radius:8px;}
+
+/* ---- Posted jobs: compact cards (grid, clear border, rounded edges, shadow) ---- */
+#myJobsList, #jobList{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px; max-width:980px;}
+.pj-card, #jobList .job-list-item{border:1.5px solid #C9D6EE; border-radius:12px !important; background:#fff; transition:.15s;
+  box-shadow:0 1px 3px rgba(16,36,84,.08), 0 8px 20px rgba(16,36,84,.12);}
+.pj-card:hover, #jobList .job-list-item:hover{border-color:var(--blue-500); transform:translateY(-2px); box-shadow:0 2px 4px rgba(16,36,84,.10), 0 12px 26px rgba(16,36,84,.18);}
+.pj-card{flex-direction:column; align-items:stretch; gap:10px; padding:12px 14px;}
+.pj-logo{width:36px; height:36px;}
+.pj-title{font-size:15px;}
+.pj-meta{font-size:12.5px; margin-top:2px;}
+.pj-extra{font-size:12px; margin-top:2px;}
+.pj-side{flex-direction:column; align-items:stretch; gap:8px; padding-top:8px; border-top:1px solid #E3E9F4;}
+.pj-count{font-size:12px;}
+.pj-actions{justify-content:flex-start; gap:6px;}
+.pj-actions .btn{padding:4px 9px; font-size:12px; border-radius:8px;}
+#jobList .job-list-item{padding:12px 14px; margin:0; gap:8px; border-bottom:1.5px solid #C9D6EE;}
+#jobList .job-list-item:last-child{border-bottom:1.5px solid #C9D6EE;}
+#jobList .job-list-item .jt{font-size:15px; text-transform:capitalize;}
+#jobList .job-list-item .jm{font-size:12px; line-height:1.4;}
