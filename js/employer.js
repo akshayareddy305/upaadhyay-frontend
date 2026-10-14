@@ -873,15 +873,18 @@ if(typeof window.bkStatusBadge !== 'function'){
     Object.keys(jobsData).forEach(id=>{
       const job = jobsData[id];
       const item = document.createElement('div');
-      item.className = 'job-list-item';
-      item.style.cursor = 'pointer';
-      item.style.display = 'flex';
-      item.style.alignItems = 'center';
+      item.className = 'job-list-item jl-card';
       item.onclick = ()=> openApplicantsView(id);
+      const n = (job.applicantIds||[]).length;
+      const meta = [job.category, job.location].filter(Boolean).join(' \u00b7 ') || 'Posted just now';
       item.innerHTML = `
-        <div class="job-logo" style="width:34px; height:34px; border-radius:8px; margin-right:10px; ${companyLogoStyle()}"></div>
-        <div style="flex:1;"><div class="jt">${jbEsc(job.title)}</div><div class="jm">${jbEsc([job.category,job.qualification,job.location].filter(Boolean).join(' · ') || 'Posted just now')} · ${job.applicantIds.length} applicants</div>${jobExtra(job) ? `<div class="jm">${jbEsc(jobExtra(job))}</div>` : ''}${typeof instJobMeta==='function' ? instJobMeta(job) : ''}</div>
-        ${bkStatusBadge(job)}`;
+        <div class="jl-top">
+          <div class="job-logo jl-logo" style="${companyLogoStyle()}"></div>
+          <div class="jl-info"><div class="jt">${jbEsc(job.title)}</div><div class="jm">${jbEsc(meta)}</div></div>
+          ${bkStatusBadge(job)}
+        </div>
+        <div class="jl-line"></div>
+        <button class="jl-view" onclick="event.stopPropagation(); openApplicantsView('${id}')">View applicants (${n})</button>`;
       list.prepend(item);
     });
   }
