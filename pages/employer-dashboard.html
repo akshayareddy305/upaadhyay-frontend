@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Employer Dashboard — Upadyay</title>
-<link rel="stylesheet" href="../css/style.css?v=9">
+<link rel="stylesheet" href="../css/style.css?v=11">
 <link rel="stylesheet" href="../css/institution.css?v=18">
 <style>#dashInnerWide{visibility:hidden}#dashInnerWide.ready{visibility:visible}</style>
 <link rel="stylesheet" href="../css/sidebar.css?v=10">
@@ -195,16 +195,16 @@
 
         <div id="dashCandidatesTab" style="display:none;">
           <h3>Browse candidates</h3>
-          <div class="cand-filter">
-            <label class="cand-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              <input type="text" id="candSearch" placeholder="Search by name, subject or role" onkeydown="if(event.key==='Enter')renderCandidates()"></label>
-            <select id="candCategory" class="cand-select">
-              <option value="">All categories</option>
-              <option>Schools</option>
-              <option>Intermediate</option>
-              <option>Higher Education</option>
-            </select>
-            <button class="btn btn-primary" onclick="renderCandidates()">Search</button>
+          <div class="bj-searchbar cand-bar">
+            <div class="bj-field">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex-shrink:0; color:var(--ink-faint);"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" id="candSearch" placeholder="Name, subject, role or keyword" onkeydown="if(event.key==='Enter')renderCandidates()">
+            </div>
+            <div class="bj-field">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex-shrink:0; color:var(--ink-faint);"><path d="M4 21V4.5L12 2L20 4.5V21" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              <input type="text" id="candLocation" placeholder="Location" onkeydown="if(event.key==='Enter')renderCandidates()">
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="renderCandidates()">Search candidates</button>
           </div>
         </div>
 
@@ -228,7 +228,7 @@
 
 <script src="../js/api.js?v=2"></script>
 <script src="../js/store.js?v=2"></script>
-<script src="../js/employer.js?v=14"></script>
+<script src="../js/employer.js?v=16"></script>
 <script src="../js/logo-crop.js"></script>
 <script src="../js/institution.js?v=16"></script>
 <script>
