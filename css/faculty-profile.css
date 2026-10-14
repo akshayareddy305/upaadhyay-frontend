@@ -206,7 +206,7 @@
 
 /* --- app-style layout (desktop): banner + hero card and the left menu stay put; only the form area scrolls --- */
 @media(min-width:900px){
-#fpRoot{display:flex;flex-direction:column;height:calc(100vh - var(--nav-h,65px) - 32px);min-height:520px}
+#fpRoot{display:flex;flex-direction:column;height:calc(100vh / var(--ui-zoom,1) - var(--nav-h,65px) - 32px);min-height:520px}
 #fpRoot>#fpHero{flex:none}
 #fpRoot>.fp-wrap{flex:1;min-height:0;grid-template-rows:minmax(0,1fr);align-items:stretch}
 #fpRoot .fp-nav{position:static;min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain}   /* many menu items -> the menu itself scrolls */
