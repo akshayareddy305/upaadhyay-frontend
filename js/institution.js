@@ -564,8 +564,13 @@ function bDropUnsaved(){ if(BRnew&&window.bkDeleteFile) bkDeleteFile(BRnew).catc
 /* ---------- status + dashboard ---------- */
 function statusBody(){
   const d=I.d, ok=anyDoc();
-  if(vState()==='verified') return `<div class="in-status"><div class="big" style="background:var(--green)">${ck(26)}</div><h3 style="margin:0 0 4px">Verified institution</h3><p style="font-size:18px;font-weight:700;color:var(--blue-900);margin:0 0 6px">${esc((d.name||'').toUpperCase())}</p>${vBadge()}</div>
-   <ul class="in-list">${vRows().map(x=>`<li>${dot(x[0],rowIc(x[0]))}${x[1]}</li>`).join('')}</ul>`;
+  if(vState()==='verified'){
+    const sub=[d.type,d.city].filter(Boolean).map(esc).join(' \u00b7 ');
+    const ini=esc(String(d.name||'?').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?');
+    return `<div class="in-vcard"><div class="in-vcard-logo">${d.logo?`<img src="${d.logo}" alt="">`:ini}</div>
+   <div class="in-vcard-txt"><p class="in-vcard-name">${esc(d.name||'Your institution')}</p>${sub?`<p class="in-vcard-sub">${sub}</p>`:''}${vBadge()}</div>
+   <button class="btn btn-ghost btn-sm" onclick="IN.edit(0)">Edit</button></div>`;
+  }
   if(I.vs==='changes') return `<div class="in-status"><div class="big" style="background:#B3261E">${BANG}</div><h3 style="margin:0 0 6px">Additional information required</h3><p style="color:var(--ink-soft);margin:0">We need some additional information before we can complete your institution verification.</p></div>
    ${note('<b>Reason</b><br>The uploaded document does not clearly match the institution name.','in-bad')}
    ${missPanel()}
