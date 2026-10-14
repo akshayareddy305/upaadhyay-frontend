@@ -549,32 +549,71 @@ if(typeof window.bkStatusBadge !== 'function'){
       + `<div class="jc-tags">${skills.map(t=>`<span class="hp-tag">${jbEsc(t)}</span>`).join('')}</div>`;
   }
 
+  /* College short code: "IIIT Nagpur" -> IIIT, "Andhra University" -> AU */
+  function collegeShort(name){
+    const n = String(name || '').trim();
+    if(!n) return '';
+    const caps = n.split(/[\s,.\-]+/).filter(w=>/^[A-Z]{2,6}$/.test(w))[0];
+    if(caps) return caps;
+    const ini = n.split(/[\s,.\-]+/).filter(w=>w && !/^(of|the|and|for|&|in)$/i.test(w)).map(w=>w[0].toUpperCase()).join('');
+    return ini.slice(0,5);
+  }
+
+  /* Saved candidates (employer's shortlist-for-later), kept in this browser */
+  function savedCands(){ try{ return JSON.parse(localStorage.getItem('upaadhyay_saved_cands')||'[]'); }catch(e){ return []; } }
+  function saveCandidate(id, ev){
+    if(ev) ev.stopPropagation();
+    let l = savedCands(); l = l.indexOf(id)>-1 ? l.filter(x=>x!==id) : l.concat(id);
+    try{ localStorage.setItem('upaadhyay_saved_cands', JSON.stringify(l)); }catch(e){}
+    renderCandidates(false);
+  }
+  function downloadCandidateCV(id, ev){
+    if(ev) ev.stopPropagation();
+    const p = facultyProfiles[id];
+    const cv = ((p && p.links) || []).filter(l=>/resume|\bcv\b/i.test(l[0] || ''))[0];
+    if(cv && cv[2]) window.open(cv[2], '_blank');
+    else alert('This candidate has not uploaded a CV yet.');
+  }
+  function toggleCandMenu(id, ev){
+    if(ev) ev.stopPropagation();
+    const m = document.getElementById('cm-'+id), open = m && m.classList.contains('open');
+    document.querySelectorAll('.cr-menu.open').forEach(x=>x.classList.remove('open'));
+    if(m && !open) m.classList.add('open');
+  }
+  document.addEventListener('click', function(){ document.querySelectorAll('.cr-menu.open').forEach(x=>x.classList.remove('open')); });
+
   function candidateCardHTML(id){
     const p = facultyProfiles[id];
     if(!p) return '';
-    const qual = (p.education && p.education[0] && (p.education[0].degree || p.education[0].title)) || (p.tags && p.tags[0]) || '';
+    const ed = (p.education || [])[0];
+    const edTitle = Array.isArray(ed) ? ed[0] : (ed && (ed.degree || ed.title)) || '';
+    const qual = edTitle || (p.tags && p.tags[0]) || '';
     const expTag = (p.tags || []).filter(t=>/experience/i.test(t))[0] || '';
-    const exp = expTag ? expTag.replace(/\s*experience/i,'') : '';
-    const locTag = (p.tags || []).filter(t=>!/experience/i.test(t) && t !== qual)[0] || '';
-    const chips = [qual].concat((p.skills || []).slice(0,3)).filter(Boolean).slice(0,3);
-    const meta = [p.college, locTag, exp ? exp + ' exp' : ''].filter(Boolean).join(' \u00b7 ');
-    const av = p.avatar ? `<span class="cc-av" style="background-image:url('${jbEsc(p.avatar)}')"></span>` : `<span class="cc-av cc-av-ph"></span>`;
+    const exp = expTag ? expTag.replace(/\s*experience/i,'').trim() : '';
+    const loc = (p.tags || []).filter(t=>!/experience/i.test(t) && t !== qual)[0] || '';
+    const roleLine = [collegeShort(p.college), p.role || 'Faculty'].filter(Boolean).join('-');
+    const chips = [qual].concat(p.skills || []).filter(Boolean);
+    const shown = chips.slice(0,3), more = chips.length - shown.length;
+    const meta = [p.college, loc, exp ? exp + ' exp' : ''].filter(Boolean).join(' \u00b7 ');
+    const ini = String(p.name||'?').replace(/^(dr|mr|mrs|ms|prof)\.?\s+/i,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+    const av = p.avatar ? `<span class="cn-av" style="background-image:url('${jbEsc(p.avatar)}')"></span>` : `<span class="cn-av cn-av-ini">${jbEsc(ini)}</span>`;
     const st = statusBadge(id);
+    const saved = savedCands().indexOf(id) > -1;
     return `
-      <div class="job-card cc-card" onclick="openProfile('${id}')">
-        <div class="cc-top">
-          <span class="cc-tag">Open to opportunities</span>
-          ${st || (exp ? `<span class="cc-exp">${jbEsc(exp)}</span>` : '')}
-        </div>
-        <p class="cc-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></p>
-        <div class="cc-org">${av}<span>${jbEsc(p.role || 'Faculty')}</span></div>
-        <div class="cc-chips">${chips.map(c=>`<span>${jbEsc(c)}</span>`).join('')}</div>
-        <p class="cc-meta">${meta ? jbEsc(meta) : 'Profile details not added yet'}</p>
-        <div class="cc-foot">
-          <button class="btn btn-light btn-sm" onclick="event.stopPropagation(); messageCandidate('${id}', event)">Message</button>
+      <div class="cn-card" onclick="openProfile('${id}')">
+        <div class="cn-top"><span class="cn-pill">Open to opportunities</span>${st || (exp ? `<span class="cn-exp">${jbEsc(exp)}</span>` : '')}</div>
+        <h3 class="cn-name">${jbEsc(p.name)}<span class="verified-tick" title="Verified profile"><svg viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span></h3>
+        <div class="cn-inst">${av}<span>${jbEsc(roleLine)}</span></div>
+        <div class="cn-chips">${shown.map(t=>`<span class="cn-chip">${jbEsc(t)}</span>`).join('')}${more>0 ? `<span class="cn-chip more">+${more}</span>` : ''}</div>
+        <p class="cn-meta">${meta ? jbEsc(meta) : 'Profile details not added yet'}</p>
+        <div class="cn-line"></div>
+        <div class="cn-acts">
+          <button onclick="event.stopPropagation(); openProfile('${id}')">View profile</button>
           ${candidateStatus[id]==='shortlisted'
-            ? `<button class="btn btn-primary btn-sm" disabled>Shortlisted</button>`
-            : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
+            ? `<button disabled>Shortlisted</button>`
+            : `<button onclick="event.stopPropagation(); inviteCandidate('${id}', event)">${candidateStatus[id]==='invited' ? 'Invited \u2713' : 'Invite'}</button>`}
+          <button onclick="messageCandidate('${id}', event)">Message</button>
+          <button class="${saved?'on':''}" onclick="saveCandidate('${id}', event)">${saved?'Saved':'Save'}</button>
         </div>
       </div>`;
   }
@@ -616,15 +655,18 @@ if(typeof window.bkStatusBadge !== 'function'){
       </div>`;
   }
 
-  const CAND_PAGE_SIZE = 8;
+  const CAND_PAGE_SIZE = 6;
   let candVisibleCount = CAND_PAGE_SIZE;
 
   function renderCandidates(resetPaging){
     if(resetPaging !== false) candVisibleCount = CAND_PAGE_SIZE;
     const q = (document.getElementById('candSearch').value || '').toLowerCase();
+    const lq = ((document.getElementById('candLocation') || {}).value || '').toLowerCase();
     const ids = Object.keys(facultyProfiles).filter(id=>{
       const p = facultyProfiles[id];
-      return !q || p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q);
+      const hay = [p.name, p.role, p.college].concat(p.skills || []).join(' ').toLowerCase();
+      const lhay = [p.college].concat(p.tags || []).join(' ').toLowerCase();
+      return (!q || hay.includes(q)) && (!lq || lhay.includes(lq));
     });
     const visibleIds = ids.slice(0, candVisibleCount);
     document.getElementById('candidateList').innerHTML = visibleIds.map(candidateCardHTML).join('') || `
@@ -640,12 +682,13 @@ if(typeof window.bkStatusBadge !== 'function'){
       const remaining = ids.length - visibleIds.length;
       if(remaining > 0){
         moreWrap.style.display = 'flex';
-        document.getElementById('candidateShowMoreBtn').textContent = `Show ${Math.min(remaining, CAND_PAGE_SIZE)} more`;
+        document.getElementById('candidateShowMoreBtn').textContent = `View more (${remaining})`;
       } else {
         moreWrap.style.display = 'none';
       }
     }
   }
+  document.addEventListener('input', function(e){ if(e.target && (e.target.id==='candSearch' || e.target.id==='candLocation')) renderCandidates(); });
   function showMoreCandidates(){
     candVisibleCount += CAND_PAGE_SIZE;
     renderCandidates(false);
