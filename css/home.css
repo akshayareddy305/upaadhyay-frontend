@@ -68,5 +68,5 @@ body.home .footer-sub{border-radius:4px}
 body.home .bj-pref-tag{border-radius:4px}
 body.home .mini-panel{border-radius:5px}
 body.home .mini-panel .mini-head,body.home .mini-seeker{border-radius:5px}
-body.home .mini-panel .btn.btn-light,body.home .msk-bar,body.home .msk-bar i,body.home .msk-chips span{border-radius:4px}
-body.home .mini-panel .mini-links a{border-radius:4px}
+body.home .mini-panel .btn.btn-light,body.home .msk-bar,body.home .msk-bar i,body.home .msk-chips span{border-radius:4px} body.home .mini-panel .mini-links a{border-radius:4px}
+/* Reserve space for JS-filled areas (prevents layout shift) */ .fh-carousel{min-height:142px} .fh-cat-grid{min-height:162px} .fh-pills{min-height:122px} @media (max-width:1100px){.fh-cat-grid{min-height:252px}} @media (max-width:860px){.fh-cat-grid{min-height:342px}.fh-pills{min-height:178px}} @media (max-width:760px){.fh-carousel{min-height:128px}.fh-cat-grid{min-height:492px}.fh-pills{min-height:340px}}  /* Makes the new link versions look like the old buttons */ .fh :where(a.fh-cat-item,a.fh-pill,a.fh-btn){text-decoration:none} .fh :where(a.fh-cat-item,a.fh-pill){color:inherit}
