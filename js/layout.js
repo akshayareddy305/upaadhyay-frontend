@@ -168,9 +168,9 @@ function mountChrome(opts){
         </div>
         <div class="footer-col">
           <h5>Company</h5>
-          <a href="javascript:void(0)" onclick="showGenericToast('About Upadyay — coming soon')">About</a>
-          <a href="javascript:void(0)" onclick="showGenericToast('Contact page — coming soon')">Contact</a>
-          <a href="javascript:void(0)" onclick="showGenericToast('Help centre — coming soon')">Help centre</a>
+          <a href="${PAGES.about}">About</a>
+          <a href="${PAGES.contact}">Contact</a>
+          <a href="${PAGES.help}">Help centre</a>
         </div>
         <div class="footer-col">
           <h5>Legal</h5>
