@@ -35,8 +35,8 @@ body.home{background:#f4efff; font-family:'Poppins','Inter',system-ui,sans-serif
 .fh-carousel-wrap{position:relative}
 .fh-carousel{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;padding:10px 6px 22px;scrollbar-width:none}
 .fh-carousel::-webkit-scrollbar,.fh-pills::-webkit-scrollbar{display:none}
-.fh-co{flex:0 0 220px;height:110px;scroll-snap-align:start;background:#fff;border-radius:5px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px solid #f0ebfa;transition:.25s;cursor:pointer}
-.fh-co b{font-size:19px;letter-spacing:-.4px}.fh-co small{font-size:12px;color:var(--muted)}
+.fh-co{flex:0 0 220px;width:220px;height:190px;padding:16px 14px;box-sizing:border-box;text-align:center;scroll-snap-align:start;background:#fff;border-radius:5px;box-shadow:var(--shadow);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border:1px solid #f0ebfa;transition:.25s;cursor:pointer}
+.fh-co b{font-size:16px;letter-spacing:-.2px;line-height:1.3;max-width:100%;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-top:8px;min-height:42px}.fh-co small{font-size:12px;color:var(--muted)}
 .fh-co:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
 .fh-arrow{position:absolute;top:50%;transform:translateY(-62%);width:44px;height:44px;border-radius:50%;background:#fff;color:var(--purple);box-shadow:var(--shadow-lg);display:flex;align-items:center;justify-content:center;z-index:5;transition:.2s}
 .fh-arrow:hover{background:var(--purple);color:#fff}
@@ -69,7 +69,7 @@ body.home .bj-pref-tag{border-radius:4px}
 body.home .mini-panel{border-radius:5px}
 body.home .mini-panel .mini-head,body.home .mini-seeker{border-radius:5px}
 body.home .mini-panel .btn.btn-light,body.home .msk-bar,body.home .msk-bar i,body.home .msk-chips span{border-radius:4px} body.home .mini-panel .mini-links a{border-radius:4px}
-/* Reserve space for JS-filled areas (prevents layout shift) */ .fh-carousel{min-height:142px} .fh-cat-grid{min-height:162px} .fh-pills{min-height:122px} @media (max-width:1100px){.fh-cat-grid{min-height:252px}} @media (max-width:860px){.fh-cat-grid{min-height:342px}.fh-pills{min-height:178px}} @media (max-width:760px){.fh-carousel{min-height:128px}.fh-cat-grid{min-height:492px}.fh-pills{min-height:340px}}  /* Makes the new link versions look like the old buttons */ .fh :where(a.fh-cat-item,a.fh-pill,a.fh-btn){text-decoration:none} .fh :where(a.fh-cat-item,a.fh-pill){color:inherit}
+/* Reserve space for JS-filled areas (prevents layout shift) */ .fh-carousel{min-height:222px} .fh-cat-grid{min-height:162px} .fh-pills{min-height:122px} @media (max-width:1100px){.fh-cat-grid{min-height:252px}} @media (max-width:860px){.fh-cat-grid{min-height:342px}.fh-pills{min-height:178px}} @media (max-width:760px){.fh-carousel{min-height:128px}.fh-cat-grid{min-height:492px}.fh-pills{min-height:340px}}  /* Makes the new link versions look like the old buttons */ .fh :where(a.fh-cat-item,a.fh-pill,a.fh-btn){text-decoration:none} .fh :where(a.fh-cat-item,a.fh-pill){color:inherit}
 
 .fh-about{display:grid;grid-template-columns:1fr 1.4fr;gap:22px;align-items:stretch}
 .fh-about-logo{background:var(--lav);border-radius:5px;display:flex;align-items:center;justify-content:center;padding:32px}
@@ -82,3 +82,6 @@ body.home .mini-panel .btn.btn-light,body.home .msk-bar,body.home .msk-bar i,bod
 .fh-about-stats b{display:block;font-size:20px;font-weight:800;color:var(--purple)}
 .fh-about-stats span{font-size:12.5px;color:var(--muted)}
 @media (max-width:760px){.fh-about{grid-template-columns:1fr}.fh-about-box{padding:24px}.fh-about-logo img{max-width:240px}}
+
+.fh-co-logo{width:68px;height:68px;border-radius:12px;background:var(--lav);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto;font-weight:800;font-size:22px;color:var(--purple)}
+.fh-co-logo img{width:100%;height:100%;object-fit:contain;background:#fff}
