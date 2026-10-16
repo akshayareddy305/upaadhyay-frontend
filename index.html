@@ -171,7 +171,16 @@
   // carousel
   function drawInst(list){
     var wrap=$('fhCarousel'); wrap.innerHTML='';
-    list.forEach(function(c){ var d=document.createElement('div'); d.className='fh-co'; var b=document.createElement('b'); b.textContent=c[0]; var sm=document.createElement('small'); sm.textContent=c[1]; d.appendChild(b); d.appendChild(sm); d.onclick=function(){ go({q:c[0]}); }; wrap.appendChild(d); });
+    list.forEach(function(c){
+      var d=document.createElement('div'); d.className='fh-co';
+      var lg=document.createElement('div'); lg.className='fh-co-logo';
+      var ini=(c[0]||'?').trim().split(/\s+/).slice(0,2).map(function(w){return w.charAt(0).toUpperCase();}).join('');
+      if(c[2]){ var im=document.createElement('img'); im.src=c[2]; im.alt=c[0]; im.loading='lazy'; im.onerror=function(){ lg.textContent=ini; im.remove(); }; lg.appendChild(im); } else { lg.textContent=ini; }
+      var b=document.createElement('b'); b.textContent=c[0]; b.title=c[0];
+      var sm=document.createElement('small'); sm.textContent=c[1]||'\u00a0';
+      d.appendChild(lg); d.appendChild(b); d.appendChild(sm);
+      d.onclick=function(){ go({q:c[0]}); }; wrap.appendChild(d);
+    });
   }
   drawInst(INST);   // placeholder until the API answers; replaced by real institutions below
   if(window.bkLoadInstitutions) bkLoadInstitutions().then(function(list){ if(list.length) drawInst(list); });
