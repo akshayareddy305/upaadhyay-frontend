@@ -20,7 +20,7 @@ const NAV_CSS = `
 .fn-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
 .fn-mark{height:38px;width:auto;display:block}
 .fn-word{font-family:'Poppins',sans-serif;font-weight:800;font-size:24px;letter-spacing:-1.2px;color:#3a1580;line-height:1}
-.fn-word span{color:#e0359a}
+.fn-word span{color:inherit}
 .fn-badge{background:#ebe3ff;color:#4b1f9e;font-size:10px;font-weight:600;padding:2px 8px;border-radius:2px;align-self:center;margin-top:4px}
 .nav-links{justify-content:flex-start !important;gap:22px !important;flex:1}
 .nav-links a{white-space:nowrap;font-size:13.5px !important;font-weight:500 !important;color:#1f1637 !important;position:relative;padding:6px 0}
@@ -48,7 +48,7 @@ function mountNav(active){
   el.innerHTML = `
   <nav class="nav">
     <div class="nav-inner">
-      <a class="brand fn-brand" href="${PAGES.home}"><img src="/assets/logo/logo-mark.png" alt="Upaadhyay logo" class="fn-mark"><span class="fn-word">Upaadh<span>yay</span></span><span class="fn-badge">Faculty</span></a>
+      <a class="brand fn-brand" href="${PAGES.home}"><img src="/assets/logo/logo-mark.png" alt="Upaadhyay logo" class="fn-mark"><span class="fn-word">Upaadh<span>yay</span></span></a>
       <div class="nav-links">
         <a href="${PAGES.home}"${cls('home')}>Home</a>
         <a href="${PAGES.facultyHub}"${cls('faculty')} id="navForFacultyLink">For Faculty</a>
