@@ -196,7 +196,8 @@
   window.bkLoadInstitutions = async function(){
     try{
       const r = await api.get('/institutions', { noAuthRedirect: true });
-      return items(r).map(function(c){ return [c.company_name || c.name, c.city || c.location || '']; }).filter(function(c){ return c[0]; });
+      return items(r).slice().sort(function(a,b){ var ta=Date.parse(a.created_at||a.createdAt||'')||0, tb=Date.parse(b.created_at||b.createdAt||'')||0; return (tb-ta) || ((b.id||0)-(a.id||0)); })
+        .map(function(c){ return [c.company_name || c.name, c.city || c.location || '', c.logo || c.logo_url || c.company_logo || (c.company_profile&&c.company_profile.logo) || '']; }).filter(function(c){ return c[0]; });
     }catch(e){ return []; }
   };
 
