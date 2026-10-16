@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Help Centre | Upaadhyay</title>
+<meta name="description" content="Answers to common questions about registering, applying, posting jobs and hiring faculty on Upaadhyay.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://upaadhyay.com/pages/help-centre.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Upaadhyay">
+<meta property="og:title" content="Help Centre | Upaadhyay">
+<meta property="og:description" content="Answers to common questions about registering, applying, posting jobs and hiring faculty on Upaadhyay.">
+<meta property="og:url" content="https://upaadhyay.com/pages/help-centre.html">
+<meta property="og:image" content="https://upaadhyay.com/assets/og-image.png">
+<meta property="og:locale" content="en_IN">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="32x32" href="../assets/logo/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="../css/style.css"><link rel="stylesheet" href="../css/site-pages.css"></head>
+<body class="sp"><div id="siteNav"></div>
+<header class="sp-hero sm"><div class="wrap"><h1>Help centre</h1><p>Find answers about accounts, profiles, jobs and hiring.</p>
+<div class="sp-search"><input id="hq" type="search" placeholder="Search for help…" aria-label="Search help"></div></div></header>
+<div class="sp-sheet"><section class="sp-sec"><div class="wrap sp-faq" id="hFaq" style="max-width:820px"><div class="sp-faqgrp"><h3>Getting started</h3><details><summary>How do I register as faculty?</summary><p>Click Register, choose Faculty, and complete your basic details. You can finish your academic profile afterwards.</p></details><details><summary>Is Upaadhyay free?</summary><p>Registration is free for faculty. Employers get an introductory free period.</p></details><details><summary>Can I apply without a complete profile?</summary><p>A complete profile improves visibility, but you can start with the basics.</p></details></div><div class="sp-faqgrp"><h3>For faculty</h3><details><summary>How do I apply for a job?</summary><p>Open any job from Browse jobs and use the apply button. You must be logged in as faculty.</p></details><details><summary>How do I update my profile?</summary><p>Log in, open the profile menu and choose Update profile.</p></details><details><summary>Who can see my profile?</summary><p>Verified institutions can discover your profile to invite or shortlist you.</p></details></div><div class="sp-faqgrp"><h3>For employers</h3><details><summary>How do I post a job?</summary><p>Log in as an employer, open your dashboard and use Post a job.</p></details><details><summary>How do I search for faculty?</summary><p>Use Browse candidates from your employer dashboard and filter by expertise.</p></details><details><summary>How are institutions verified?</summary><p>Institution details are reviewed before your profile and openings are published.</p></details></div><div class="sp-faqgrp"><h3>Account & login</h3><details><summary>I forgot my password</summary><p>Use the forgot-password option on the login page. If it still fails, contact us.</p></details><details><summary>How do I log out?</summary><p>Use the Log out button in the top-right of the navigation bar.</p></details></div><p class="sp-empty" id="hEmpty">No results. Try different words or <a href="contact.html">contact us</a>.</p></div></section>
+<div class="sp-cta"><h2>Still need help?</h2><p>Our team is happy to assist.</p><a class="sp-btn" href="contact.html">Contact us</a></div></div>
+<div id="siteChrome"></div>
+<script src="../js/api.js"></script>
+<script src="../js/store.js"></script><script src="../js/employer.js"></script><script src="../js/auth.js"></script><script src="../js/faculty.js"></script><script src="../js/layout.js"></script><script src="../js/backend.js"></script><script src="../js/site-pages.js"></script>
+<script>spBoot('help');document.getElementById('hq').addEventListener('input',function(){
+ var q=this.value.toLowerCase().trim(),any=false;
+ document.querySelectorAll('#hFaq details').forEach(function(d){var ok=!q||d.textContent.toLowerCase().indexOf(q)>-1;d.style.display=ok?'':'none';if(ok)any=true;});
+ document.querySelectorAll('.sp-faqgrp').forEach(function(g){g.style.display=[].some.call(g.querySelectorAll('details'),function(d){return d.style.display!=='none'})?'':'none';});
+ document.getElementById('hEmpty').style.display=any?'none':'block';
+});</script></body></html>
