@@ -223,6 +223,9 @@ const PAGES = {
   employersHub:SITE_ROOT + 'pages/for-employers.html',
   howItWorks:SITE_ROOT + 'pages/how-it-works.html',
   jobView:   SITE_ROOT + 'pages/job-view.html',
+  about:     SITE_ROOT + 'pages/about.html',
+  contact:   SITE_ROOT + 'pages/contact.html',
+  help:      SITE_ROOT + 'pages/help-centre.html',
   admin:     SITE_ROOT + 'admin/index.html'
 };
 function goTo(page, params){
